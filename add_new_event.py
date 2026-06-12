@@ -153,19 +153,20 @@ class RunTab(tk.Frame):
         self.v_location   = labeled_entry(self, "Location", 1)
         self.v_dist       = labeled_entry(self, "Distance (km)", 2)
         self.v_total_time = labeled_entry(self, "Total time (H:MM:SS)", 3)
-        self.v_hr_avg     = labeled_entry(self, "Avg HR (bpm)", 4)
-        self.v_hr_max     = labeled_entry(self, "Max HR (bpm)", 5)
+        self.v_hr_avg      = labeled_entry(self, "Avg HR (bpm)", 4)
+        self.v_hr_max      = labeled_entry(self, "Max HR (bpm)", 5)
+        self.v_elevation   = labeled_entry(self, "Elevation (m)", 6, "0")
 
-        tk.Label(self, text="Sneakers", anchor="e", width=16).grid(row=6, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Sneakers", anchor="e", width=16).grid(row=7, column=0, sticky="e", **PAD)
         self.v_sneakers = tk.StringVar()
         self.cb_sneakers_run = ttk.Combobox(self, textvariable=self.v_sneakers, width=ENTRY_W - 2)
         self.cb_sneakers_run['values'] = load_sneakers()
-        self.cb_sneakers_run.grid(row=6, column=1, sticky="ew", **PAD)
+        self.cb_sneakers_run.grid(row=7, column=1, sticky="ew", **PAD)
 
         # Photos folder row
-        tk.Label(self, text="Photos folder", anchor="e", width=16).grid(row=7, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Photos folder", anchor="e", width=16).grid(row=8, column=0, sticky="e", **PAD)
         ph_frame = tk.Frame(self)
-        ph_frame.grid(row=7, column=1, sticky="ew", **PAD)
+        ph_frame.grid(row=8, column=1, sticky="ew", **PAD)
         ph_frame.columnconfigure(0, weight=1)
         self.v_photos = tk.StringVar()
         tk.Entry(ph_frame, textvariable=self.v_photos).grid(row=0, column=0, sticky="ew")
@@ -173,7 +174,7 @@ class RunTab(tk.Frame):
 
         tk.Button(self, text="💾  Save Run", command=self._save,
                   bg="#e8521b", fg="white", font=("", 11, "bold"),
-                  padx=18, pady=6).grid(row=8, column=0, columnspan=2, pady=16)
+                  padx=18, pady=6).grid(row=9, column=0, columnspan=2, pady=16)
 
     def _browse(self):
         folder = filedialog.askdirectory(title="Select photos folder")
@@ -194,6 +195,7 @@ class RunTab(tk.Frame):
             "total_time":  self.v_total_time.get().strip(),
             "hr_avg":      int(self.v_hr_avg.get() or 0),
             "hr_max":      int(self.v_hr_max.get() or 0),
+            "elevation":   int(self.v_elevation.get() or 0),
             "sneakers":    self.v_sneakers.get().strip(),
             "photos":      [],
         }

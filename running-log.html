@@ -412,6 +412,8 @@ const I18N = {
     max:            "max",
     km:             "km",
     total_time:     "Total time",
+    elevation:      "Elevation",
+    m:              "m",
     photos_details: "Photos & details",
     hide_details:   "Hide details",
     det_date:       "Date",
@@ -443,6 +445,8 @@ const I18N = {
     max:            "макс.",
     km:             "км",
     total_time:     "Агульны час",
+    elevation:      "Набор",
+    m:              "м",
     photos_details: "Фота і падрабязнасці",
     hide_details:   "Схаваць падрабязнасці",
     det_date:       "Дата",
@@ -521,31 +525,43 @@ function renderRuns() {
         '<div class="run-dist">' + run.distance_km + '<small> ' + t('km') + '</small></div>' +
       '</div>' +
 
-      '<div class="run-stats">' +
-        '<div class="stat"><div class="stat-label">' + t('pace') + '</div><div class="stat-value">' + calcPace(run.distance_km, run.total_time) + '</div><div class="stat-sub">' + t('min_km') + '</div></div>' +
-        '<div class="stat"><div class="stat-label">' + t('avg_hr') + '</div><div class="stat-value">' + run.hr_avg + '</div><div class="stat-sub">' + t('bpm') + '</div></div>' +
-        '<div class="stat"><div class="stat-label">' + t('total_time') + '</div><div class="stat-value">' + run.total_time + '</div></div>' +
-      '</div>' +
-
-      '<div class="expand-row">' +
-        '<button class="expand-btn" id="ebtn-' + i + '" onclick="event.stopPropagation(); toggleDetails(' + i + ')">' +
-          '&#9658; &nbsp;' + t('photos_details') +
-        '</button>' +
-      '</div>' +
-
-      '<div class="run-details" id="det-' + i + '">' +
-        '<div class="details-row"><span class="details-key">' + t('det_date') + '</span>' + fmtDate(run.date) + '</div>' +
-        '<div class="details-row"><span class="details-key">' + t('det_location') + '</span>' + run.location + '</div>' +
-        '<div class="details-row"><span class="details-key">' + t('det_distance') + '</span>' + run.distance_km + ' ' + t('km') + '</div>' +
-        '<div class="details-row"><span class="details-key">' + t('det_pace') + '</span>' + calcPace(run.distance_km, run.total_time) + ' ' + t('min_km') + '</div>' +
-        '<div class="details-row"><span class="details-key">' + t('det_avg_hr') + '</span>' + run.hr_avg + ' ' + t('bpm') + '</div>' +
-        '<div class="details-row"><span class="details-key">' + t('det_max_hr') + '</span>' + run.hr_max + ' ' + t('bpm') + '</div>' +
-        '<div class="details-row"><span class="details-key">' + t('det_sneakers') + '</span>' + run.sneakers + '</div>' +
-        '<div class="photos-wrap">' +
-          '<div class="photos-label">' + t('photos') + '</div>' +
-          photoGrid(run.photos) +
+      (function() {
+        var elev = run.elevation || 0;
+        var cols = elev > 0 ? 4 : 3;
+        var elevStat = elev > 0
+          ? '<div class="stat"><div class="stat-label">' + t('elevation') + '</div><div class="stat-value">' + elev + '</div><div class="stat-sub">' + t('m') + '</div></div>'
+          : '';
+        var elevDetail = elev === 0
+          ? '<div class="details-row"><span class="details-key">' + t('elevation') + '</span>' + elev + ' ' + t('m') + '</div>'
+          : '';
+        return '<div class="run-stats" style="grid-template-columns:repeat(' + cols + ',1fr)">' +
+          '<div class="stat"><div class="stat-label">' + t('pace') + '</div><div class="stat-value">' + calcPace(run.distance_km, run.total_time) + '</div><div class="stat-sub">' + t('min_km') + '</div></div>' +
+          '<div class="stat"><div class="stat-label">' + t('avg_hr') + '</div><div class="stat-value">' + run.hr_avg + '</div><div class="stat-sub">' + t('bpm') + '</div></div>' +
+          '<div class="stat"><div class="stat-label">' + t('total_time') + '</div><div class="stat-value">' + run.total_time + '</div></div>' +
+          elevStat +
         '</div>' +
-      '</div>' +
+
+        '<div class="expand-row">' +
+          '<button class="expand-btn" id="ebtn-' + i + '" onclick="event.stopPropagation(); toggleDetails(' + i + ')">' +
+            '&#9658; &nbsp;' + t('photos_details') +
+          '</button>' +
+        '</div>' +
+
+        '<div class="run-details" id="det-' + i + '">' +
+          '<div class="details-row"><span class="details-key">' + t('det_date') + '</span>' + fmtDate(run.date) + '</div>' +
+          '<div class="details-row"><span class="details-key">' + t('det_location') + '</span>' + run.location + '</div>' +
+          '<div class="details-row"><span class="details-key">' + t('det_distance') + '</span>' + run.distance_km + ' ' + t('km') + '</div>' +
+          '<div class="details-row"><span class="details-key">' + t('det_pace') + '</span>' + calcPace(run.distance_km, run.total_time) + ' ' + t('min_km') + '</div>' +
+          '<div class="details-row"><span class="details-key">' + t('det_avg_hr') + '</span>' + run.hr_avg + ' ' + t('bpm') + '</div>' +
+          '<div class="details-row"><span class="details-key">' + t('det_max_hr') + '</span>' + run.hr_max + ' ' + t('bpm') + '</div>' +
+          elevDetail +
+          '<div class="details-row"><span class="details-key">' + t('det_sneakers') + '</span>' + run.sneakers + '</div>' +
+          '<div class="photos-wrap">' +
+            '<div class="photos-label">' + t('photos') + '</div>' +
+            photoGrid(run.photos) +
+          '</div>' +
+        '</div>';
+      }()) +
     '</article>';
   }).join('');
 }

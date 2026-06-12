@@ -25,9 +25,9 @@ Running records/
 
 Open `running-log.html` in any browser. No server required.
 
-- **All Runs** tab — cards sorted newest first, each showing pace, avg HR, and total time. Expand a card to see full details and photos.
-- **Personal Bests** tab — best time per distance with pace, heart rate, and previous records.
-- **EN / BE** toggle in the top-right corner switches the interface language between English and Belarusian.
+- **All Runs** tab — cards sorted newest first. Each card shows pace, avg HR, and total time. If elevation gain is recorded, it appears as a fourth stat. Expand a card for full details and photos.
+- **Personal Bests** tab — best time per distance with pace, heart rate, sneakers, and previous records.
+- **EN / BE** toggle in the top-right corner switches the interface between English and Belarusian, including dates and all labels.
 
 ---
 
@@ -55,22 +55,28 @@ python add_new_event.py
 | Total time | H:MM:SS, e.g. `1:05:30` |
 | Avg HR | Beats per minute |
 | Max HR | Beats per minute |
+| Elevation | Metres of elevation gain, e.g. `320`. Use `0` if flat |
 | Sneakers | Choose from dropdown or type a new name |
 | Photos folder | Optional — all images in the folder are copied into `data/photos/` |
 
 ### Add Personal Best tab
 
-Same fields as Add Run, plus:
-
 | Field | Format |
 |---|---|
 | Distance label | Display name, e.g. `5 km` or `Half Marathon` |
 | Distance (km) | Numeric, e.g. `5` or `21.0975` — used to calculate pace |
+| Total time | H:MM:SS, e.g. `19:14` |
+| Date | YYYY-MM-DD |
+| Location | Free text |
+| Avg HR | Beats per minute |
+| Max HR | Beats per minute |
+| Sneakers | Choose from dropdown or type a new name |
+| Photos folder | Optional |
 | Previous records | One record per line: `time\|date\|location` |
 
 ### Sneakers
 
-The Sneakers field is a dropdown backed by `data/sneakers.json`. Typing a new name and saving adds it to the list automatically — it will appear in the dropdown on the next use.
+The Sneakers field is a dropdown backed by `data/sneakers.json`. Typing a new name and saving adds it to the list automatically — it appears in the dropdown on the next use.
 
 ### After saving
 
@@ -86,11 +92,12 @@ Each event is stored as a standalone JSON file:
 ```json
 {
   "date": "2026-05-31",
-  "location": "Gorky Park, Moscow",
+  "location": "Gorky Park",
   "distance_km": 10.0,
   "total_time": "51:30",
   "hr_avg": 145,
   "hr_max": 168,
+  "elevation": 120,
   "sneakers": "Nike Vaporfly 4",
   "photos": ["data/photos/2026-05-31/IMG_001.jpg"]
 }
@@ -114,4 +121,6 @@ Each event is stored as a standalone JSON file:
 }
 ```
 
-Pace is calculated automatically from `distance_km` and `total_time` — it is not stored.
+**Notes:**
+- Pace is calculated from `distance_km` and `total_time` — it is not stored.
+- Elevation `0` is shown only in the expanded details panel, not in the stats row.
