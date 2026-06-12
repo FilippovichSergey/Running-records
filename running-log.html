@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sergey's Running Log</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --accent: #e8521b;
+  --bg: #f0ede8;
+  --card: #ffffff;
+  --text: #1a1a1a;
+  --muted: #888;
+  --border: #e5e1da;
+  --shadow: 0 2px 16px rgba(0,0,0,0.07);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+header {
+  background: #1a1a1a;
+  color: #fff;
+  height: 60px;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.logo {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+}
+.logo em { color: var(--accent); font-style: normal; }
+
+nav { display: flex; gap: 4px; }
+
+nav button {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.55);
+  padding: 6px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+  transition: all 0.15s;
+}
+nav button:hover:not(.active) { background: rgba(255,255,255,0.08); color: #fff; }
+nav button.active { background: var(--accent); color: #fff; }
+
+/* ── Lang switcher ── */
+.lang-switch {
+  margin-left: auto;
+  display: flex;
+  gap: 2px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 3px;
+}
+.lang-switch button {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.45);
+  padding: 4px 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  transition: all 0.15s;
+}
+.lang-switch button:hover:not(.active) { color: #fff; }
+.lang-switch button.active { background: var(--accent); color: #fff; }
+
+/* ── Pages ── */
+.page { display: none; max-width: 880px; margin: 0 auto; padding: 32px 24px 64px; }
+.page.visible { display: block; }
+
+/* ── Run card ── */
+.run-card {
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.run-top {
+  padding: 20px 24px 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+  user-select: none;
+}
+.run-top:hover { background: #fafaf8; }
+
+.run-meta { flex: 1 1 auto; }
+
+.run-when {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.run-location {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  line-height: 1.1;
+}
+
+.run-dist {
+  font-size: 34px;
+  font-weight: 900;
+  color: var(--accent);
+  letter-spacing: -1.5px;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.run-dist small {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+
+/* Stats row */
+.run-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--border);
+}
+.stat {
+  padding: 13px 18px;
+  border-right: 1px solid var(--border);
+  text-align: center;
+}
+.stat:last-child { border-right: none; }
+
+.stat-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.stat-value {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+.stat-sub {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+/* Expand toggle */
+.expand-row {
+  border-top: 1px solid var(--border);
+  padding: 0 24px;
+  background: #fafaf8;
+}
+.expand-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 10px 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--accent);
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+/* Details panel */
+.run-details {
+  display: none;
+  padding: 20px 24px;
+  border-top: 1px solid var(--border);
+  background: #fafaf8;
+}
+.run-details.open { display: block; }
+
+.details-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.details-key {
+  color: var(--muted);
+  font-weight: 600;
+  min-width: 88px;
+  flex-shrink: 0;
+}
+
+/* Photos */
+.photos-wrap { margin-top: 18px; }
+.photos-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.photos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+}
+.photo-thumb {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--border);
+  cursor: pointer;
+}
+.photo-thumb img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.2s;
+}
+.photo-thumb:hover img { transform: scale(1.05); }
+.no-photos {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* ── Personal Bests page ── */
+.pb-card {
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.pb-head {
+  background: #1a1a1a;
+  color: #fff;
+  padding: 22px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pb-dist-name {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+}
+.pb-time {
+  font-size: 34px;
+  font-weight: 900;
+  color: var(--accent);
+  letter-spacing: -1.5px;
+}
+
+.pb-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--border);
+}
+.pb-stat {
+  padding: 14px 20px;
+  border-right: 1px solid var(--border);
+}
+.pb-stat:last-child { border-right: none; }
+
+.pb-photos { padding: 16px 24px; border-bottom: 1px solid var(--border); }
+
+/* History */
+.pb-history { padding: 16px 24px; }
+.history-head {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.history-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.history-row:last-child { border-bottom: none; }
+.history-time {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  min-width: 70px;
+}
+.history-date { color: var(--muted); }
+.history-loc { margin-left: auto; color: var(--muted); font-size: 13px; }
+
+/* ── Lightbox ── */
+#lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.93);
+  z-index: 999;
+  align-items: center;
+  justify-content: center;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 92vw;
+  max-height: 92vh;
+  object-fit: contain;
+  border-radius: 10px;
+}
+#lb-close {
+  position: fixed;
+  top: 18px; right: 22px;
+  background: none; border: none;
+  color: rgba(255,255,255,0.75);
+  font-size: 38px; line-height: 1;
+  cursor: pointer;
+  transition: color 0.1s;
+}
+#lb-close:hover { color: #fff; }
+
+/* ── Responsive ── */
+@media (max-width: 580px) {
+  .run-stats { grid-template-columns: repeat(2, 1fr); }
+  .pb-stats { grid-template-columns: repeat(2, 1fr); }
+  .run-dist { font-size: 26px; }
+  .pb-time { font-size: 26px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" id="logo">Sergey's <em>Running</em> Log</div>
+  <nav>
+    <button class="active" id="nav-runs" onclick="showPage('runs', this)">All Runs</button>
+    <button id="nav-pbs" onclick="showPage('pbs', this)">Personal Bests</button>
+  </nav>
+  <div class="lang-switch">
+    <button id="lang-en" class="active" onclick="setLang('en')">EN</button>
+    <button id="lang-be" onclick="setLang('be')">BE</button>
+  </div>
+</header>
+
+<!-- Lightbox -->
+<div id="lightbox" onclick="closeLb()">
+  <button id="lb-close" onclick="closeLb()">×</button>
+  <img id="lb-img" src="" alt="">
+</div>
+
+<div id="page-runs" class="page visible"></div>
+<div id="page-pbs"  class="page"></div>
+
+<script src="data/data.js"></script>
+<script>
+// Data is loaded from data/data.js (RUNS_DATA, PBS_DATA).
+// Use add_new_event.py to add or edit events — do not edit data.js manually.
+
+const RUNS           = typeof RUNS_DATA !== "undefined" ? RUNS_DATA : [];
+const PERSONAL_BESTS = typeof PBS_DATA  !== "undefined" ? PBS_DATA  : [];
+
+// ── i18n ─────────────────────────────────────────────────────
+
+const I18N = {
+  en: {
+    logo:           "Sergey's <em>Running</em> Log",
+    nav_runs:       "All Runs",
+    nav_pbs:        "Personal Bests",
+    pace:           "Pace",
+    avg_hr:         "Avg HR",
+    max_hr:         "Max HR",
+    sneakers:       "Sneakers",
+    min_km:         "min/km",
+    bpm:            "bpm",
+    avg:            "avg",
+    max:            "max",
+    km:             "km",
+    total_time:     "Total time",
+    photos_details: "Photos & details",
+    hide_details:   "Hide details",
+    det_date:       "Date",
+    det_location:   "Location",
+    det_distance:   "Distance",
+    det_pace:       "Pace",
+    det_avg_hr:     "Avg HR",
+    det_max_hr:     "Max HR",
+    det_sneakers:   "Sneakers",
+    photos:         "Photos",
+    no_photos:      "No photos added yet.",
+    date_place:     "Date & Place",
+    heart_rate:     "Heart Rate",
+    prev_records:   "Previous Records",
+    first_time:     "This is your first recorded time for this distance.",
+    locale:         "en-GB",
+  },
+  be: {
+    logo:           "<em>Бегавы</em> дзённік Сяргея",
+    nav_runs:       "Усе забегі",
+    nav_pbs:        "Асабістыя рэкорды",
+    pace:           "Тэмп",
+    avg_hr:         "Сяр. пульс",
+    max_hr:         "Макс. пульс",
+    sneakers:       "Красоўкі",
+    min_km:         "хв/км",
+    bpm:            "уд/хв",
+    avg:            "сяр.",
+    max:            "макс.",
+    km:             "км",
+    total_time:     "Агульны час",
+    photos_details: "Фота і падрабязнасці",
+    hide_details:   "Схаваць падрабязнасці",
+    det_date:       "Дата",
+    det_location:   "Месца",
+    det_distance:   "Адлегласць",
+    det_pace:       "Тэмп",
+    det_avg_hr:     "Сяр. пульс",
+    det_max_hr:     "Макс. пульс",
+    det_sneakers:   "Красоўкі",
+    photos:         "Фота",
+    no_photos:      "Фота пакуль не дададзены.",
+    date_place:     "Дата і месца",
+    heart_rate:     "Пульс",
+    prev_records:   "Папярэднія рэкорды",
+    first_time:     "Гэта ваш першы запісаны вынік на гэтай дыстанцыі.",
+    locale:         "be",
+  },
+};
+
+let LANG = localStorage.getItem('lang') || 'en';
+const t = key => I18N[LANG][key];
+
+// ── Helpers ───────────────────────────────────────────────────
+
+var BE_MONTHS = [
+  'студзеня','лютага','сакавіка','красавіка','траўня','чэрвеня',
+  'ліпеня','жніўня','верасня','кастрычніка','лістапада','снежня'
+];
+
+function fmtDate(str) {
+  var d = new Date(str + 'T12:00:00');
+  if (LANG === 'be') {
+    return d.getDate() + ' ' + BE_MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+  }
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function calcPace(distance_km, total_time) {
+  var parts = total_time.split(':').map(Number);
+  var totalSec = parts.length === 3
+    ? parts[0] * 3600 + parts[1] * 60 + parts[2]
+    : parts[0] * 60 + parts[1];
+  var paceSecPerKm = totalSec / distance_km;
+  var pm = Math.floor(paceSecPerKm / 60);
+  var ps = Math.round(paceSecPerKm % 60);
+  if (ps === 60) { pm++; ps = 0; }
+  return pm + ':' + (ps < 10 ? '0' + ps : ps);
+}
+
+function photoGrid(photos) {
+  if (!photos || photos.length === 0)
+    return '<p class="no-photos">' + t('no_photos') + '</p>';
+  return '<div class="photos-grid">' +
+    photos.map(function(src) {
+      return '<div class="photo-thumb" onclick="openLb(\'' + src + '\')">' +
+               '<img src="' + src + '" alt="" loading="lazy">' +
+             '</div>';
+    }).join('') +
+  '</div>';
+}
+
+// ── Render: All Runs ──────────────────────────────────────────
+
+function renderRuns() {
+  var sorted = RUNS.slice().sort(function(a, b) {
+    return new Date(b.date) - new Date(a.date);
+  });
+
+  document.getElementById('page-runs').innerHTML = sorted.map(function(run, i) {
+    return '<article class="run-card">' +
+      '<div class="run-top" onclick="toggleDetails(' + i + ')">' +
+        '<div class="run-meta">' +
+          '<div class="run-when">' + fmtDate(run.date) + '</div>' +
+          '<div class="run-location">' + run.location + '</div>' +
+        '</div>' +
+        '<div class="run-dist">' + run.distance_km + '<small> ' + t('km') + '</small></div>' +
+      '</div>' +
+
+      '<div class="run-stats">' +
+        '<div class="stat"><div class="stat-label">' + t('pace') + '</div><div class="stat-value">' + calcPace(run.distance_km, run.total_time) + '</div><div class="stat-sub">' + t('min_km') + '</div></div>' +
+        '<div class="stat"><div class="stat-label">' + t('avg_hr') + '</div><div class="stat-value">' + run.hr_avg + '</div><div class="stat-sub">' + t('bpm') + '</div></div>' +
+        '<div class="stat"><div class="stat-label">' + t('total_time') + '</div><div class="stat-value">' + run.total_time + '</div></div>' +
+      '</div>' +
+
+      '<div class="expand-row">' +
+        '<button class="expand-btn" id="ebtn-' + i + '" onclick="event.stopPropagation(); toggleDetails(' + i + ')">' +
+          '&#9658; &nbsp;' + t('photos_details') +
+        '</button>' +
+      '</div>' +
+
+      '<div class="run-details" id="det-' + i + '">' +
+        '<div class="details-row"><span class="details-key">' + t('det_date') + '</span>' + fmtDate(run.date) + '</div>' +
+        '<div class="details-row"><span class="details-key">' + t('det_location') + '</span>' + run.location + '</div>' +
+        '<div class="details-row"><span class="details-key">' + t('det_distance') + '</span>' + run.distance_km + ' ' + t('km') + '</div>' +
+        '<div class="details-row"><span class="details-key">' + t('det_pace') + '</span>' + calcPace(run.distance_km, run.total_time) + ' ' + t('min_km') + '</div>' +
+        '<div class="details-row"><span class="details-key">' + t('det_avg_hr') + '</span>' + run.hr_avg + ' ' + t('bpm') + '</div>' +
+        '<div class="details-row"><span class="details-key">' + t('det_max_hr') + '</span>' + run.hr_max + ' ' + t('bpm') + '</div>' +
+        '<div class="details-row"><span class="details-key">' + t('det_sneakers') + '</span>' + run.sneakers + '</div>' +
+        '<div class="photos-wrap">' +
+          '<div class="photos-label">' + t('photos') + '</div>' +
+          photoGrid(run.photos) +
+        '</div>' +
+      '</div>' +
+    '</article>';
+  }).join('');
+}
+
+// ── Render: Personal Bests ────────────────────────────────────
+
+function renderPBs() {
+  document.getElementById('page-pbs').innerHTML = PERSONAL_BESTS.map(function(pb) {
+    var photosHtml = (pb.photos && pb.photos.length > 0)
+      ? '<div class="pb-photos"><div class="photos-label">' + t('photos') + '</div>' + photoGrid(pb.photos) + '</div>'
+      : '';
+
+    var historyHtml;
+    if (pb.previous_records && pb.previous_records.length > 0) {
+      historyHtml = '<div class="pb-history"><div class="history-head">' + t('prev_records') + '</div>' +
+        pb.previous_records.map(function(r) {
+          return '<div class="history-row">' +
+            '<div class="history-time">' + r.time + '</div>' +
+            '<div class="history-date">' + fmtDate(r.date) + '</div>' +
+            '<div class="history-loc">' + r.location + '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>';
+    } else {
+      historyHtml = '<div class="pb-history"><div class="history-head">' + t('prev_records') + '</div>' +
+        '<p class="no-photos">' + t('first_time') + '</p></div>';
+    }
+
+    return '<article class="pb-card">' +
+      '<div class="pb-head">' +
+        '<div class="pb-dist-name">' + pb.distance + '</div>' +
+        '<div class="pb-time">' + pb.total_time + '</div>' +
+      '</div>' +
+
+      '<div class="pb-stats">' +
+        '<div class="pb-stat"><div class="stat-label">' + t('date_place') + '</div>' +
+          '<div class="stat-value" style="font-size:14px;font-weight:700;">' + fmtDate(pb.date) + '</div>' +
+          '<div class="stat-sub">' + pb.location + '</div></div>' +
+        '<div class="pb-stat"><div class="stat-label">' + t('pace') + '</div>' +
+          '<div class="stat-value">' + calcPace(pb.distance_km, pb.total_time) + '</div>' +
+          '<div class="stat-sub">' + t('min_km') + '</div></div>' +
+        '<div class="pb-stat"><div class="stat-label">' + t('heart_rate') + '</div>' +
+          '<div class="stat-value">' + pb.hr_avg + ' <span style="font-size:11px;color:var(--muted);font-weight:600">' + t('avg') + '</span></div>' +
+          '<div class="stat-sub">' + t('max') + ' ' + pb.hr_max + ' ' + t('bpm') + '</div></div>' +
+      '</div>' +
+
+      '<div style="padding:12px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">' +
+        '<span class="stat-label" style="margin:0">' + t('sneakers') + '</span>' +
+        '<span style="font-size:14px;font-weight:700;">' + pb.sneakers + '</span>' +
+      '</div>' +
+
+      photosHtml +
+      historyHtml +
+    '</article>';
+  }).join('');
+}
+
+// ── Language switch ───────────────────────────────────────────
+
+function setLang(lang) {
+  LANG = lang;
+  localStorage.setItem('lang', lang);
+  document.documentElement.lang = lang;
+
+  document.getElementById('lang-en').classList.toggle('active', lang === 'en');
+  document.getElementById('lang-be').classList.toggle('active', lang === 'be');
+  document.getElementById('logo').innerHTML      = t('logo');
+  document.getElementById('nav-runs').textContent = t('nav_runs');
+  document.getElementById('nav-pbs').textContent  = t('nav_pbs');
+
+  renderRuns();
+  renderPBs();
+}
+
+// ── Interactions ──────────────────────────────────────────────
+
+function toggleDetails(i) {
+  var det  = document.getElementById('det-'  + i);
+  var btn  = document.getElementById('ebtn-' + i);
+  var open = det.classList.toggle('open');
+  btn.textContent = open ? '▾  ' + t('hide_details') : '▸  ' + t('photos_details');
+}
+
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('visible'); });
+  document.querySelectorAll('nav button').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('page-' + name).classList.add('visible');
+  btn.classList.add('active');
+}
+
+function openLb(src) {
+  document.getElementById('lb-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLb() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lb-img').src = '';
+}
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLb(); });
+
+// ── Init ─────────────────────────────────────────────────────
+setLang(LANG);
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "distance": "5 км",
+  "date": "2026-05-31",
+  "location": "Поці",
+  "hr_avg": 171,
+  "hr_max": 182,
+  "sneakers": "Nike Vaporfly 4",
+  "photos": [
+    "data/photos/pb_5_км/IMG_5349.png"
+  ],
+  "previous_records": [
+    {
+      "time": "19:36",
+      "date": "2024-04-27",
+      "location": "Батумі"
+    }
+  ],
+  "total_time": "0:19:14",
+  "distance_km": 5.0
+}
