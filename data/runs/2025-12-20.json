@@ -1,0 +1,18 @@
+{
+  "date": "2025-12-20",
+  "location": "Batumi (backyard)",
+  "location_be": "Батумі (бэк'ярд)",
+  "distance_km": 100.5,
+  "total_time": "15:00:00",
+  "hr_avg": 0,
+  "hr_max": 0,
+  "elevation": 0,
+  "sneakers": "Asics Gel Nimbus 27",
+  "photos": [
+    "data/photos/2025-12-20/DSC01511.jpg",
+    "data/photos/2025-12-20/DSC01885.jpg",
+    "data/photos/2025-12-20/IMG_3447.JPG",
+    "data/photos/2025-12-20/IMG_4044.JPG",
+    "data/photos/2025-12-20/photo_2026-01-06_20-57-54.jpg"
+  ]
+}

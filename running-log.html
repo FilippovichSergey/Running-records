@@ -683,6 +683,7 @@ const I18N = {
     avg_hr:         "Avg HR",
     max_hr:         "Max HR",
     sneakers:       "Sneakers",
+    video:          "Video",
     min_km:         "min/km",
     bpm:            "bpm",
     avg:            "avg",
@@ -710,6 +711,7 @@ const I18N = {
     det_avg_hr:     "Avg HR",
     det_max_hr:     "Max HR",
     det_sneakers:   "Sneakers",
+    det_video:      "Video",
     photos:         "Photos",
     no_photos:      "No photos added yet.",
     date_place:     "Date & Place",
@@ -751,6 +753,7 @@ const I18N = {
     avg_hr:         "Сяр. пульс",
     max_hr:         "Макс. пульс",
     sneakers:       "Красоўкі",
+    video:          "Відэа",
     min_km:         "хв/км",
     bpm:            "уд/хв",
     avg:            "сяр.",
@@ -778,6 +781,7 @@ const I18N = {
     det_avg_hr:     "Сяр. пульс",
     det_max_hr:     "Макс. пульс",
     det_sneakers:   "Красоўкі",
+    det_video:      "Відэа",
     photos:         "Фота",
     no_photos:      "Фота пакуль не дададзены.",
     date_place:     "Дата і месца",
@@ -1098,6 +1102,7 @@ function renderRuns(runs) {
           '<div class="details-row"><span class="details-key">' + t('det_max_hr') + '</span>' + run.hr_max + ' ' + t('bpm') + '</div>' +
           elevDetail +
           '<div class="details-row"><span class="details-key">' + t('det_sneakers') + '</span>' + run.sneakers + '</div>' +
+          (run.video ? '<div class="details-row"><span class="details-key">' + t('det_video') + '</span><a href="' + run.video + '" target="_blank" rel="noopener">' + run.video + '</a></div>' : '') +
           '<div class="photos-wrap">' +
             '<div class="photos-label">' + t('photos') + '</div>' +
             photoGrid(run.photos) +
@@ -1154,6 +1159,11 @@ function renderPBs() {
         '<span class="stat-label" style="margin:0">' + t('sneakers') + '</span>' +
         '<span style="font-size:14px;font-weight:700;">' + pb.sneakers + '</span>' +
       '</div>' +
+
+      (pb.video ? '<div style="padding:10px 24px;border-bottom:1px solid var(--border)">' +
+        '<span class="stat-label" style="margin:0">' + t('video') + '</span> ' +
+        '<a href="' + pb.video + '" target="_blank" rel="noopener" style="font-size:14px">' + pb.video + '</a>' +
+      '</div>' : '') +
 
       photosHtml +
       historyHtml +
