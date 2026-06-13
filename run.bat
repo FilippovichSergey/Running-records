@@ -1,3 +1,3 @@
-cd d:\IT\Running records\
+cd d:\IT\Running_records\
 python add_new_event.py
 pause
