@@ -355,6 +355,69 @@ nav button.active { background: var(--accent); color: #fff; }
 }
 #lb-close:hover { color: #fff; }
 
+/* ── Filter bar ── */
+.filter-bar {
+  max-width: 880px;
+  margin: 24px auto 0;
+  padding: 0 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.filter-bar select,
+.filter-bar input[type="text"] {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 13px;
+  padding: 5px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.filter-bar select:focus,
+.filter-bar input[type="text"]:focus { border-color: var(--accent); }
+
+.filter-bar input[type="text"] { width: 130px; }
+
+#filter-reset {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-left: auto;
+}
+#filter-reset:hover { border-color: var(--accent); color: var(--accent); }
+
+#runs-count {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  margin-left: 4px;
+}
+
 /* ── Responsive ── */
 @media (max-width: 580px) {
   .run-stats { grid-template-columns: repeat(2, 1fr); }
@@ -382,6 +445,27 @@ nav button.active { background: var(--accent); color: #fff; }
 <div id="lightbox" onclick="closeLb()">
   <button id="lb-close" onclick="closeLb()">×</button>
   <img id="lb-img" src="" alt="">
+</div>
+
+<div id="runs-filterbar" class="filter-bar">
+  <div class="filter-group">
+    <span class="filter-label" id="flabel-year"></span>
+    <select id="filter-year" onchange="applyFilters()"></select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label" id="flabel-sneaker"></span>
+    <select id="filter-sneaker" onchange="applyFilters()"></select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label" id="flabel-distance"></span>
+    <select id="filter-distance" onchange="applyFilters()"></select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label" id="flabel-search"></span>
+    <input type="text" id="filter-search" oninput="applyFilters()" placeholder="…">
+  </div>
+  <button id="filter-reset" onclick="resetFilters()"></button>
+  <span id="runs-count"></span>
 </div>
 
 <div id="page-runs" class="page visible"></div>
@@ -414,6 +498,15 @@ const I18N = {
     total_time:     "Total time",
     elevation:      "Elevation",
     m:              "m",
+    filter_year:     "Year",
+    filter_sneaker:  "Sneakers",
+    filter_distance: "Distance",
+    filter_search:   "Location",
+    filter_reset:    "Reset",
+    all_years:       "All years",
+    all_sneakers:    "All sneakers",
+    all_distances:   "All distances",
+    runs_shown:     function(n, t) { return n + ' / ' + t + ' runs'; },
     photos_details: "Photos & details",
     hide_details:   "Hide details",
     det_date:       "Date",
@@ -447,6 +540,15 @@ const I18N = {
     total_time:     "Агульны час",
     elevation:      "Набор",
     m:              "м",
+    filter_year:     "Год",
+    filter_sneaker:  "Красоўкі",
+    filter_distance: "Адлегласць",
+    filter_search:   "Месца",
+    filter_reset:    "Скінуць",
+    all_years:       "Усе гады",
+    all_sneakers:    "Усе красоўкі",
+    all_distances:   "Усе адлегласці",
+    runs_shown:     function(n, t) { return n + ' / ' + t + ' забегаў'; },
     photos_details: "Фота і падрабязнасці",
     hide_details:   "Схаваць падрабязнасці",
     det_date:       "Дата",
@@ -512,10 +614,68 @@ function photoGrid(photos) {
   '</div>';
 }
 
+// ── Filters ───────────────────────────────────────────────────
+
+function buildFilterOptions() {
+  var years     = [...new Set(RUNS.map(r => r.date.slice(0, 4)))].sort().reverse();
+  var sneakers  = [...new Set(RUNS.map(r => r.sneakers).filter(Boolean))].sort();
+  var distances = [...new Set(RUNS.map(r => r.distance_km))].sort((a, b) => a - b);
+
+  var ySel = document.getElementById('filter-year');
+  var sSel = document.getElementById('filter-sneaker');
+  var dSel = document.getElementById('filter-distance');
+  var yVal = ySel.value, sVal = sSel.value, dVal = dSel.value;
+
+  ySel.innerHTML = '<option value="">' + t('all_years') + '</option>' +
+    years.map(y => '<option value="' + y + '">' + y + '</option>').join('');
+  sSel.innerHTML = '<option value="">' + t('all_sneakers') + '</option>' +
+    sneakers.map(s => '<option value="' + s + '">' + s + '</option>').join('');
+  dSel.innerHTML = '<option value="">' + t('all_distances') + '</option>' +
+    distances.map(d => '<option value="' + d + '">' + d + ' ' + t('km') + '</option>').join('');
+
+  if (yVal) ySel.value = yVal;
+  if (sVal) sSel.value = sVal;
+  if (dVal) dSel.value = dVal;
+
+  document.getElementById('flabel-year').textContent     = t('filter_year');
+  document.getElementById('flabel-sneaker').textContent  = t('filter_sneaker');
+  document.getElementById('flabel-distance').textContent = t('filter_distance');
+  document.getElementById('flabel-search').textContent   = t('filter_search');
+  document.getElementById('filter-reset').textContent    = t('filter_reset');
+}
+
+function applyFilters() {
+  var year     = document.getElementById('filter-year').value;
+  var sneaker  = document.getElementById('filter-sneaker').value;
+  var distance = document.getElementById('filter-distance').value;
+  var search   = document.getElementById('filter-search').value.trim().toLowerCase();
+
+  var filtered = RUNS.filter(function(r) {
+    if (year     && r.date.slice(0, 4) !== year)               return false;
+    if (sneaker  && r.sneakers !== sneaker)                     return false;
+    if (distance && r.distance_km !== parseFloat(distance))    return false;
+    if (search   && !locStr(r).toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  renderRuns(filtered);
+  document.getElementById('runs-count').textContent =
+    (filtered.length < RUNS.length) ? t('runs_shown')(filtered.length, RUNS.length) : '';
+}
+
+function resetFilters() {
+  document.getElementById('filter-year').value     = '';
+  document.getElementById('filter-sneaker').value  = '';
+  document.getElementById('filter-distance').value = '';
+  document.getElementById('filter-search').value   = '';
+  applyFilters();
+}
+
 // ── Render: All Runs ──────────────────────────────────────────
 
-function renderRuns() {
-  var sorted = RUNS.slice().sort(function(a, b) {
+function renderRuns(runs) {
+  if (!runs) runs = RUNS;
+  var sorted = runs.slice().sort(function(a, b) {
     return new Date(b.date) - new Date(a.date);
   });
 
@@ -636,7 +796,8 @@ function setLang(lang) {
   document.getElementById('nav-runs').textContent = t('nav_runs');
   document.getElementById('nav-pbs').textContent  = t('nav_pbs');
 
-  renderRuns();
+  buildFilterOptions();
+  applyFilters();
   renderPBs();
 }
 
@@ -654,6 +815,7 @@ function showPage(name, btn) {
   document.querySelectorAll('nav button').forEach(function(b) { b.classList.remove('active'); });
   document.getElementById('page-' + name).classList.add('visible');
   btn.classList.add('active');
+  document.getElementById('runs-filterbar').style.display = name === 'runs' ? '' : 'none';
 }
 
 function openLb(src) {
