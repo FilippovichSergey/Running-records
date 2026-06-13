@@ -1,7 +1,10 @@
 {
   "distance": "5 км",
+  "distance_km": 5.0,
+  "total_time": "0:19:14",
   "date": "2026-05-31",
-  "location": "Поці",
+  "location": "Poti",
+  "location_be": "Поці",
   "hr_avg": 171,
   "hr_max": 182,
   "sneakers": "Nike Vaporfly 4",
@@ -14,32 +17,30 @@
       "date": "2024-04-27",
       "location": "Батумі"
     },
-	{
+    {
       "time": "20:21",
       "date": "2023-05-16",
       "location": "Батумі"
     },
-	{
+    {
       "time": "20:50",
       "date": "2023-04-23",
       "location": "Тбілісі"
     },
-	{
+    {
       "time": "20:54",
       "date": "2022-12-17",
       "location": "Батумі"
     },
-	{
+    {
       "time": "22:10",
       "date": "2022-09-10",
       "location": "Батумі"
     },
-	{
+    {
       "time": "23:51",
       "date": "2022-07-14",
       "location": "Батумі"
     }
-  ],
-  "total_time": "0:19:14",
-  "distance_km": 5.0
+  ]
 }

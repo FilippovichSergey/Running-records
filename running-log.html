@@ -469,6 +469,10 @@ const I18N = {
 let LANG = localStorage.getItem('lang') || 'en';
 const t = key => I18N[LANG][key];
 
+function locStr(obj) {
+  return (LANG === 'be' && obj.location_be) ? obj.location_be : obj.location;
+}
+
 // ── Helpers ───────────────────────────────────────────────────
 
 var BE_MONTHS = [
@@ -520,7 +524,7 @@ function renderRuns() {
       '<div class="run-top" onclick="toggleDetails(' + i + ')">' +
         '<div class="run-meta">' +
           '<div class="run-when">' + fmtDate(run.date) + '</div>' +
-          '<div class="run-location">' + run.location + '</div>' +
+          '<div class="run-location">' + locStr(run) + '</div>' +
         '</div>' +
         '<div class="run-dist">' + run.distance_km + '<small> ' + t('km') + '</small></div>' +
       '</div>' +
@@ -549,7 +553,7 @@ function renderRuns() {
 
         '<div class="run-details" id="det-' + i + '">' +
           '<div class="details-row"><span class="details-key">' + t('det_date') + '</span>' + fmtDate(run.date) + '</div>' +
-          '<div class="details-row"><span class="details-key">' + t('det_location') + '</span>' + run.location + '</div>' +
+          '<div class="details-row"><span class="details-key">' + t('det_location') + '</span>' + locStr(run) + '</div>' +
           '<div class="details-row"><span class="details-key">' + t('det_distance') + '</span>' + run.distance_km + ' ' + t('km') + '</div>' +
           '<div class="details-row"><span class="details-key">' + t('det_pace') + '</span>' + calcPace(run.distance_km, run.total_time) + ' ' + t('min_km') + '</div>' +
           '<div class="details-row"><span class="details-key">' + t('det_avg_hr') + '</span>' + run.hr_avg + ' ' + t('bpm') + '</div>' +
@@ -581,7 +585,7 @@ function renderPBs() {
           return '<div class="history-row">' +
             '<div class="history-time">' + r.time + '</div>' +
             '<div class="history-date">' + fmtDate(r.date) + '</div>' +
-            '<div class="history-loc">' + r.location + '</div>' +
+            '<div class="history-loc">' + locStr(r) + '</div>' +
           '</div>';
         }).join('') +
       '</div>';
@@ -599,7 +603,7 @@ function renderPBs() {
       '<div class="pb-stats">' +
         '<div class="pb-stat"><div class="stat-label">' + t('date_place') + '</div>' +
           '<div class="stat-value" style="font-size:14px;font-weight:700;">' + fmtDate(pb.date) + '</div>' +
-          '<div class="stat-sub">' + pb.location + '</div></div>' +
+          '<div class="stat-sub">' + locStr(pb) + '</div></div>' +
         '<div class="pb-stat"><div class="stat-label">' + t('pace') + '</div>' +
           '<div class="stat-value">' + calcPace(pb.distance_km, pb.total_time) + '</div>' +
           '<div class="stat-sub">' + t('min_km') + '</div></div>' +

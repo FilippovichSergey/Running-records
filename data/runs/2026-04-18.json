@@ -1,10 +1,12 @@
 {
   "date": "2026-04-18",
-  "location": "Батумі",
+  "location": "Batumi",
+  "location_be": "Батумі",
   "distance_km": 10.0,
   "total_time": "0:40:05",
   "hr_avg": 164,
   "hr_max": 174,
+  "elevation": 0,
   "sneakers": "Nike Vaporfly 4",
   "photos": [
     "data/photos/2026-04-18/IMG_5274.png",

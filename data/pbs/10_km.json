@@ -3,7 +3,8 @@
   "distance_km": 10.0,
   "total_time": "0:40:05",
   "date": "2026-04-18",
-  "location": "Батумі",
+  "location": "Batumi",
+  "location_be": "Батумі",
   "hr_avg": 164,
   "hr_max": 174,
   "sneakers": "Nike Vaporfly 4",
@@ -15,29 +16,29 @@
   ],
   "previous_records": [
     {
-        "time": "40:58",
-        "date": "2024-05-04",
-        "location": "Батумі"
-      },
-	  {
-        "time": "41:15",
-        "date": "2023-05-16",
-        "location": "Батумі"
-      },
-	  {
-        "time": "44:10",
-        "date": "2023-05-10",
-        "location": "Батумі"
-      },
-	  {
-        "time": "44:44",
-        "date": "2023-05-05",
-        "location": "Батумі"
-      },
-	  {
-        "time": "45:11",
-        "date": "2022-09-10",
-        "location": "Батумі"
-      }
+      "time": "40:58",
+      "date": "2024-05-04",
+      "location": "Батумі"
+    },
+    {
+      "time": "41:15",
+      "date": "2023-05-16",
+      "location": "Батумі"
+    },
+    {
+      "time": "44:10",
+      "date": "2023-05-10",
+      "location": "Батумі"
+    },
+    {
+      "time": "44:44",
+      "date": "2023-05-05",
+      "location": "Батумі"
+    },
+    {
+      "time": "45:11",
+      "date": "2022-09-10",
+      "location": "Батумі"
+    }
   ]
 }

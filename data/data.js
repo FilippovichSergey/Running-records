@@ -2,7 +2,8 @@
 const RUNS_DATA = [
   {
     "date": "2026-03-28",
-    "location": "Арго",
+    "location": "Batumi (Argo)",
+    "location_be": "Батумі (Арго)",
     "distance_km": 3.45,
     "total_time": "0:19:12",
     "hr_avg": 156,
@@ -15,11 +16,13 @@ const RUNS_DATA = [
   },
   {
     "date": "2026-04-18",
-    "location": "Батумі",
+    "location": "Batumi",
+    "location_be": "Батумі",
     "distance_km": 10.0,
     "total_time": "0:40:05",
     "hr_avg": 164,
     "hr_max": 174,
+    "elevation": 0,
     "sneakers": "Nike Vaporfly 4",
     "photos": [
       "data/photos/2026-04-18/IMG_5274.png",
@@ -31,7 +34,8 @@ const RUNS_DATA = [
   {
     "date": "2026-05-31",
     "time": "09:30",
-    "location": "Поці",
+    "location": "Poti",
+    "location_be": "Поці",
     "distance_km": 5.0,
     "hr_avg": 171,
     "hr_max": 182,
@@ -49,7 +53,8 @@ const PBS_DATA = [
     "distance_km": 10.0,
     "total_time": "0:40:05",
     "date": "2026-04-18",
-    "location": "Батумі",
+    "location": "Batumi",
+    "location_be": "Батумі",
     "hr_avg": 164,
     "hr_max": 174,
     "sneakers": "Nike Vaporfly 4",
@@ -89,8 +94,11 @@ const PBS_DATA = [
   },
   {
     "distance": "5 км",
+    "distance_km": 5.0,
+    "total_time": "0:19:14",
     "date": "2026-05-31",
-    "location": "Поці",
+    "location": "Poti",
+    "location_be": "Поці",
     "hr_avg": 171,
     "hr_max": 182,
     "sneakers": "Nike Vaporfly 4",
@@ -128,8 +136,6 @@ const PBS_DATA = [
         "date": "2022-07-14",
         "location": "Батумі"
       }
-    ],
-    "total_time": "0:19:14",
-    "distance_km": 5.0
+    ]
   }
 ];
