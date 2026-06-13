@@ -7,7 +7,8 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "PowerShell(New-Item -ItemType Directory -Force \"D:\\\\IT\\\\Running_records\\\\data\\\\activities\")"
     ]
   }
 }

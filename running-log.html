@@ -467,6 +467,85 @@ nav button.active { background: var(--accent); color: #fff; }
 
 .chart-svg { width: 100%; display: block; overflow: visible; }
 
+/* ── Activities tab ── */
+.act-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.act-summary {
+  background: var(--card);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 14px 22px;
+  margin-bottom: 20px;
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+.act-sum-item { display: flex; flex-direction: column; }
+.act-sum-val {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: var(--accent);
+  line-height: 1.1;
+}
+.act-sum-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.act-row {
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 12px 20px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+  font-size: 14px;
+}
+
+.act-type {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 9px;
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.act-type.trail { background: #edf7ed; color: #2d6a2d; border-color: #a5c8a5; }
+
+.act-stat { display: flex; flex-direction: column; }
+.act-stat-val {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  line-height: 1.1;
+}
+.act-stat-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
 /* ── Responsive ── */
 @media (max-width: 580px) {
   .run-stats { grid-template-columns: repeat(2, 1fr); }
@@ -483,6 +562,7 @@ nav button.active { background: var(--accent); color: #fff; }
   <nav>
     <button class="active" id="nav-runs" onclick="showPage('runs', this)">All Runs</button>
     <button id="nav-pbs" onclick="showPage('pbs', this)">Personal Bests</button>
+    <button id="nav-activities" onclick="showPage('activities', this)">Activities</button>
   </nav>
   <div class="lang-switch">
     <button id="lang-en" class="active" onclick="setLang('en')">EN</button>
@@ -539,13 +619,57 @@ nav button.active { background: var(--accent); color: #fff; }
 
 <div id="page-pbs" class="page"></div>
 
+<div id="page-activities" class="page">
+  <div class="act-controls">
+    <div class="filter-group">
+      <span class="filter-label" id="actl-type"></span>
+      <select id="act-type" onchange="renderActivities()"></select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label" id="actl-metric"></span>
+      <select id="act-metric" onchange="renderActivities()">
+        <option value="distance" id="aom-distance"></option>
+        <option value="runs"     id="aom-runs"></option>
+        <option value="time"     id="aom-time"></option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label" id="actl-period"></span>
+      <select id="act-period" onchange="onActPeriodChange()">
+        <option value="week"       id="aop-week"></option>
+        <option value="curr_month" id="aop-curr_month"></option>
+        <option value="last_month" id="aop-last_month"></option>
+        <option value="curr_year"  id="aop-curr_year"></option>
+        <option value="last_year"  id="aop-last_year"></option>
+        <option value="custom"     id="aop-custom"></option>
+      </select>
+    </div>
+    <div id="act-custom-wrap" class="filter-group" style="display:none">
+      <input type="date" id="act-from" onchange="renderActivities()"
+        style="border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:13px;padding:5px 10px;outline:none">
+      <span style="color:var(--muted);padding:0 4px">–</span>
+      <input type="date" id="act-to" onchange="renderActivities()"
+        style="border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:13px;padding:5px 10px;outline:none">
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:20px">
+    <svg class="chart-svg" id="act-svg" viewBox="0 0 760 160"
+         xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+  </div>
+
+  <div id="act-list"></div>
+</div>
+
 <script src="data/data.js"></script>
+<script src="data/activities.js" onerror="void 0"></script>
 <script>
 // Data is loaded from data/data.js (RUNS_DATA, PBS_DATA).
 // Use add_new_event.py to add or edit events — do not edit data.js manually.
 
-const RUNS           = typeof RUNS_DATA !== "undefined" ? RUNS_DATA : [];
-const PERSONAL_BESTS = typeof PBS_DATA  !== "undefined" ? PBS_DATA  : [];
+const RUNS           = typeof RUNS_DATA       !== "undefined" ? RUNS_DATA       : [];
+const PERSONAL_BESTS = typeof PBS_DATA        !== "undefined" ? PBS_DATA        : [];
+const ACTIVITIES     = typeof ACTIVITIES_DATA !== "undefined" ? ACTIVITIES_DATA : [];
 
 // ── i18n ─────────────────────────────────────────────────────
 
@@ -591,7 +715,24 @@ const I18N = {
     heart_rate:     "Heart Rate",
     prev_records:   "Previous Records",
     first_time:     "This is your first recorded time for this distance.",
-    locale:         "en-GB",
+    locale:              "en-GB",
+    nav_activities:      "Activities",
+    act_type_lbl:        "Activity",
+    act_metric_lbl:      "Show",
+    act_period_lbl:      "Period",
+    act_all_running:     "All running",
+    act_metric_dist:     "Distance",
+    act_metric_runs:     "Runs",
+    act_metric_time:     "Time",
+    act_period_week:     "Last 7 days",
+    act_period_curr_month: "This month",
+    act_period_last_month: "Last month",
+    act_period_curr_year:  "This year",
+    act_period_last_year:  "Last year",
+    act_period_custom:   "Custom",
+    act_no_data:         "No activities in selected period",
+    act_h:               "h",
+    act_min:             "min",
   },
   be: {
     logo:           "<em>Бегавы</em> дзённік Сяргея",
@@ -634,7 +775,24 @@ const I18N = {
     heart_rate:     "Пульс",
     prev_records:   "Папярэднія рэкорды",
     first_time:     "Гэта ваш першы запісаны вынік на гэтай дыстанцыі.",
-    locale:         "be",
+    locale:              "be",
+    nav_activities:      "Актыўнасці",
+    act_type_lbl:        "Актыўнасць",
+    act_metric_lbl:      "Паказаць",
+    act_period_lbl:      "Перыяд",
+    act_all_running:     "Увесь бег",
+    act_metric_dist:     "Адлегласць",
+    act_metric_runs:     "Забегі",
+    act_metric_time:     "Час",
+    act_period_week:     "Апошнія 7 дзён",
+    act_period_curr_month: "Гэты месяц",
+    act_period_last_month: "Мінулы месяц",
+    act_period_curr_year:  "Гэты год",
+    act_period_last_year:  "Мінулы год",
+    act_period_custom:   "Адвольны",
+    act_no_data:         "Няма актыўнасці за абраны перыяд",
+    act_h:               "г",
+    act_min:             "хв",
   },
 };
 
@@ -986,6 +1144,245 @@ function renderPBs() {
   }).join('');
 }
 
+// ── Activities ────────────────────────────────────────────────
+
+function initActivitiesControls() {
+  document.getElementById('actl-type').textContent   = t('act_type_lbl');
+  document.getElementById('actl-metric').textContent = t('act_metric_lbl');
+  document.getElementById('actl-period').textContent = t('act_period_lbl');
+  document.getElementById('aom-distance').textContent        = t('act_metric_dist');
+  document.getElementById('aom-runs').textContent            = t('act_metric_runs');
+  document.getElementById('aom-time').textContent            = t('act_metric_time');
+  document.getElementById('aop-week').textContent            = t('act_period_week');
+  document.getElementById('aop-curr_month').textContent      = t('act_period_curr_month');
+  document.getElementById('aop-last_month').textContent      = t('act_period_last_month');
+  document.getElementById('aop-curr_year').textContent       = t('act_period_curr_year');
+  document.getElementById('aop-last_year').textContent       = t('act_period_last_year');
+  document.getElementById('aop-custom').textContent          = t('act_period_custom');
+
+  var sel = document.getElementById('act-type');
+  var cur = sel.value || 'all';
+  var types = [...new Set(ACTIVITIES.map(function(a) { return a.type; }))].sort();
+  sel.innerHTML = '<option value="all">' + t('act_all_running') + '</option>' +
+    types.map(function(tp) { return '<option value="' + tp + '">' + tp + '</option>'; }).join('');
+  if (cur !== 'all' && types.indexOf(cur) !== -1) sel.value = cur;
+}
+
+function getActBounds() {
+  var period = document.getElementById('act-period').value;
+  var now    = new Date();
+  var end    = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+  var start;
+  if (period === 'week') {
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+  } else if (period === 'curr_month') {
+    start = new Date(now.getFullYear(), now.getMonth(), 1);
+  } else if (period === 'last_month') {
+    start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    end   = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+  } else if (period === 'curr_year') {
+    start = new Date(now.getFullYear(), 0, 1);
+  } else if (period === 'last_year') {
+    start = new Date(now.getFullYear() - 1, 0, 1);
+    end   = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59);
+  } else {
+    var from = document.getElementById('act-from').value;
+    var to   = document.getElementById('act-to').value;
+    start = from ? new Date(from) : new Date(0);
+    end   = to   ? new Date(to + 'T23:59:59') : new Date();
+  }
+  return { start: start, end: end };
+}
+
+function getActFiltered(start, end) {
+  var type = document.getElementById('act-type').value;
+  return ACTIVITIES.filter(function(a) {
+    var d = new Date(a.date + 'T12:00:00');
+    if (d < start || d > end) return false;
+    if (type !== 'all' && a.type !== type) return false;
+    return true;
+  });
+}
+
+function actTimeToMin(s) {
+  var p = s.split(':').map(Number);
+  return p.length === 3 ? p[0] * 60 + p[1] + p[2] / 60 : p[0] + p[1] / 60;
+}
+
+function fmtActTotalTime(min) {
+  var h = Math.floor(min / 60), m = Math.round(min % 60);
+  if (h > 0) return h + t('act_h') + (m > 0 ? ' ' + m + t('act_min') : '');
+  return m + t('act_min');
+}
+
+function getActBucketKey(dateStr, bType) {
+  if (bType === 'month') return dateStr.slice(0, 7);
+  if (bType === 'day')   return dateStr;
+  var d = new Date(dateStr + 'T12:00:00');
+  var dow = d.getDay() || 7;
+  d.setDate(d.getDate() - (dow - 1));
+  return d.toISOString().slice(0, 10);
+}
+
+function genActBucketKeys(start, end, bType) {
+  var keys = [], cur;
+  if (bType === 'day') {
+    cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    while (cur <= end) {
+      keys.push(cur.toISOString().slice(0, 10));
+      cur.setDate(cur.getDate() + 1);
+    }
+  } else if (bType === 'month') {
+    cur = new Date(start.getFullYear(), start.getMonth(), 1);
+    while (cur <= end) {
+      keys.push(cur.toISOString().slice(0, 7));
+      cur.setMonth(cur.getMonth() + 1);
+    }
+  } else {
+    cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    var dow = cur.getDay() || 7;
+    cur.setDate(cur.getDate() - (dow - 1));
+    while (cur <= end) {
+      keys.push(cur.toISOString().slice(0, 10));
+      cur.setDate(cur.getDate() + 7);
+    }
+  }
+  return keys;
+}
+
+function fmtActBucketLabel(key, bType) {
+  if (bType === 'month') {
+    var d = new Date(key + '-01T12:00:00');
+    return LANG === 'be' ? BE_MONTHS_SHORT[d.getMonth()]
+                         : d.toLocaleDateString('en-GB', { month: 'short' });
+  }
+  var d = new Date(key + 'T12:00:00');
+  var mon = LANG === 'be' ? BE_MONTHS_SHORT[d.getMonth()]
+                          : d.toLocaleDateString('en-GB', { month: 'short' });
+  return bType === 'day' ? String(d.getDate()) : mon + ' ' + d.getDate();
+}
+
+function onActPeriodChange() {
+  document.getElementById('act-custom-wrap').style.display =
+    document.getElementById('act-period').value === 'custom' ? 'flex' : 'none';
+  renderActivities();
+}
+
+function renderActChart(acts, bounds) {
+  var svg    = document.getElementById('act-svg');
+  var metric = document.getElementById('act-metric').value;
+  var days   = Math.round((bounds.end - bounds.start) / 86400000);
+  var bType  = days <= 31 ? 'day' : days <= 90 ? 'week' : 'month';
+  var keys   = genActBucketKeys(bounds.start, bounds.end, bType);
+
+  var map = {};
+  keys.forEach(function(k) { map[k] = { n: 0, dist: 0, time: 0 }; });
+  acts.forEach(function(a) {
+    var k = getActBucketKey(a.date, bType);
+    if (map[k]) { map[k].n++; map[k].dist += a.distance_km; map[k].time += actTimeToMin(a.time); }
+  });
+
+  var vals = keys.map(function(k) {
+    return metric === 'distance' ? map[k].dist
+         : metric === 'runs'     ? map[k].n
+         : map[k].time / 60;
+  });
+
+  var maxV = Math.max.apply(null, vals) || 1;
+  var W = 760, H = 160, ML = 46, MR = 12, MT = 10, MB = 30;
+  var cW = W - ML - MR, cH = H - MT - MB;
+  var n = keys.length;
+  var slotW = cW / n;
+  var barW  = Math.min(36, Math.max(4, slotW * 0.7));
+
+  var yHtml = '';
+  for (var ti = 0; ti <= 3; ti++) {
+    var tv = (ti / 3) * maxV;
+    var ty = MT + cH - (tv / maxV) * cH;
+    var lbl = metric === 'distance' ? tv.toFixed(1)
+            : metric === 'runs'     ? Math.round(tv).toString()
+            : tv.toFixed(1);
+    yHtml += '<line x1="' + ML + '" y1="' + ty + '" x2="' + (ML + cW) + '" y2="' + ty +
+             '" stroke="var(--border)" stroke-width="1"/>' +
+             '<text x="' + (ML - 5) + '" y="' + (ty + 4) +
+             '" text-anchor="end" font-size="10" font-family="inherit" fill="var(--muted)">' + lbl + '</text>';
+  }
+
+  var barsHtml = '', xHtml = '';
+  var labelEvery = Math.ceil(n / 12);
+  keys.forEach(function(k, i) {
+    var v  = vals[i];
+    var cx = ML + (i + 0.5) * slotW;
+    if (v > 0) {
+      var bh = (v / maxV) * cH, by = MT + cH - bh;
+      var tipVal = metric === 'distance' ? v.toFixed(1) + ' km'
+                 : metric === 'runs'     ? v + (v !== 1 ? ' runs' : ' run')
+                 : fmtActTotalTime(v * 60);
+      barsHtml += '<rect x="' + (cx - barW / 2) + '" y="' + by + '" width="' + barW + '" height="' + bh +
+                  '" rx="3" fill="var(--accent)" opacity="0.85">' +
+                  '<title>' + fmtActBucketLabel(k, bType) + ': ' + tipVal + '</title></rect>';
+    }
+    if (i % labelEvery === 0 || i === n - 1) {
+      xHtml += '<text x="' + cx + '" y="' + (MT + cH + 16) +
+               '" text-anchor="middle" font-size="10" font-family="inherit" fill="var(--muted)">' +
+               fmtActBucketLabel(k, bType) + '</text>';
+    }
+  });
+
+  svg.innerHTML = yHtml + barsHtml + xHtml;
+}
+
+function renderActList(acts) {
+  var el = document.getElementById('act-list');
+  if (acts.length === 0) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:14px;text-align:center;padding:32px 0">' +
+                   t('act_no_data') + '</p>';
+    return;
+  }
+  var sorted = acts.slice().sort(function(a, b) { return b.datetime.localeCompare(a.datetime); });
+  var totalDist = 0, totalMin = 0;
+  sorted.forEach(function(a) { totalDist += a.distance_km; totalMin += actTimeToMin(a.time); });
+
+  var summaryHtml =
+    '<div class="act-summary">' +
+      '<div class="act-sum-item"><span class="act-sum-val">' + sorted.length + '</span>' +
+        '<span class="act-sum-lbl">' + t('act_metric_runs') + '</span></div>' +
+      '<div class="act-sum-item"><span class="act-sum-val">' + totalDist.toFixed(1) + '</span>' +
+        '<span class="act-sum-lbl">' + t('km') + '</span></div>' +
+      '<div class="act-sum-item"><span class="act-sum-val">' + fmtActTotalTime(totalMin) + '</span>' +
+        '<span class="act-sum-lbl">' + t('total_time') + '</span></div>' +
+    '</div>';
+
+  var listHtml = sorted.map(function(a) {
+    var pace       = a.distance_km > 0 ? calcPace(a.distance_km, a.time) : '--';
+    var elevHtml   = a.elevation > 0
+      ? '<div class="act-stat"><span class="act-stat-val">' + a.elevation + '</span>' +
+        '<span class="act-stat-lbl">' + t('elevation') + ', ' + t('m') + '</span></div>'
+      : '';
+    var typeClass  = a.type.toLowerCase().indexOf('trail') !== -1 ? ' trail' : '';
+    return '<div class="act-row">' +
+      '<div style="min-width:110px;font-size:13px;color:var(--muted);font-weight:600">' + fmtDate(a.date) + '</div>' +
+      '<span class="act-type' + typeClass + '">' + a.type + '</span>' +
+      '<div class="act-stat"><span class="act-stat-val">' + a.distance_km.toFixed(2) + '</span>' +
+        '<span class="act-stat-lbl">' + t('km') + '</span></div>' +
+      '<div class="act-stat"><span class="act-stat-val">' + a.time + '</span>' +
+        '<span class="act-stat-lbl">' + t('total_time') + '</span></div>' +
+      '<div class="act-stat"><span class="act-stat-val">' + pace + '</span>' +
+        '<span class="act-stat-lbl">' + t('min_km') + '</span></div>' +
+      elevHtml +
+    '</div>';
+  }).join('');
+
+  el.innerHTML = summaryHtml + listHtml;
+}
+
+function renderActivities() {
+  var bounds = getActBounds();
+  var acts   = getActFiltered(bounds.start, bounds.end);
+  renderActChart(acts, bounds);
+  renderActList(acts);
+}
+
 // ── Language switch ───────────────────────────────────────────
 
 function setLang(lang) {
@@ -996,14 +1393,17 @@ function setLang(lang) {
   document.getElementById('lang-en').classList.toggle('active', lang === 'en');
   document.getElementById('lang-be').classList.toggle('active', lang === 'be');
   document.getElementById('logo').innerHTML      = t('logo');
-  document.getElementById('nav-runs').textContent = t('nav_runs');
-  document.getElementById('nav-pbs').textContent  = t('nav_pbs');
+  document.getElementById('nav-runs').textContent        = t('nav_runs');
+  document.getElementById('nav-pbs').textContent         = t('nav_pbs');
+  document.getElementById('nav-activities').textContent  = t('nav_activities');
 
   buildFilterOptions();
   applyFilters();
   buildPBChartOptions();
   renderPBChart();
   renderPBs();
+  initActivitiesControls();
+  renderActivities();
 }
 
 // ── Interactions ──────────────────────────────────────────────
@@ -1020,8 +1420,9 @@ function showPage(name, btn) {
   document.querySelectorAll('nav button').forEach(function(b) { b.classList.remove('active'); });
   document.getElementById('page-' + name).classList.add('visible');
   btn.classList.add('active');
-  document.getElementById('runs-filterbar').style.display = name === 'runs' ? ''     : 'none';
+  document.getElementById('runs-filterbar').style.display = name === 'runs' ? ''      : 'none';
   document.getElementById('pbs-chart').style.display      = name === 'pbs'  ? 'block' : 'none';
+  if (name === 'activities') { initActivitiesControls(); renderActivities(); }
 }
 
 function openLb(src) {
