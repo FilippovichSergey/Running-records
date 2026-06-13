@@ -1,0 +1,19 @@
+{
+  "date": "2025-11-16",
+  "location": "Batumi (Ekiden)",
+  "location_be": "Батумі (Экідэн)",
+  "distance_km": 10.0,
+  "total_time": "0:42:25",
+  "hr_avg": 163,
+  "hr_max": 176,
+  "elevation": 0,
+  "sneakers": "Nike Zoom Fly 4",
+  "video": "",
+  "photos": [
+    "data/photos/2025-11-16/IMG_4813.jpg",
+    "data/photos/2025-11-16/IMG_4822 (2).jpg",
+    "data/photos/2025-11-16/IMG_4844.JPG",
+    "data/photos/2025-11-16/IMG_4846.JPG",
+    "data/photos/2025-11-16/IMG_4847.JPG"
+  ]
+}

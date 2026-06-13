@@ -354,6 +354,21 @@ nav button.active { background: var(--accent); color: #fff; }
   transition: color 0.1s;
 }
 #lb-close:hover { color: #fff; }
+#lb-prev, #lb-next {
+  position: fixed;
+  top: 50%; transform: translateY(-50%);
+  background: none; border: none;
+  color: rgba(255,255,255,0.7);
+  font-size: 64px; line-height: 1;
+  cursor: pointer;
+  padding: 0 18px;
+  transition: color 0.1s;
+  user-select: none;
+}
+#lb-prev { left: 0; }
+#lb-next { right: 0; }
+#lb-prev:hover, #lb-next:hover { color: #fff; }
+#lb-prev.hidden, #lb-next.hidden { display: none; }
 
 /* ── Filter bar ── */
 .filter-bar {
@@ -573,7 +588,9 @@ nav button.active { background: var(--accent); color: #fff; }
 <!-- Lightbox -->
 <div id="lightbox" onclick="closeLb()">
   <button id="lb-close" onclick="closeLb()">×</button>
-  <img id="lb-img" src="" alt="">
+  <button id="lb-prev" onclick="event.stopPropagation();lbNav(-1)">&#8249;</button>
+  <img id="lb-img" src="" alt="" onclick="event.stopPropagation()">
+  <button id="lb-next" onclick="event.stopPropagation();lbNav(1)">&#8250;</button>
 </div>
 
 <div id="runs-filterbar" class="filter-bar">
@@ -859,9 +876,13 @@ function calcPace(distance_km, total_time) {
 function photoGrid(photos) {
   if (!photos || photos.length === 0)
     return '<p class="no-photos">' + t('no_photos') + '</p>';
-  return '<div class="photos-grid">' +
-    photos.map(function(src) {
-      return '<div class="photo-thumb" onclick="openLb(\'' + src + '\')">' +
+  var id = 'pg' + (photoGrid._id = (photoGrid._id || 0) + 1);
+  // store the array globally so the lightbox can navigate it
+  photoGrid._sets = photoGrid._sets || {};
+  photoGrid._sets[id] = photos;
+  return '<div class="photos-grid" data-pgid="' + id + '">' +
+    photos.map(function(src, i) {
+      return '<div class="photo-thumb" onclick="openLb(\'' + id + '\',' + i + ')">' +
                '<img src="' + src + '" alt="" loading="lazy">' +
              '</div>';
     }).join('') +
@@ -1514,15 +1535,32 @@ function showPage(name, btn) {
   if (name === 'activities') { initActivitiesControls(); renderActivities(); }
 }
 
-function openLb(src) {
-  document.getElementById('lb-img').src = src;
+var _lbSet = [], _lbIdx = 0;
+
+function openLb(setId, idx) {
+  _lbSet = (photoGrid._sets && photoGrid._sets[setId]) || [];
+  _lbIdx = idx || 0;
+  _lbShow();
+}
+function _lbShow() {
+  document.getElementById('lb-img').src = _lbSet[_lbIdx];
   document.getElementById('lightbox').classList.add('open');
+  document.getElementById('lb-prev').classList.toggle('hidden', _lbIdx === 0);
+  document.getElementById('lb-next').classList.toggle('hidden', _lbIdx === _lbSet.length - 1);
+}
+function lbNav(dir) {
+  var next = _lbIdx + dir;
+  if (next >= 0 && next < _lbSet.length) { _lbIdx = next; _lbShow(); }
 }
 function closeLb() {
   document.getElementById('lightbox').classList.remove('open');
   document.getElementById('lb-img').src = '';
 }
-document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLb(); });
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape')      closeLb();
+  if (e.key === 'ArrowLeft')   lbNav(-1);
+  if (e.key === 'ArrowRight')  lbNav(1);
+});
 
 // ── Init ─────────────────────────────────────────────────────
 setLang(LANG);

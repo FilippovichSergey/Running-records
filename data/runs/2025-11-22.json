@@ -1,0 +1,17 @@
+{
+  "date": "2025-11-22",
+  "location": "Tbilisi",
+  "location_be": "Тбілісі",
+  "distance_km": 3.0,
+  "total_time": "0:11:39",
+  "hr_avg": 162,
+  "hr_max": 177,
+  "elevation": 0,
+  "sneakers": "Nike Zoom Fly 4",
+  "video": "",
+  "photos": [
+    "data/photos/2025-11-22/IMG_4890.JPG",
+    "data/photos/2025-11-22/IMG_4891.JPG",
+    "data/photos/2025-11-22/IMG_4895.JPG"
+  ]
+}
