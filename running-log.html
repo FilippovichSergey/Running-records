@@ -642,6 +642,7 @@ nav button.active { background: var(--accent); color: #fff; }
         <option value="curr_year"  id="aop-curr_year"></option>
         <option value="last_year"  id="aop-last_year"></option>
         <option value="custom"     id="aop-custom"></option>
+        <option value="all"        id="aop-all"></option>
       </select>
     </div>
     <div id="act-custom-wrap" class="filter-group" style="display:none">
@@ -730,9 +731,17 @@ const I18N = {
     act_period_curr_year:  "This year",
     act_period_last_year:  "Last year",
     act_period_custom:   "Custom",
+    act_period_all:      "All years",
     act_no_data:         "No activities in selected period",
     act_h:               "h",
     act_min:             "min",
+    act_period_duration: "Period",
+    act_avg_week:        "avg km/week",
+    act_avg_month:       "avg km/month",
+    act_avg_year:        "avg km/year",
+    act_yr:              "yr",
+    act_mo:              "mo",
+    act_d:               "d",
   },
   be: {
     logo:           "<em>Бегавы</em> дзённік Сяргея",
@@ -790,9 +799,17 @@ const I18N = {
     act_period_curr_year:  "Гэты год",
     act_period_last_year:  "Мінулы год",
     act_period_custom:   "Адвольны",
+    act_period_all:      "Усе гады",
     act_no_data:         "Няма актыўнасці за абраны перыяд",
     act_h:               "г",
     act_min:             "хв",
+    act_period_duration: "Перыяд",
+    act_avg_week:        "сяр. км/тыдзень",
+    act_avg_month:       "сяр. км/месяц",
+    act_avg_year:        "сяр. км/год",
+    act_yr:              "г",
+    act_mo:              "м",
+    act_d:               "д",
   },
 };
 
@@ -1159,6 +1176,7 @@ function initActivitiesControls() {
   document.getElementById('aop-curr_year').textContent       = t('act_period_curr_year');
   document.getElementById('aop-last_year').textContent       = t('act_period_last_year');
   document.getElementById('aop-custom').textContent          = t('act_period_custom');
+  document.getElementById('aop-all').textContent             = t('act_period_all');
 
   var sel = document.getElementById('act-type');
   var cur = sel.value || 'all';
@@ -1185,6 +1203,8 @@ function getActBounds() {
   } else if (period === 'last_year') {
     start = new Date(now.getFullYear() - 1, 0, 1);
     end   = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59);
+  } else if (period === 'all') {
+    start = new Date(0);
   } else {
     var from = document.getElementById('act-from').value;
     var to   = document.getElementById('act-to').value;
@@ -1332,7 +1352,19 @@ function renderActChart(acts, bounds) {
   svg.innerHTML = yHtml + barsHtml + xHtml;
 }
 
-function renderActList(acts) {
+function fmtPeriodDuration(days) {
+  var yrs = Math.floor(days / 365);
+  var rem = days - yrs * 365;
+  var mos = Math.floor(rem / 30);
+  var ds  = rem - mos * 30;
+  var parts = [];
+  if (yrs > 0) parts.push(yrs + ' ' + t('act_yr'));
+  if (mos > 0) parts.push(mos + ' ' + t('act_mo'));
+  if (ds  > 0 || parts.length === 0) parts.push(ds + ' ' + t('act_d'));
+  return parts.join(' ');
+}
+
+function renderActList(acts, bounds) {
   var el = document.getElementById('act-list');
   if (acts.length === 0) {
     el.innerHTML = '<p style="color:var(--muted);font-size:14px;text-align:center;padding:32px 0">' +
@@ -1343,6 +1375,20 @@ function renderActList(acts) {
   var totalDist = 0, totalMin = 0;
   sorted.forEach(function(a) { totalDist += a.distance_km; totalMin += actTimeToMin(a.time); });
 
+  // Compute period span
+  var periodStart = bounds ? bounds.start : null;
+  var periodEnd   = bounds ? bounds.end   : null;
+  // For "all years" the start is epoch (new Date(0)); use actual activity dates instead
+  if (periodStart && periodStart.getTime() === 0 && sorted.length > 0) {
+    var dates = sorted.map(function(a) { return new Date(a.date); });
+    periodStart = new Date(Math.min.apply(null, dates));
+    periodEnd   = new Date(Math.max.apply(null, dates));
+  }
+  var periodDays = 0;
+  if (periodStart && periodEnd) {
+    periodDays = Math.round((periodEnd - periodStart) / 86400000) + 1;
+  }
+
   var summaryHtml =
     '<div class="act-summary">' +
       '<div class="act-sum-item"><span class="act-sum-val">' + sorted.length + '</span>' +
@@ -1351,6 +1397,22 @@ function renderActList(acts) {
         '<span class="act-sum-lbl">' + t('km') + '</span></div>' +
       '<div class="act-sum-item"><span class="act-sum-val">' + fmtActTotalTime(totalMin) + '</span>' +
         '<span class="act-sum-lbl">' + t('total_time') + '</span></div>' +
+      (periodDays > 0
+        ? '<div class="act-sum-item"><span class="act-sum-val">' + fmtPeriodDuration(periodDays) + '</span>' +
+            '<span class="act-sum-lbl">' + t('act_period_duration') + '</span></div>'
+        : '') +
+      (periodDays >= 7
+        ? '<div class="act-sum-item"><span class="act-sum-val">' + (totalDist / (periodDays / 7)).toFixed(1) + '</span>' +
+            '<span class="act-sum-lbl">' + t('act_avg_week') + '</span></div>'
+        : '') +
+      (periodDays >= 30
+        ? '<div class="act-sum-item"><span class="act-sum-val">' + (totalDist / (periodDays / 30)).toFixed(1) + '</span>' +
+            '<span class="act-sum-lbl">' + t('act_avg_month') + '</span></div>'
+        : '') +
+      (periodDays >= 365
+        ? '<div class="act-sum-item"><span class="act-sum-val">' + (totalDist / (periodDays / 365)).toFixed(1) + '</span>' +
+            '<span class="act-sum-lbl">' + t('act_avg_year') + '</span></div>'
+        : '') +
     '</div>';
 
   var listHtml = sorted.map(function(a) {
@@ -1380,7 +1442,7 @@ function renderActivities() {
   var bounds = getActBounds();
   var acts   = getActFiltered(bounds.start, bounds.end);
   renderActChart(acts, bounds);
-  renderActList(acts);
+  renderActList(acts, bounds);
 }
 
 // ── Language switch ───────────────────────────────────────────
