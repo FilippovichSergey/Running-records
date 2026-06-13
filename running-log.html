@@ -501,10 +501,7 @@ nav button.active { background: var(--accent); color: #fff; }
     <span class="filter-label" id="flabel-year"></span>
     <select id="filter-year" onchange="applyFilters()"></select>
   </div>
-  <div class="filter-group">
-    <span class="filter-label" id="flabel-sneaker"></span>
-    <select id="filter-sneaker" onchange="applyFilters()"></select>
-  </div>
+
   <div class="filter-group">
     <span class="filter-label" id="flabel-distance"></span>
     <select id="filter-distance" onchange="applyFilters()"></select>
@@ -573,12 +570,10 @@ const I18N = {
     pbc_pace:        "Pace",
     pbc_time:        "Time",
     filter_year:     "Year",
-    filter_sneaker:  "Sneakers",
     filter_distance: "Distance",
     filter_search:   "Location",
     filter_reset:    "Reset",
     all_years:       "All years",
-    all_sneakers:    "All sneakers",
     all_distances:   "All distances",
     runs_shown:     function(n, t) { return n + ' / ' + t + ' runs'; },
     photos_details: "Photos & details",
@@ -618,12 +613,10 @@ const I18N = {
     pbc_pace:        "Тэмп",
     pbc_time:        "Час",
     filter_year:     "Год",
-    filter_sneaker:  "Красоўкі",
     filter_distance: "Адлегласць",
     filter_search:   "Месца",
     filter_reset:    "Скінуць",
     all_years:       "Усе гады",
-    all_sneakers:    "Усе красоўкі",
     all_distances:   "Усе адлегласці",
     runs_shown:     function(n, t) { return n + ' / ' + t + ' забегаў'; },
     photos_details: "Фота і падрабязнасці",
@@ -836,27 +829,22 @@ function renderPBChart() {
 
 function buildFilterOptions() {
   var years     = [...new Set(RUNS.map(r => r.date.slice(0, 4)))].sort().reverse();
-  var sneakers  = [...new Set(RUNS.map(r => r.sneakers).filter(Boolean))].sort();
+
   var distances = [...new Set(RUNS.map(r => r.distance_km))].sort((a, b) => a - b);
 
   var ySel = document.getElementById('filter-year');
-  var sSel = document.getElementById('filter-sneaker');
   var dSel = document.getElementById('filter-distance');
-  var yVal = ySel.value, sVal = sSel.value, dVal = dSel.value;
+  var yVal = ySel.value, dVal = dSel.value;
 
   ySel.innerHTML = '<option value="">' + t('all_years') + '</option>' +
     years.map(y => '<option value="' + y + '">' + y + '</option>').join('');
-  sSel.innerHTML = '<option value="">' + t('all_sneakers') + '</option>' +
-    sneakers.map(s => '<option value="' + s + '">' + s + '</option>').join('');
   dSel.innerHTML = '<option value="">' + t('all_distances') + '</option>' +
     distances.map(d => '<option value="' + d + '">' + d + ' ' + t('km') + '</option>').join('');
 
   if (yVal) ySel.value = yVal;
-  if (sVal) sSel.value = sVal;
   if (dVal) dSel.value = dVal;
 
   document.getElementById('flabel-year').textContent     = t('filter_year');
-  document.getElementById('flabel-sneaker').textContent  = t('filter_sneaker');
   document.getElementById('flabel-distance').textContent = t('filter_distance');
   document.getElementById('flabel-search').textContent   = t('filter_search');
   document.getElementById('filter-reset').textContent    = t('filter_reset');
@@ -864,13 +852,11 @@ function buildFilterOptions() {
 
 function applyFilters() {
   var year     = document.getElementById('filter-year').value;
-  var sneaker  = document.getElementById('filter-sneaker').value;
   var distance = document.getElementById('filter-distance').value;
   var search   = document.getElementById('filter-search').value.trim().toLowerCase();
 
   var filtered = RUNS.filter(function(r) {
     if (year     && r.date.slice(0, 4) !== year)               return false;
-    if (sneaker  && r.sneakers !== sneaker)                     return false;
     if (distance && r.distance_km !== parseFloat(distance))    return false;
     if (search   && !locStr(r).toLowerCase().includes(search)) return false;
     return true;
@@ -883,7 +869,6 @@ function applyFilters() {
 
 function resetFilters() {
   document.getElementById('filter-year').value     = '';
-  document.getElementById('filter-sneaker').value  = '';
   document.getElementById('filter-distance').value = '';
   document.getElementById('filter-search').value   = '';
   applyFilters();
