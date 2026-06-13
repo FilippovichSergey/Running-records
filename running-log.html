@@ -526,9 +526,14 @@ nav button.active { background: var(--accent); color: #fff; }
         <span class="filter-label" id="pbc-label-dist"></span>
         <select id="pbc-distance" onchange="renderPBChart()"></select>
       </div>
-      <div class="chart-toggle">
-        <button class="active" id="pbc-pace" onclick="setPBChartMetric('pace')"></button>
-        <button id="pbc-time" onclick="setPBChartMetric('time')"></button>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="chart-toggle">
+          <button class="active" id="pbc-pace" onclick="setPBChartMetric('pace')"></button>
+          <button id="pbc-time" onclick="setPBChartMetric('time')"></button>
+        </div>
+        <button id="pbc-toggle" onclick="togglePBChart()"
+          style="background:none;border:none;cursor:pointer;font-size:18px;line-height:1;color:var(--muted);padding:2px 4px;transition:color 0.15s"
+          onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">▾</button>
       </div>
     </div>
     <svg class="chart-svg" id="pbc-svg" viewBox="0 0 760 180" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
@@ -654,6 +659,11 @@ var BE_MONTHS = [
   'ліпеня','жніўня','верасня','кастрычніка','лістапада','снежня'
 ];
 
+var BE_MONTHS_SHORT = [
+  'студз','лют','сак','крас','трав','чэрв',
+  'ліп','жн','вер','кастр','ліст','снеж'
+];
+
 function fmtDate(str) {
   var d = new Date(str + 'T12:00:00');
   if (LANG === 'be') {
@@ -689,6 +699,14 @@ function photoGrid(photos) {
 // ── PB Chart ──────────────────────────────────────────────────
 
 var pbChartMetric = 'pace';
+
+var pbChartExpanded = true;
+
+function togglePBChart() {
+  pbChartExpanded = !pbChartExpanded;
+  document.getElementById('pbc-svg').style.display    = pbChartExpanded ? '' : 'none';
+  document.getElementById('pbc-toggle').textContent   = pbChartExpanded ? '▾' : '▸';
+}
 
 function setPBChartMetric(m) {
   pbChartMetric = m;
@@ -780,7 +798,9 @@ function renderPBChart() {
   // x-axis: label every point with short date
   var xHtml = points.map(function(pt, i) {
     var d    = new Date(pt.date + 'T12:00:00');
-    var mon  = d.toLocaleDateString(t('locale'), { month: 'short' });
+    var mon  = LANG === 'be'
+      ? BE_MONTHS_SHORT[d.getMonth()]
+      : d.toLocaleDateString('en-GB', { month: 'short' });
     var line1 = mon + ' ' + d.getDate();
     var line2 = d.getFullYear();
     var x = xPos(i);
