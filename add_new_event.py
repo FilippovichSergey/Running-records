@@ -295,6 +295,329 @@ class PBTab(tk.Frame):
         self.app.refresh_lists()
 
 
+class EditRunTab(tk.Frame):
+    """Select an existing run to edit or delete."""
+
+    def __init__(self, master, app):
+        super().__init__(master)
+        self.app = app
+        self.runs = []
+        self.selected_index = None
+        self.columnconfigure(1, weight=1)
+
+        # ── Listbox ──────────────────────────────────────────────
+        tk.Label(self, text="Select run:", font=("", 9, "bold")).grid(
+            row=0, column=0, columnspan=2, sticky="w", padx=8, pady=(8, 2))
+
+        list_frame = tk.Frame(self)
+        list_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=8, pady=(0, 8))
+        list_frame.columnconfigure(0, weight=1)
+
+        self.listbox = tk.Listbox(list_frame, height=5, font=("Courier", 9), exportselection=False)
+        sb = tk.Scrollbar(list_frame, command=self.listbox.yview)
+        self.listbox.configure(yscrollcommand=sb.set)
+        self.listbox.grid(row=0, column=0, sticky="ew")
+        sb.grid(row=0, column=1, sticky="ns")
+        self.listbox.bind("<<ListboxSelect>>", self._on_select)
+
+        # ── Fields ───────────────────────────────────────────────
+        self.v_date       = labeled_entry(self, "Date (YYYY-MM-DD)", 2)
+        self.v_location   = labeled_entry(self, "Location", 3)
+        self.v_dist       = labeled_entry(self, "Distance (km)", 4)
+        self.v_total_time = labeled_entry(self, "Total time (H:MM:SS)", 5)
+        self.v_hr_avg     = labeled_entry(self, "Avg HR (bpm)", 6)
+        self.v_hr_max     = labeled_entry(self, "Max HR (bpm)", 7)
+        self.v_elevation  = labeled_entry(self, "Elevation (m)", 8)
+
+        tk.Label(self, text="Sneakers", anchor="e", width=16).grid(row=9, column=0, sticky="e", **PAD)
+        self.v_sneakers = tk.StringVar()
+        self.cb_sneakers = ttk.Combobox(self, textvariable=self.v_sneakers, width=ENTRY_W - 2)
+        self.cb_sneakers['values'] = load_sneakers()
+        self.cb_sneakers.grid(row=9, column=1, sticky="ew", **PAD)
+
+        tk.Label(self, text="Add photos folder", anchor="e", width=16).grid(row=10, column=0, sticky="e", **PAD)
+        ph_frame = tk.Frame(self)
+        ph_frame.grid(row=10, column=1, sticky="ew", **PAD)
+        ph_frame.columnconfigure(0, weight=1)
+        self.v_photos = tk.StringVar()
+        tk.Entry(ph_frame, textvariable=self.v_photos).grid(row=0, column=0, sticky="ew")
+        tk.Button(ph_frame, text="Browse…", command=self._browse).grid(row=0, column=1, padx=(6, 0))
+
+        tk.Label(self, text="(leave blank to keep\nexisting photos)",
+                 fg="grey", font=("", 8)).grid(row=11, column=1, sticky="w", padx=8)
+
+        btn_frame = tk.Frame(self)
+        btn_frame.grid(row=12, column=0, columnspan=2, pady=14)
+        tk.Button(btn_frame, text="💾  Save Changes", command=self._save,
+                  bg="#e8521b", fg="white", font=("", 11, "bold"),
+                  padx=14, pady=6).pack(side="left", padx=6)
+        tk.Button(btn_frame, text="🗑  Delete Run", command=self._delete,
+                  bg="#c0392b", fg="white", font=("", 11, "bold"),
+                  padx=14, pady=6).pack(side="left", padx=6)
+
+        self.refresh()
+
+    def refresh(self):
+        self.runs = sorted(load_all_runs(), key=lambda x: x["date"], reverse=True)
+        self.listbox.delete(0, "end")
+        for r in self.runs:
+            self.listbox.insert("end", f"{r['date']}  {r['location']}  {r['distance_km']} km")
+        self.selected_index = None
+        self._clear_fields()
+
+    def _clear_fields(self):
+        for v in (self.v_date, self.v_location, self.v_dist, self.v_total_time,
+                  self.v_hr_avg, self.v_hr_max, self.v_elevation, self.v_sneakers, self.v_photos):
+            v.set("")
+
+    def _on_select(self, _event):
+        sel = self.listbox.curselection()
+        if not sel:
+            return
+        self.selected_index = sel[0]
+        r = self.runs[self.selected_index]
+        self.v_date.set(r.get("date", ""))
+        self.v_location.set(r.get("location", ""))
+        self.v_dist.set(str(r.get("distance_km", "")))
+        self.v_total_time.set(r.get("total_time", ""))
+        self.v_hr_avg.set(str(r.get("hr_avg", "")))
+        self.v_hr_max.set(str(r.get("hr_max", "")))
+        self.v_elevation.set(str(r.get("elevation", 0)))
+        self.v_sneakers.set(r.get("sneakers", ""))
+        self.v_photos.set("")
+
+    def _browse(self):
+        folder = filedialog.askdirectory(title="Select photos folder")
+        if folder:
+            self.v_photos.set(folder)
+
+    def _save(self):
+        if self.selected_index is None:
+            messagebox.showwarning("No selection", "Select a run from the list first.")
+            return
+        old_run = self.runs[self.selected_index]
+        try:
+            dist = float(self.v_dist.get().replace(",", "."))
+        except ValueError:
+            messagebox.showerror("Error", "Distance must be a number.")
+            return
+
+        run = {
+            "date":        self.v_date.get().strip(),
+            "location":    self.v_location.get().strip(),
+            "distance_km": dist,
+            "total_time":  self.v_total_time.get().strip(),
+            "hr_avg":      int(self.v_hr_avg.get() or 0),
+            "hr_max":      int(self.v_hr_max.get() or 0),
+            "elevation":   int(self.v_elevation.get() or 0),
+            "sneakers":    self.v_sneakers.get().strip(),
+            "photos":      old_run.get("photos", []),
+        }
+
+        # If date changed, remove old file
+        old_path = run_filename(old_run)
+        new_path = run_filename(run)
+        if old_path != new_path and old_path.exists():
+            old_path.unlink()
+
+        # Add new photos if a folder was specified
+        new_folder = self.v_photos.get().strip()
+        if new_folder:
+            new_photos = copy_photos(new_folder, run["date"])
+            run["photos"] = run["photos"] + new_photos
+
+        ensure_sneaker(run["sneakers"])
+        save_run(run)
+        rebuild_data_js()
+        self.cb_sneakers['values'] = load_sneakers()
+        messagebox.showinfo("Saved", f"Run on {run['date']} updated.")
+        self.app.refresh_lists()
+
+    def _delete(self):
+        if self.selected_index is None:
+            messagebox.showwarning("No selection", "Select a run from the list first.")
+            return
+        run = self.runs[self.selected_index]
+        if not messagebox.askyesno("Confirm delete",
+                                   f"Delete run {run['date']} – {run['location']}?\n"
+                                   "This cannot be undone."):
+            return
+        path = run_filename(run)
+        if path.exists():
+            path.unlink()
+        rebuild_data_js()
+        messagebox.showinfo("Deleted", f"Run {run['date']} deleted.")
+        self.app.refresh_lists()
+
+
+class EditPBTab(tk.Frame):
+    """Select an existing personal best to edit or delete."""
+
+    def __init__(self, master, app):
+        super().__init__(master)
+        self.app = app
+        self.pbs = []
+        self.selected_index = None
+        self.columnconfigure(1, weight=1)
+
+        tk.Label(self, text="Select personal best:", font=("", 9, "bold")).grid(
+            row=0, column=0, columnspan=2, sticky="w", padx=8, pady=(8, 2))
+
+        list_frame = tk.Frame(self)
+        list_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=8, pady=(0, 8))
+        list_frame.columnconfigure(0, weight=1)
+
+        self.listbox = tk.Listbox(list_frame, height=4, font=("Courier", 9), exportselection=False)
+        sb = tk.Scrollbar(list_frame, command=self.listbox.yview)
+        self.listbox.configure(yscrollcommand=sb.set)
+        self.listbox.grid(row=0, column=0, sticky="ew")
+        sb.grid(row=0, column=1, sticky="ns")
+        self.listbox.bind("<<ListboxSelect>>", self._on_select)
+
+        self.v_distance    = labeled_entry(self, "Distance label", 2)
+        self.v_distance_km = labeled_entry(self, "Distance (km)", 3)
+        self.v_total_time  = labeled_entry(self, "Total time (H:MM:SS)", 4)
+        self.v_date        = labeled_entry(self, "Date (YYYY-MM-DD)", 5)
+        self.v_location    = labeled_entry(self, "Location", 6)
+        self.v_hr_avg      = labeled_entry(self, "Avg HR (bpm)", 7)
+        self.v_hr_max      = labeled_entry(self, "Max HR (bpm)", 8)
+
+        tk.Label(self, text="Sneakers", anchor="e", width=16).grid(row=9, column=0, sticky="e", **PAD)
+        self.v_sneakers = tk.StringVar()
+        self.cb_sneakers = ttk.Combobox(self, textvariable=self.v_sneakers, width=ENTRY_W - 2)
+        self.cb_sneakers['values'] = load_sneakers()
+        self.cb_sneakers.grid(row=9, column=1, sticky="ew", **PAD)
+
+        tk.Label(self, text="Add photos folder", anchor="e", width=16).grid(row=10, column=0, sticky="e", **PAD)
+        ph_frame = tk.Frame(self)
+        ph_frame.grid(row=10, column=1, sticky="ew", **PAD)
+        ph_frame.columnconfigure(0, weight=1)
+        self.v_photos = tk.StringVar()
+        tk.Entry(ph_frame, textvariable=self.v_photos).grid(row=0, column=0, sticky="ew")
+        tk.Button(ph_frame, text="Browse…", command=self._browse).grid(row=0, column=1, padx=(6, 0))
+
+        tk.Label(self, text="Previous records", anchor="e", width=16).grid(row=11, column=0, sticky="ne", **PAD)
+        self.prev_text = tk.Text(self, height=4, width=ENTRY_W)
+        self.prev_text.grid(row=11, column=1, sticky="ew", **PAD)
+        tk.Label(self, text="Format: time|date|location\none per line",
+                 fg="grey", font=("", 8)).grid(row=12, column=1, sticky="w", padx=8)
+
+        btn_frame = tk.Frame(self)
+        btn_frame.grid(row=13, column=0, columnspan=2, pady=14)
+        tk.Button(btn_frame, text="💾  Save Changes", command=self._save,
+                  bg="#e8521b", fg="white", font=("", 11, "bold"),
+                  padx=14, pady=6).pack(side="left", padx=6)
+        tk.Button(btn_frame, text="🗑  Delete PB", command=self._delete,
+                  bg="#c0392b", fg="white", font=("", 11, "bold"),
+                  padx=14, pady=6).pack(side="left", padx=6)
+
+        self.refresh()
+
+    def refresh(self):
+        self.pbs = load_all_pbs()
+        self.listbox.delete(0, "end")
+        for pb in self.pbs:
+            self.listbox.insert("end", f"{pb['distance']}  {pb['total_time']}  {pb['date']}")
+        self.selected_index = None
+        self._clear_fields()
+
+    def _clear_fields(self):
+        for v in (self.v_distance, self.v_distance_km, self.v_total_time, self.v_date,
+                  self.v_location, self.v_hr_avg, self.v_hr_max, self.v_sneakers, self.v_photos):
+            v.set("")
+        self.prev_text.delete("1.0", "end")
+
+    def _on_select(self, _event):
+        sel = self.listbox.curselection()
+        if not sel:
+            return
+        self.selected_index = sel[0]
+        pb = self.pbs[self.selected_index]
+        self.v_distance.set(pb.get("distance", ""))
+        self.v_distance_km.set(str(pb.get("distance_km", "")))
+        self.v_total_time.set(pb.get("total_time", ""))
+        self.v_date.set(pb.get("date", ""))
+        self.v_location.set(pb.get("location", ""))
+        self.v_hr_avg.set(str(pb.get("hr_avg", "")))
+        self.v_hr_max.set(str(pb.get("hr_max", "")))
+        self.v_sneakers.set(pb.get("sneakers", ""))
+        self.v_photos.set("")
+        self.prev_text.delete("1.0", "end")
+        for r in pb.get("previous_records", []):
+            self.prev_text.insert("end", f"{r['time']}|{r['date']}|{r['location']}\n")
+
+    def _browse(self):
+        folder = filedialog.askdirectory(title="Select photos folder")
+        if folder:
+            self.v_photos.set(folder)
+
+    def _parse_previous(self):
+        records = []
+        for line in self.prev_text.get("1.0", "end").strip().splitlines():
+            parts = [p.strip() for p in line.split("|")]
+            if len(parts) == 3:
+                records.append({"time": parts[0], "date": parts[1], "location": parts[2]})
+        return records
+
+    def _save(self):
+        if self.selected_index is None:
+            messagebox.showwarning("No selection", "Select a personal best from the list first.")
+            return
+        old_pb = self.pbs[self.selected_index]
+        try:
+            dist_km = float(self.v_distance_km.get().replace(",", "."))
+        except ValueError:
+            messagebox.showerror("Error", "Distance (km) must be a number.")
+            return
+
+        pb = {
+            "distance":         self.v_distance.get().strip(),
+            "distance_km":      dist_km,
+            "total_time":       self.v_total_time.get().strip(),
+            "date":             self.v_date.get().strip(),
+            "location":         self.v_location.get().strip(),
+            "hr_avg":           int(self.v_hr_avg.get() or 0),
+            "hr_max":           int(self.v_hr_max.get() or 0),
+            "sneakers":         self.v_sneakers.get().strip(),
+            "photos":           old_pb.get("photos", []),
+            "previous_records": self._parse_previous(),
+        }
+
+        old_path = pb_filename(old_pb)
+        new_path = pb_filename(pb)
+        if old_path != new_path and old_path.exists():
+            old_path.unlink()
+
+        new_folder = self.v_photos.get().strip()
+        if new_folder:
+            event_key = "pb_" + pb["distance"].lower().replace(" ", "_").replace("/", "")
+            new_photos = copy_photos(new_folder, event_key)
+            pb["photos"] = pb["photos"] + new_photos
+
+        ensure_sneaker(pb["sneakers"])
+        save_pb(pb)
+        rebuild_data_js()
+        self.cb_sneakers['values'] = load_sneakers()
+        messagebox.showinfo("Saved", f"Personal Best '{pb['distance']}' updated.")
+        self.app.refresh_lists()
+
+    def _delete(self):
+        if self.selected_index is None:
+            messagebox.showwarning("No selection", "Select a personal best from the list first.")
+            return
+        pb = self.pbs[self.selected_index]
+        if not messagebox.askyesno("Confirm delete",
+                                   f"Delete PB '{pb['distance']}' ({pb['total_time']})?\n"
+                                   "This cannot be undone."):
+            return
+        path = pb_filename(pb)
+        if path.exists():
+            path.unlink()
+        rebuild_data_js()
+        messagebox.showinfo("Deleted", f"Personal Best '{pb['distance']}' deleted.")
+        self.app.refresh_lists()
+
+
 class ViewTab(tk.Frame):
     """Simple read-only list of existing events."""
 
@@ -336,22 +659,28 @@ class ViewTab(tk.Frame):
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Running Log – Add Event")
+        self.title("Running Log – Event Manager")
         self.resizable(True, True)
-        self.minsize(520, 480)
+        self.minsize(520, 520)
 
         nb = ttk.Notebook(self)
         nb.pack(fill="both", expand=True, padx=10, pady=10)
 
-        self.run_tab  = RunTab(nb, self)
-        self.pb_tab   = PBTab(nb, self)
-        self.view_tab = ViewTab(nb, self)
+        self.run_tab      = RunTab(nb, self)
+        self.pb_tab       = PBTab(nb, self)
+        self.edit_run_tab = EditRunTab(nb, self)
+        self.edit_pb_tab  = EditPBTab(nb, self)
+        self.view_tab     = ViewTab(nb, self)
 
-        nb.add(self.run_tab,  text="  Add Run  ")
-        nb.add(self.pb_tab,   text="  Add Personal Best  ")
-        nb.add(self.view_tab, text="  View All  ")
+        nb.add(self.run_tab,      text="  Add Run  ")
+        nb.add(self.pb_tab,       text="  Add Personal Best  ")
+        nb.add(self.edit_run_tab, text="  Edit Run  ")
+        nb.add(self.edit_pb_tab,  text="  Edit Personal Best  ")
+        nb.add(self.view_tab,     text="  View All  ")
 
     def refresh_lists(self):
+        self.edit_run_tab.refresh()
+        self.edit_pb_tab.refresh()
         self.view_tab.refresh()
 
 
