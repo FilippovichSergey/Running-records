@@ -6,7 +6,8 @@
       "Bash(python -m py_compile \"D:\\\\IT\\\\Running_records\\\\add_new_event.py\")",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(python -c ' *)"
     ]
   }
 }

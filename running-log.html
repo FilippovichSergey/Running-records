@@ -418,6 +418,55 @@ nav button.active { background: var(--accent); color: #fff; }
   margin-left: 4px;
 }
 
+/* ── Trend chart ── */
+.chart-wrap {
+  max-width: 880px;
+  margin: 20px auto 0;
+  padding: 0 24px;
+}
+
+.chart-card {
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 20px 24px 16px;
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.chart-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1px;
+  color: var(--text);
+}
+
+.chart-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+.chart-toggle button {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.chart-toggle button:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+.chart-toggle button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.chart-svg { width: 100%; display: block; overflow: visible; }
+
 /* ── Responsive ── */
 @media (max-width: 580px) {
   .run-stats { grid-template-columns: repeat(2, 1fr); }
@@ -469,7 +518,24 @@ nav button.active { background: var(--accent); color: #fff; }
 </div>
 
 <div id="page-runs" class="page visible"></div>
-<div id="page-pbs"  class="page"></div>
+
+<div id="pbs-chart" class="chart-wrap" style="display:none">
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="filter-group">
+        <span class="filter-label" id="pbc-label-dist"></span>
+        <select id="pbc-distance" onchange="renderPBChart()"></select>
+      </div>
+      <div class="chart-toggle">
+        <button class="active" id="pbc-pace" onclick="setPBChartMetric('pace')"></button>
+        <button id="pbc-time" onclick="setPBChartMetric('time')"></button>
+      </div>
+    </div>
+    <svg class="chart-svg" id="pbc-svg" viewBox="0 0 760 180" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+  </div>
+</div>
+
+<div id="page-pbs" class="page"></div>
 
 <script src="data/data.js"></script>
 <script>
@@ -498,6 +564,9 @@ const I18N = {
     total_time:     "Total time",
     elevation:      "Elevation",
     m:              "m",
+    pbc_distance:    "Distance",
+    pbc_pace:        "Pace",
+    pbc_time:        "Time",
     filter_year:     "Year",
     filter_sneaker:  "Sneakers",
     filter_distance: "Distance",
@@ -540,6 +609,9 @@ const I18N = {
     total_time:     "Агульны час",
     elevation:      "Набор",
     m:              "м",
+    pbc_distance:    "Адлегласць",
+    pbc_pace:        "Тэмп",
+    pbc_time:        "Час",
     filter_year:     "Год",
     filter_sneaker:  "Красоўкі",
     filter_distance: "Адлегласць",
@@ -612,6 +684,132 @@ function photoGrid(photos) {
              '</div>';
     }).join('') +
   '</div>';
+}
+
+// ── PB Chart ──────────────────────────────────────────────────
+
+var pbChartMetric = 'pace';
+
+function setPBChartMetric(m) {
+  pbChartMetric = m;
+  document.getElementById('pbc-pace').classList.toggle('active', m === 'pace');
+  document.getElementById('pbc-time').classList.toggle('active', m === 'time');
+  renderPBChart();
+}
+
+function buildPBChartOptions() {
+  document.getElementById('pbc-label-dist').textContent = t('pbc_distance');
+  document.getElementById('pbc-pace').textContent       = t('pbc_pace');
+  document.getElementById('pbc-time').textContent       = t('pbc_time');
+
+  var sel    = document.getElementById('pbc-distance');
+  var curVal = sel.value;
+  sel.innerHTML = PERSONAL_BESTS.map(function(pb) {
+    return '<option value="' + pb.distance + '">' + pb.distance + '</option>';
+  }).join('');
+  if (curVal && PERSONAL_BESTS.some(function(pb) { return pb.distance === curVal; }))
+    sel.value = curVal;
+}
+
+function timeToSec(str) {
+  var p = str.split(':').map(Number);
+  return p.length === 3 ? p[0]*3600 + p[1]*60 + p[2] : p[0]*60 + p[1];
+}
+
+function fmtSec(sec) {
+  sec = Math.round(sec);
+  var h = Math.floor(sec / 3600);
+  var m = Math.floor((sec % 3600) / 60);
+  var s = sec % 60;
+  if (h > 0) return h + ':' + (m < 10 ? '0'+m : m) + ':' + (s < 10 ? '0'+s : s);
+  return m + ':' + (s < 10 ? '0'+s : s);
+}
+
+function renderPBChart() {
+  var svg = document.getElementById('pbc-svg');
+  var distName = document.getElementById('pbc-distance').value;
+  var pb = PERSONAL_BESTS.find(function(p) { return p.distance === distName; });
+  if (!pb) { svg.innerHTML = ''; return; }
+
+  // Collect all data points: previous records + current PB
+  var points = (pb.previous_records || []).map(function(r) {
+    return { date: r.date, sec: timeToSec(r.time), loc: r.location };
+  });
+  points.push({ date: pb.date, sec: timeToSec(pb.total_time), loc: pb.location, isBest: true });
+  points.sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
+
+  if (points.length < 2) {
+    // single point — still draw it
+    if (points.length === 0) { svg.innerHTML = ''; return; }
+  }
+
+  var W = 760, H = 180, ML = 52, MR = 16, MT = 14, MB = 42;
+  var cW = W - ML - MR, cH = H - MT - MB;
+  var n  = points.length;
+  var isPace = pbChartMetric === 'pace';
+
+  function val(pt) {
+    return isPace ? pt.sec / pb.distance_km : pt.sec;
+  }
+
+  var vals = points.map(val);
+  var minV = Math.min.apply(null, vals), maxV = Math.max.apply(null, vals);
+  var pad  = (maxV - minV) * 0.18 || (isPace ? 10 : 30);
+  minV = Math.max(0, minV - pad); maxV += pad;
+  var range = maxV - minV || 1;
+
+  function xPos(i) { return n === 1 ? ML + cW/2 : ML + (i / (n-1)) * cW; }
+  // lower = better → invert: lower value → top of chart
+  function yPos(v) { return MT + ((v - minV) / range) * cH; }
+
+  function fmtVal(v) { return fmtSec(v); }
+
+  // y-axis ticks
+  var tickCount = 4, yHtml = '';
+  for (var ti = 0; ti <= tickCount; ti++) {
+    var tv = minV + (ti / tickCount) * range;
+    var ty = yPos(tv);
+    yHtml +=
+      '<line x1="' + ML + '" y1="' + ty + '" x2="' + (ML+cW) + '" y2="' + ty +
+        '" stroke="var(--border)" stroke-width="1"/>' +
+      '<text x="' + (ML-5) + '" y="' + (ty+4) +
+        '" text-anchor="end" font-size="10" font-family="inherit" fill="var(--muted)">' +
+        fmtVal(tv) + '</text>';
+  }
+
+  // x-axis: label every point with short date
+  var xHtml = points.map(function(pt, i) {
+    var d    = new Date(pt.date + 'T12:00:00');
+    var mon  = d.toLocaleDateString(t('locale'), { month: 'short' });
+    var line1 = mon + ' ' + d.getDate();
+    var line2 = d.getFullYear();
+    var x = xPos(i);
+    return '<text x="' + x + '" y="' + (MT+cH+16) +
+      '" text-anchor="middle" font-size="10" font-family="inherit" fill="var(--muted)">' + line1 + '</text>' +
+      '<text x="' + x + '" y="' + (MT+cH+28) +
+      '" text-anchor="middle" font-size="10" font-family="inherit" fill="var(--muted)">' + line2 + '</text>';
+  }).join('');
+
+  // trend line
+  var lineHtml = n > 1
+    ? '<polyline points="' + points.map(function(pt,i){return xPos(i)+','+yPos(val(pt));}).join(' ') +
+      '" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.7"/>'
+    : '';
+
+  // dots — current PB gets a larger filled circle
+  var dotsHtml = points.map(function(pt, i) {
+    var v   = val(pt);
+    var tip = fmtDate(pt.date) + ' · ' + pt.loc + '\n' + fmtVal(v) + (isPace ? ' ' + t('min_km') : '');
+    var r   = pt.isBest ? 7 : 5;
+    var fill = pt.isBest ? 'var(--accent)' : 'var(--card)';
+    var stroke = 'var(--accent)';
+    var sw = pt.isBest ? 0 : 2.5;
+    return '<circle cx="' + xPos(i) + '" cy="' + yPos(v) + '" r="' + r + '"' +
+      ' fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + sw + '">' +
+      '<title>' + tip.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</title></circle>';
+  }).join('');
+
+  svg.innerHTML = yHtml + xHtml + lineHtml + dotsHtml;
 }
 
 // ── Filters ───────────────────────────────────────────────────
@@ -798,6 +996,8 @@ function setLang(lang) {
 
   buildFilterOptions();
   applyFilters();
+  buildPBChartOptions();
+  renderPBChart();
   renderPBs();
 }
 
@@ -815,7 +1015,8 @@ function showPage(name, btn) {
   document.querySelectorAll('nav button').forEach(function(b) { b.classList.remove('active'); });
   document.getElementById('page-' + name).classList.add('visible');
   btn.classList.add('active');
-  document.getElementById('runs-filterbar').style.display = name === 'runs' ? '' : 'none';
+  document.getElementById('runs-filterbar').style.display = name === 'runs' ? ''     : 'none';
+  document.getElementById('pbs-chart').style.display      = name === 'pbs'  ? 'block' : 'none';
 }
 
 function openLb(src) {
