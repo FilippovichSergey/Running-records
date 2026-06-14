@@ -184,6 +184,22 @@ const RUNS_DATA = [
     ]
   },
   {
+    "date": "2025-05-26",
+    "location": "Mtirala",
+    "location_be": "Мцірала",
+    "distance_km": 10.15,
+    "total_time": "1:12:26",
+    "hr_avg": 164,
+    "hr_max": 176,
+    "elevation": 900,
+    "sneakers": "Nike Pegasus Trail GTX 4",
+    "video": "",
+    "photos": [
+      "data/photos/2026-06-14/IMG_0423.jpg",
+      "data/photos/2026-06-14/IMG_0427.JPG"
+    ]
+  },
+  {
     "date": "2025-07-17",
     "location": "Mestia",
     "location_be": "Месція",
@@ -350,22 +366,6 @@ const RUNS_DATA = [
     "video": "",
     "photos": [
       "data/photos/2026-05-31_1914/IMG_5349.png"
-    ]
-  },
-  {
-    "date": "2026-06-14",
-    "location": "Mtirala",
-    "location_be": "Мцірала",
-    "distance_km": 10.15,
-    "total_time": "1:12:26",
-    "hr_avg": 164,
-    "hr_max": 176,
-    "elevation": 900,
-    "sneakers": "Nike Pegasus Trail GTX 4",
-    "video": "",
-    "photos": [
-      "data/photos/2026-06-14/IMG_0423.jpg",
-      "data/photos/2026-06-14/IMG_0427.JPG"
     ]
   }
 ];
