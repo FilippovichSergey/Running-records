@@ -16,6 +16,14 @@
   --border: #e5e1da;
   --shadow: 0 2px 16px rgba(0,0,0,0.07);
 }
+:root.dark {
+  --bg: #141414;
+  --card: #1e1e1e;
+  --text: #e8e4de;
+  --muted: #777;
+  --border: #2e2e2e;
+  --shadow: 0 2px 16px rgba(0,0,0,0.4);
+}
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif;
@@ -675,6 +683,9 @@ nav button.active { background: var(--accent); color: #fff; }
     <button id="nav-pbs" onclick="showPage('pbs', this)">Personal Bests</button>
     <button id="nav-activities" onclick="showPage('activities', this)">Activities</button>
   </nav>
+  <button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode"
+    style="background:none;border:none;cursor:pointer;font-size:18px;line-height:1;padding:4px 6px;color:rgba(255,255,255,0.7);transition:color 0.15s"
+    onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">☀</button>
   <div class="lang-switch">
     <button id="lang-en" class="active" onclick="setLang('en')">EN</button>
     <button id="lang-be" onclick="setLang('be')">BE</button>
@@ -1896,6 +1907,18 @@ function renderCmpChart() {
 }
 
 // ── Language switch ───────────────────────────────────────────
+
+function toggleTheme() {
+  var dark = document.documentElement.classList.toggle('dark');
+  document.getElementById('theme-toggle').textContent = dark ? '☽' : '☀';
+  localStorage.setItem('theme', dark ? 'dark' : 'light');
+}
+(function() {
+  if (localStorage.getItem('theme') === 'dark') {
+    document.documentElement.classList.add('dark');
+    document.getElementById('theme-toggle').textContent = '☽';
+  }
+})();
 
 function setLang(lang) {
   LANG = lang;
