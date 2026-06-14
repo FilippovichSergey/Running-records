@@ -142,7 +142,15 @@ nav button.active { background: var(--accent); color: #fff; }
   border-radius: 20px;
   padding: 3px 10px 3px 6px;
 }
-.run-tag img { width: 16px; height: 16px; object-fit: contain; }
+/* Per-type pill color */
+.run-tag-sprint   { color:#7c3aed; background:rgba(124,58,237,.1); border-color:rgba(124,58,237,.3); }
+.run-tag-mid      { color:#2563eb; background:rgba(37,99,235,.1);  border-color:rgba(37,99,235,.3); }
+.run-tag-long     { color:#059669; background:rgba(5,150,105,.1);  border-color:rgba(5,150,105,.3); }
+.run-tag-marathon { color:#d97706; background:rgba(217,119,6,.1);  border-color:rgba(217,119,6,.3); }
+.run-tag-ultra    { color:#dc2626; background:rgba(220,38,38,.1);  border-color:rgba(220,38,38,.3); }
+.run-tag-trail    { color:#78350f; background:rgba(120,53,15,.1);  border-color:rgba(120,53,15,.3); }
+
+.run-tag-emoji { font-size: 14px; line-height: 1; }
 
 .run-when {
   font-size: 12px;
@@ -1281,11 +1289,11 @@ function resetFilters() {
 // ── Render: All Runs ──────────────────────────────────────────
 
 var DTYPE_DEFS = [
-  { key: 'sprint',   icon: 'sprint',   tag: 'tag_sprint',   test: function(m) { return m <= 400; } },
-  { key: 'mid',      icon: 'short',    tag: 'tag_mid',      test: function(m) { return m <= 3000; } },
-  { key: 'long',     icon: 'long',     tag: 'tag_long',     test: function(m) { return m < 42195; } },
-  { key: 'marathon', icon: 'marathon', tag: 'tag_marathon',  test: function(m) { return m === 42195; } },
-  { key: 'ultra',    icon: 'ultra',    tag: 'tag_ultra',    test: function(m) { return true; } },
+  { key: 'sprint',   emoji: '⚡', tag: 'tag_sprint',   test: function(m) { return m <= 400; } },
+  { key: 'mid',      emoji: '🏃', tag: 'tag_mid',      test: function(m) { return m <= 3000; } },
+  { key: 'long',     emoji: '🏅', tag: 'tag_long',     test: function(m) { return m < 42195; } },
+  { key: 'marathon', emoji: '🎽', tag: 'tag_marathon',  test: function(m) { return m === 42195; } },
+  { key: 'ultra',    emoji: '🏔', tag: 'tag_ultra',    test: function(m) { return true; } },
 ];
 
 function getDistanceType(run) {
@@ -1297,9 +1305,9 @@ function getDistanceType(run) {
 
 function runTags(run) {
   var dt   = getDistanceType(run);
-  var tags = ['<span class="run-tag"><img src="data/icons/' + dt.icon + '.png" alt="">' + t(dt.tag) + '</span>'];
+  var tags = ['<span class="run-tag run-tag-' + dt.key + '"><span class="run-tag-emoji">' + dt.emoji + '</span>' + t(dt.tag) + '</span>'];
   if ((run.elevation || 0) > 0)
-    tags.push('<span class="run-tag"><img src="data/icons/trail.png" alt="">' + t('tag_trail') + '</span>');
+    tags.push('<span class="run-tag run-tag-trail"><span class="run-tag-emoji">🌿</span>' + t('tag_trail') + '</span>');
   return '<div class="run-tags">' + tags.join('') + '</div>';
 }
 
