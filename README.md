@@ -29,9 +29,9 @@ Running records/
 
 Open `running-log.html` in any browser. No server required.
 
-- **All Runs** tab — competition runs sorted newest first. Each card shows pace, avg HR, and total time. Filter by year, distance, or location. Expand a card for full details and photos.
+- **All Runs** tab — competition runs sorted newest first. Each card shows pace, avg HR, and total time. Distance-type tags (⚡ Sprint · 🏃 Mid · 🏅 Long · 🎽 Marathon · 🏔 Ultra · 🌿 Trail) and a medal thumbnail appear at a glance. Filter by year, distance type, or location. Expand a card for full details and photos.
 - **Personal Bests** tab — best time per distance with pace, heart rate, sneakers, and previous records. An expandable trend chart shows pace or time history for a chosen distance.
-- **Activities** tab — all training activities imported from Garmin. Bar chart with selectable activity type, metric (distance / runs / time), and period. Summary strip shows totals and averages for the selected period.
+- **Activities** tab — all training activities imported from Garmin. Bar chart with selectable activity type, metric (distance / runs / time), and period. Summary strip shows totals and averages. Text search and year quick-jump buttons filter the list without leaving the tab.
 - **EN / BE** toggle in the top-right corner switches the interface between English and Belarusian, including dates, labels, and location names.
 
 ---
@@ -65,7 +65,9 @@ The script has five tabs: **Add Run**, **Add Personal Best**, **Edit Run**, **Ed
 | Max HR | Beats per minute |
 | Elevation | Metres of elevation gain, e.g. `320`. Use `0` if flat |
 | Sneakers | Choose from dropdown or type a new name |
+| Video link | Optional URL shown in the Photos section |
 | Photos folder | Optional — all images in the folder are copied into `data/photos/` |
+| Medal photo | Optional — single image copied as `data/photos/<event>/medal.<ext>` and shown on the card |
 
 ### Add Personal Best tab
 
@@ -80,7 +82,9 @@ The script has five tabs: **Add Run**, **Add Personal Best**, **Edit Run**, **Ed
 | Avg HR | Beats per minute |
 | Max HR | Beats per minute |
 | Sneakers | Choose from dropdown or type a new name |
+| Video link | Optional URL shown in the Photos section |
 | Photos folder | Optional |
+| Medal photo | Optional — single image shown on the PB card |
 | Previous records | One record per line: `time\|date\|location` |
 
 ### Edit Run / Edit Personal Best tabs
@@ -145,6 +149,10 @@ The bar chart auto-selects granularity based on the period length: daily (≤ 31
 
 Shows totals for the selected period: number of runs, total distance, total time, period duration, and average km per week / month / year (each shown only when the period is long enough).
 
+### Search and year navigation
+
+A text search box above the activity list filters by activity type (e.g. `trail`) or date fragment (e.g. `2025-03`). Year buttons are generated from the data — clicking one jumps to that calendar year as a custom date range. Switching back to a preset period clears the year selection.
+
 ---
 
 ## Data files
@@ -163,7 +171,9 @@ Each event is stored as a standalone JSON file:
   "hr_max": 168,
   "elevation": 120,
   "sneakers": "Nike Vaporfly 4",
-  "photos": ["data/photos/2026-05-31/IMG_001.jpg"]
+  "video": "https://youtube.com/...",
+  "photos": ["data/photos/2026-05-31/IMG_001.jpg"],
+  "medal": "data/photos/2026-05-31/medal.jpg"
 }
 ```
 
@@ -179,7 +189,9 @@ Each event is stored as a standalone JSON file:
   "hr_avg": 171,
   "hr_max": 182,
   "sneakers": "Nike Vaporfly 4",
+  "video": "https://youtube.com/...",
   "photos": [],
+  "medal": "data/photos/pb_5_km/medal.jpg",
   "previous_records": [
     { "time": "19:36", "date": "2024-04-27", "location": "Батумі" }
   ]
@@ -188,5 +200,6 @@ Each event is stored as a standalone JSON file:
 
 **Notes:**
 - `location_be` is optional — if absent, the English `location` is shown in both language modes.
+- `video`, `medal` are optional — omit the key entirely if not set.
 - Pace is calculated from `distance_km` and `total_time` — it is not stored.
 - Elevation `0` is shown only in the expanded details panel, not in the stats row.
