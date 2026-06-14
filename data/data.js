@@ -11,6 +11,7 @@ const RUNS_DATA = [
     "elevation": 1181,
     "sneakers": "",
     "video": "",
+    "medal": "data/photos/2022-09-04/medal.jpg",
     "photos": [
       "data/photos/2022-09-04/IMG_20220904_124207.jpg"
     ]
@@ -26,6 +27,7 @@ const RUNS_DATA = [
     "elevation": 2105,
     "sneakers": "Nike Pegasus Trail GTX 4",
     "video": "",
+    "medal": "data/photos/2023-09-04/medal.jpg",
     "photos": [
       "data/photos/2023-09-04/IMG_20230902_160623.jpg",
       "data/photos/2023-09-04/IMG_20230903_095140.jpg"
@@ -42,6 +44,7 @@ const RUNS_DATA = [
     "elevation": 989,
     "sneakers": "Nike Pegasus Trail GTX 4",
     "video": "",
+    "medal": "data/photos/2024-05-11/medal.jpg",
     "photos": [
       "data/photos/2024-05-11/_DSC3423_add.jpg",
       "data/photos/2024-05-11/_DSC4293.jpg",
@@ -63,6 +66,7 @@ const RUNS_DATA = [
     "elevation": 0,
     "sneakers": "Nike Pegasus Trail GTX 4",
     "video": "",
+    "medal": "data/photos/2024-06-08/medal.jpg",
     "photos": [
       "data/photos/2024-06-08/DSC_4258.jpg",
       "data/photos/2024-06-08/DSC_4370.jpg",
@@ -84,6 +88,7 @@ const RUNS_DATA = [
     "elevation": 2543,
     "sneakers": "Nike Pegasus Trail GTX 4",
     "video": "",
+    "medal": "data/photos/2024-06-16/medal.jpg",
     "photos": [
       "data/photos/2024-06-16/IMG_0613.JPG",
       "data/photos/2024-06-16/IMG_0616.JPG",
@@ -104,6 +109,7 @@ const RUNS_DATA = [
     "elevation": 874,
     "sneakers": "Nike Pegasus Trail GTX 4",
     "video": "https://www.youtube.com/watch?v=0LiCRSc5R3Q",
+    "medal": "data/photos/2024-08-11/medal.jpg",
     "photos": [
       "data/photos/2024-08-11/085db9f0-03ac-48cf-a7f1-0ad73972ce85.jpg",
       "data/photos/2024-08-11/3d02c254-5b20-4682-a92b-e3608d4849b8.jpg",
@@ -140,6 +146,7 @@ const RUNS_DATA = [
     "elevation": 0,
     "sneakers": "Nike Vaporfly 4",
     "video": "",
+    "medal": "data/photos/2024-10-13/medal.jpg",
     "photos": [
       "data/photos/2024-10-13/IMG_2428.jpg",
       "data/photos/2024-10-13/IMG_2479.jpg",
@@ -184,22 +191,6 @@ const RUNS_DATA = [
     ]
   },
   {
-    "date": "2025-05-26",
-    "location": "Mtirala",
-    "location_be": "Мцірала",
-    "distance_km": 10.15,
-    "total_time": "1:12:26",
-    "hr_avg": 164,
-    "hr_max": 176,
-    "elevation": 900,
-    "sneakers": "Nike Pegasus Trail GTX 4",
-    "video": "",
-    "photos": [
-      "data/photos/2026-06-14/IMG_0423.jpg",
-      "data/photos/2026-06-14/IMG_0427.JPG"
-    ]
-  },
-  {
     "date": "2025-07-17",
     "location": "Mestia",
     "location_be": "Месція",
@@ -210,6 +201,7 @@ const RUNS_DATA = [
     "elevation": 1187,
     "sneakers": "Nike Pegasus Trail GTX 4",
     "video": "https://www.youtube.com/watch?v=EQy_DC_G-1k",
+    "medal": "data/photos/2025-07-17/medal.jpg",
     "photos": [
       "data/photos/2025-07-17/DSC07001.jpg",
       "data/photos/2025-07-17/IMG_4409.JPG",
@@ -245,6 +237,7 @@ const RUNS_DATA = [
     "elevation": 1225,
     "sneakers": "Nike Pegasus Trail GTX 4",
     "video": "https://www.youtube.com/watch?v=ry3T82Up1i0",
+    "medal": "data/photos/2025-08-31/medal.jpg",
     "photos": [
       "data/photos/2025-08-31/KazbegiMarathon2025-20250903044548-a2e4cb5e0d1b.jpg",
       "data/photos/2025-08-31/KazbegiMarathon2025-20250903044550-7736ec991f98.jpg",
@@ -278,6 +271,7 @@ const RUNS_DATA = [
     "elevation": 0,
     "sneakers": "Nike Zoom Fly 4",
     "video": "",
+    "medal": "data/photos/2025-11-16/medal.jpg",
     "photos": [
       "data/photos/2025-11-16/IMG_4813.jpg",
       "data/photos/2025-11-16/IMG_4822 (2).jpg",
@@ -314,6 +308,7 @@ const RUNS_DATA = [
     "elevation": 0,
     "sneakers": "Asics Gel Nimbus 27",
     "video": "",
+    "medal": "data/photos/2025-12-20/medal.jpg",
     "photos": [
       "data/photos/2025-12-20/DSC01511.jpg",
       "data/photos/2025-12-20/DSC01885.jpg",
@@ -332,6 +327,8 @@ const RUNS_DATA = [
     "hr_max": 169,
     "elevation": 218,
     "sneakers": "Asics Gel Nimbus 27",
+    "video": "",
+    "medal": "data/photos/2026-03-28/medal.jpg",
     "photos": [
       "data/photos/2026-03-28/IMG_5253.png"
     ]
@@ -347,11 +344,29 @@ const RUNS_DATA = [
     "elevation": 0,
     "sneakers": "Nike Vaporfly 4",
     "video": "",
+    "medal": "data/photos/2026-04-18/medal.jpg",
     "photos": [
       "data/photos/2026-04-18/IMG_5274.png",
       "data/photos/2026-04-18/IMG_5287.JPG",
       "data/photos/2026-04-18/IMG_5289.JPG",
       "data/photos/2026-04-18/IMG_5308.JPG"
+    ]
+  },
+  {
+    "date": "2026-05-26",
+    "location": "Mtirala",
+    "location_be": "Мцірала",
+    "distance_km": 10.15,
+    "total_time": "1:12:26",
+    "hr_avg": 164,
+    "hr_max": 176,
+    "elevation": 900,
+    "sneakers": "Nike Pegasus Trail GTX 4",
+    "video": "",
+    "medal": "data/photos/2026-05-26/medal.jpg",
+    "photos": [
+      "data/photos/2026-06-14/IMG_0423.jpg",
+      "data/photos/2026-06-14/IMG_0427.JPG"
     ]
   },
   {
@@ -365,6 +380,7 @@ const RUNS_DATA = [
     "elevation": 0,
     "sneakers": "Nike Vaporfly 4",
     "video": "",
+    "medal": "data/photos/2026-05-31/medal.jpg",
     "photos": [
       "data/photos/2026-05-31_1914/IMG_5349.png"
     ]
@@ -382,6 +398,7 @@ const PBS_DATA = [
     "hr_avg": 164,
     "hr_max": 174,
     "sneakers": "Nike Vaporfly 4",
+    "video": "",
     "photos": [
       "data/photos/pb_10_km/IMG_5274.png",
       "data/photos/pb_10_km/IMG_5287.JPG",
@@ -482,6 +499,7 @@ const PBS_DATA = [
     "hr_avg": 171,
     "hr_max": 182,
     "sneakers": "Nike Vaporfly 4",
+    "video": "",
     "photos": [
       "data/photos/pb_5_км/IMG_5349.png"
     ],
