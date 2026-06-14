@@ -613,6 +613,44 @@ nav button.active { background: var(--accent); color: #fff; }
   flex-shrink: 0;
 }
 
+.act-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.act-search-bar input[type="search"] {
+  flex: 0 0 220px;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+.act-search-bar input[type="search"]:focus {
+  border-color: var(--accent);
+}
+.act-year-jumps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.act-year-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.act-year-btn:hover { border-color: var(--accent); color: var(--accent); }
+.act-year-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
 .act-summary {
   background: var(--card);
   border-radius: 14px;
@@ -844,6 +882,11 @@ nav button.active { background: var(--accent); color: #fff; }
     </div>
   </div>
 
+  <div class="act-search-bar">
+    <input type="search" id="act-search" placeholder="" oninput="renderActivities()" autocomplete="off">
+    <div id="act-year-jumps" class="act-year-jumps"></div>
+  </div>
+
   <div id="act-list"></div>
 </div>
 
@@ -927,6 +970,7 @@ const I18N = {
     act_period_last_year:  "Last year",
     act_period_custom:   "Custom",
     act_period_all:      "All years",
+    act_search_ph:       "Search by type or date…",
     act_no_data:         "No activities in selected period",
     act_h:               "h",
     act_min:             "min",
@@ -1013,6 +1057,7 @@ const I18N = {
     act_period_last_year:  "Мінулы год",
     act_period_custom:   "Адвольны",
     act_period_all:      "Усе гады",
+    act_search_ph:       "Пошук па тыпе або даце…",
     act_no_data:         "Няма актыўнасці за абраны перыяд",
     act_h:               "г",
     act_min:             "хв",
@@ -1448,6 +1493,7 @@ function renderPBs() {
 // ── Activities ────────────────────────────────────────────────
 
 function initActivitiesControls() {
+  document.getElementById('act-search').placeholder  = t('act_search_ph');
   document.getElementById('actl-type').textContent   = t('act_type_lbl');
   document.getElementById('actl-metric').textContent = t('act_metric_lbl');
   document.getElementById('actl-period').textContent = t('act_period_lbl');
@@ -1500,13 +1546,40 @@ function getActBounds() {
 }
 
 function getActFiltered(start, end) {
-  var type = document.getElementById('act-type').value;
+  var type   = document.getElementById('act-type').value;
+  var search = (document.getElementById('act-search').value || '').trim().toLowerCase();
   return ACTIVITIES.filter(function(a) {
     var d = new Date(a.date + 'T12:00:00');
     if (d < start || d > end) return false;
     if (type !== 'all' && a.type !== type) return false;
+    if (search && a.type.toLowerCase().indexOf(search) === -1 && a.date.indexOf(search) === -1) return false;
     return true;
   });
+}
+
+function buildYearJumps() {
+  var years = {};
+  ACTIVITIES.forEach(function(a) { years[a.date.slice(0, 4)] = true; });
+  var sorted = Object.keys(years).sort().reverse();
+  var wrap = document.getElementById('act-year-jumps');
+  wrap.innerHTML = sorted.map(function(y) {
+    return '<button class="act-year-btn" onclick="jumpToYear(\'' + y + '\')">' + y + '</button>';
+  }).join('');
+}
+
+function jumpToYear(y) {
+  document.getElementById('act-period').value = 'custom';
+  document.getElementById('act-custom-wrap').style.display = '';
+  document.getElementById('act-from').value = y + '-01-01';
+  document.getElementById('act-to').value   = y + '-12-31';
+  document.querySelectorAll('.act-year-btn').forEach(function(b) {
+    b.classList.toggle('active', b.textContent === y);
+  });
+  renderActivities();
+}
+
+function clearYearActive() {
+  document.querySelectorAll('.act-year-btn').forEach(function(b) { b.classList.remove('active'); });
 }
 
 function actTimeToMin(s) {
@@ -1583,8 +1656,9 @@ function fmtActBucketLabel(key, bType) {
 }
 
 function onActPeriodChange() {
-  document.getElementById('act-custom-wrap').style.display =
-    document.getElementById('act-period').value === 'custom' ? 'flex' : 'none';
+  var val = document.getElementById('act-period').value;
+  document.getElementById('act-custom-wrap').style.display = val === 'custom' ? 'flex' : 'none';
+  if (val !== 'custom') clearYearActive();
   renderActivities();
 }
 
@@ -2004,7 +2078,7 @@ function showPage(name, btn) {
   btn.classList.add('active');
   document.getElementById('runs-filterbar').style.display = name === 'runs' ? ''      : 'none';
   document.getElementById('pbs-chart').style.display      = name === 'pbs'  ? 'block' : 'none';
-  if (name === 'activities') { initActivitiesControls(); renderActivities(); }
+  if (name === 'activities') { initActivitiesControls(); buildYearJumps(); renderActivities(); }
 }
 
 var _lbSet = [], _lbIdx = 0;
