@@ -102,6 +102,20 @@ def copy_photos(src_folder: str, event_key: str) -> list[str]:
             paths.append(rel)
     return paths
 
+
+def copy_medal(src_file: str, event_key: str) -> str:
+    """Copy a single medal image to data/photos/<event_key>/; return relative path or ''."""
+    if not src_file:
+        return ""
+    src = Path(src_file)
+    if not src.is_file() or src.suffix.lower() not in IMG_EXTS:
+        return ""
+    dest = PHOTOS_DIR / event_key
+    dest.mkdir(parents=True, exist_ok=True)
+    target = dest / ("medal" + src.suffix.lower())
+    shutil.copy2(src, target)
+    return target.relative_to(BASE_DIR).as_posix()
+
 # ── Sneakers list ────────────────────────────────────────────────────────────
 
 def load_sneakers() -> list:
@@ -172,10 +186,18 @@ class RunTab(tk.Frame):
 
         self.v_video = labeled_entry(self, "Video link", 9)
 
+        tk.Label(self, text="Medal photo", anchor="e", width=16).grid(row=10, column=0, sticky="e", **PAD)
+        medal_frame = tk.Frame(self)
+        medal_frame.grid(row=10, column=1, sticky="ew", **PAD)
+        medal_frame.columnconfigure(0, weight=1)
+        self.v_medal = tk.StringVar()
+        tk.Entry(medal_frame, textvariable=self.v_medal).grid(row=0, column=0, sticky="ew")
+        tk.Button(medal_frame, text="Browse…", command=self._browse_medal).grid(row=0, column=1, padx=(6, 0))
+
         # Photos folder row
-        tk.Label(self, text="Photos folder", anchor="e", width=16).grid(row=10, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Photos folder", anchor="e", width=16).grid(row=11, column=0, sticky="e", **PAD)
         ph_frame = tk.Frame(self)
-        ph_frame.grid(row=10, column=1, sticky="ew", **PAD)
+        ph_frame.grid(row=11, column=1, sticky="ew", **PAD)
         ph_frame.columnconfigure(0, weight=1)
         self.v_photos = tk.StringVar()
         tk.Entry(ph_frame, textvariable=self.v_photos).grid(row=0, column=0, sticky="ew")
@@ -183,12 +205,18 @@ class RunTab(tk.Frame):
 
         tk.Button(self, text="💾  Save Run", command=self._save,
                   bg="#e8521b", fg="white", font=("", 11, "bold"),
-                  padx=18, pady=6).grid(row=11, column=0, columnspan=2, pady=16)
+                  padx=18, pady=6).grid(row=12, column=0, columnspan=2, pady=16)
 
     def _browse(self):
         folder = filedialog.askdirectory(title="Select photos folder")
         if folder:
             self.v_photos.set(folder)
+
+    def _browse_medal(self):
+        path = filedialog.askopenfilename(title="Select medal photo",
+            filetypes=[("Images", "*.jpg *.jpeg *.png *.webp *.gif")])
+        if path:
+            self.v_medal.set(path)
 
     def _save(self):
         try:
@@ -208,10 +236,12 @@ class RunTab(tk.Frame):
             "elevation":   int(self.v_elevation.get() or 0),
             "sneakers":    self.v_sneakers.get().strip(),
             "video":       self.v_video.get().strip(),
+            "medal":       "",
             "photos":      [],
         }
 
         event_key = run["date"]
+        run["medal"]  = copy_medal(self.v_medal.get(), event_key)
         run["photos"] = copy_photos(self.v_photos.get(), event_key)
 
         ensure_sneaker(run["sneakers"])
@@ -247,28 +277,42 @@ class PBTab(tk.Frame):
 
         self.v_video = labeled_entry(self, "Video link", 9)
 
-        tk.Label(self, text="Photos folder", anchor="e", width=16).grid(row=10, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Medal photo", anchor="e", width=16).grid(row=10, column=0, sticky="e", **PAD)
+        medal_frame = tk.Frame(self)
+        medal_frame.grid(row=10, column=1, sticky="ew", **PAD)
+        medal_frame.columnconfigure(0, weight=1)
+        self.v_medal = tk.StringVar()
+        tk.Entry(medal_frame, textvariable=self.v_medal).grid(row=0, column=0, sticky="ew")
+        tk.Button(medal_frame, text="Browse…", command=self._browse_medal).grid(row=0, column=1, padx=(6, 0))
+
+        tk.Label(self, text="Photos folder", anchor="e", width=16).grid(row=11, column=0, sticky="e", **PAD)
         ph_frame = tk.Frame(self)
-        ph_frame.grid(row=10, column=1, sticky="ew", **PAD)
+        ph_frame.grid(row=11, column=1, sticky="ew", **PAD)
         ph_frame.columnconfigure(0, weight=1)
         self.v_photos = tk.StringVar()
         tk.Entry(ph_frame, textvariable=self.v_photos).grid(row=0, column=0, sticky="ew")
         tk.Button(ph_frame, text="Browse…", command=self._browse).grid(row=0, column=1, padx=(6, 0))
 
-        tk.Label(self, text="Previous records", anchor="e", width=16).grid(row=11, column=0, sticky="ne", **PAD)
+        tk.Label(self, text="Previous records", anchor="e", width=16).grid(row=12, column=0, sticky="ne", **PAD)
         self.prev_text = tk.Text(self, height=4, width=ENTRY_W)
-        self.prev_text.grid(row=11, column=1, sticky="ew", **PAD)
+        self.prev_text.grid(row=12, column=1, sticky="ew", **PAD)
         tk.Label(self, text="Format: time|date|location\none per line",
-                 fg="grey", font=("", 8)).grid(row=12, column=1, sticky="w", padx=8)
+                 fg="grey", font=("", 8)).grid(row=13, column=1, sticky="w", padx=8)
 
         tk.Button(self, text="💾  Save Personal Best", command=self._save,
                   bg="#e8521b", fg="white", font=("", 11, "bold"),
-                  padx=18, pady=6).grid(row=13, column=0, columnspan=2, pady=16)
+                  padx=18, pady=6).grid(row=14, column=0, columnspan=2, pady=16)
 
     def _browse(self):
         folder = filedialog.askdirectory(title="Select photos folder")
         if folder:
             self.v_photos.set(folder)
+
+    def _browse_medal(self):
+        path = filedialog.askopenfilename(title="Select medal photo",
+            filetypes=[("Images", "*.jpg *.jpeg *.png *.webp *.gif")])
+        if path:
+            self.v_medal.set(path)
 
     def _parse_previous(self):
         records = []
@@ -296,11 +340,13 @@ class PBTab(tk.Frame):
             "hr_max":           int(self.v_hr_max.get() or 0),
             "sneakers":         self.v_sneakers.get().strip(),
             "video":            self.v_video.get().strip(),
+            "medal":            "",
             "photos":           [],
             "previous_records": self._parse_previous(),
         }
 
         event_key = "pb_" + pb["distance"].lower().replace(" ", "_").replace("/", "")
+        pb["medal"]  = copy_medal(self.v_medal.get(), event_key)
         pb["photos"] = copy_photos(self.v_photos.get(), event_key)
 
         ensure_sneaker(pb["sneakers"])
@@ -354,19 +400,27 @@ class EditRunTab(tk.Frame):
 
         self.v_video = labeled_entry(self, "Video link", 11)
 
-        tk.Label(self, text="Add photos folder", anchor="e", width=16).grid(row=12, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Medal photo", anchor="e", width=16).grid(row=12, column=0, sticky="e", **PAD)
+        medal_frame = tk.Frame(self)
+        medal_frame.grid(row=12, column=1, sticky="ew", **PAD)
+        medal_frame.columnconfigure(0, weight=1)
+        self.v_medal = tk.StringVar()
+        tk.Entry(medal_frame, textvariable=self.v_medal).grid(row=0, column=0, sticky="ew")
+        tk.Button(medal_frame, text="Browse…", command=self._browse_medal).grid(row=0, column=1, padx=(6, 0))
+
+        tk.Label(self, text="Add photos folder", anchor="e", width=16).grid(row=13, column=0, sticky="e", **PAD)
         ph_frame = tk.Frame(self)
-        ph_frame.grid(row=12, column=1, sticky="ew", **PAD)
+        ph_frame.grid(row=13, column=1, sticky="ew", **PAD)
         ph_frame.columnconfigure(0, weight=1)
         self.v_photos = tk.StringVar()
         tk.Entry(ph_frame, textvariable=self.v_photos).grid(row=0, column=0, sticky="ew")
         tk.Button(ph_frame, text="Browse…", command=self._browse).grid(row=0, column=1, padx=(6, 0))
 
         tk.Label(self, text="(leave blank to keep\nexisting photos)",
-                 fg="grey", font=("", 8)).grid(row=13, column=1, sticky="w", padx=8)
+                 fg="grey", font=("", 8)).grid(row=14, column=1, sticky="w", padx=8)
 
         btn_frame = tk.Frame(self)
-        btn_frame.grid(row=14, column=0, columnspan=2, pady=14)
+        btn_frame.grid(row=15, column=0, columnspan=2, pady=14)
         tk.Button(btn_frame, text="💾  Save Changes", command=self._save,
                   bg="#e8521b", fg="white", font=("", 11, "bold"),
                   padx=14, pady=6).pack(side="left", padx=6)
@@ -386,7 +440,8 @@ class EditRunTab(tk.Frame):
 
     def _clear_fields(self):
         for v in (self.v_date, self.v_location, self.v_location_be, self.v_dist, self.v_total_time,
-                  self.v_hr_avg, self.v_hr_max, self.v_elevation, self.v_sneakers, self.v_video, self.v_photos):
+                  self.v_hr_avg, self.v_hr_max, self.v_elevation, self.v_sneakers, self.v_video,
+                  self.v_medal, self.v_photos):
             v.set("")
 
     def _on_select(self, _event):
@@ -405,12 +460,19 @@ class EditRunTab(tk.Frame):
         self.v_elevation.set(str(r.get("elevation", 0)))
         self.v_sneakers.set(r.get("sneakers", ""))
         self.v_video.set(r.get("video", ""))
+        self.v_medal.set(r.get("medal", ""))
         self.v_photos.set("")
 
     def _browse(self):
         folder = filedialog.askdirectory(title="Select photos folder")
         if folder:
             self.v_photos.set(folder)
+
+    def _browse_medal(self):
+        path = filedialog.askopenfilename(title="Select medal photo",
+            filetypes=[("Images", "*.jpg *.jpeg *.png *.webp *.gif")])
+        if path:
+            self.v_medal.set(path)
 
     def _save(self):
         if self.selected_index is None:
@@ -434,6 +496,7 @@ class EditRunTab(tk.Frame):
             "elevation":   int(self.v_elevation.get() or 0),
             "sneakers":    self.v_sneakers.get().strip(),
             "video":       self.v_video.get().strip(),
+            "medal":       old_run.get("medal", ""),
             "photos":      old_run.get("photos", []),
         }
 
@@ -444,6 +507,11 @@ class EditRunTab(tk.Frame):
             old_path.unlink()
         elif old_path.exists() and old_path == new_path:
             old_path.unlink()  # will be rewritten by save_run below
+
+        # Update medal if a new file was specified
+        new_medal = self.v_medal.get().strip()
+        if new_medal:
+            run["medal"] = copy_medal(new_medal, run["date"])
 
         # Add new photos if a folder was specified
         new_folder = self.v_photos.get().strip()
@@ -516,22 +584,30 @@ class EditPBTab(tk.Frame):
 
         self.v_video = labeled_entry(self, "Video link", 11)
 
-        tk.Label(self, text="Add photos folder", anchor="e", width=16).grid(row=12, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Medal photo", anchor="e", width=16).grid(row=12, column=0, sticky="e", **PAD)
+        medal_frame = tk.Frame(self)
+        medal_frame.grid(row=12, column=1, sticky="ew", **PAD)
+        medal_frame.columnconfigure(0, weight=1)
+        self.v_medal = tk.StringVar()
+        tk.Entry(medal_frame, textvariable=self.v_medal).grid(row=0, column=0, sticky="ew")
+        tk.Button(medal_frame, text="Browse…", command=self._browse_medal).grid(row=0, column=1, padx=(6, 0))
+
+        tk.Label(self, text="Add photos folder", anchor="e", width=16).grid(row=13, column=0, sticky="e", **PAD)
         ph_frame = tk.Frame(self)
-        ph_frame.grid(row=12, column=1, sticky="ew", **PAD)
+        ph_frame.grid(row=13, column=1, sticky="ew", **PAD)
         ph_frame.columnconfigure(0, weight=1)
         self.v_photos = tk.StringVar()
         tk.Entry(ph_frame, textvariable=self.v_photos).grid(row=0, column=0, sticky="ew")
         tk.Button(ph_frame, text="Browse…", command=self._browse).grid(row=0, column=1, padx=(6, 0))
 
-        tk.Label(self, text="Previous records", anchor="e", width=16).grid(row=13, column=0, sticky="ne", **PAD)
+        tk.Label(self, text="Previous records", anchor="e", width=16).grid(row=14, column=0, sticky="ne", **PAD)
         self.prev_text = tk.Text(self, height=4, width=ENTRY_W)
-        self.prev_text.grid(row=13, column=1, sticky="ew", **PAD)
+        self.prev_text.grid(row=14, column=1, sticky="ew", **PAD)
         tk.Label(self, text="Format: time|date|location\none per line",
-                 fg="grey", font=("", 8)).grid(row=14, column=1, sticky="w", padx=8)
+                 fg="grey", font=("", 8)).grid(row=15, column=1, sticky="w", padx=8)
 
         btn_frame = tk.Frame(self)
-        btn_frame.grid(row=15, column=0, columnspan=2, pady=14)
+        btn_frame.grid(row=16, column=0, columnspan=2, pady=14)
         tk.Button(btn_frame, text="💾  Save Changes", command=self._save,
                   bg="#e8521b", fg="white", font=("", 11, "bold"),
                   padx=14, pady=6).pack(side="left", padx=6)
@@ -552,7 +628,7 @@ class EditPBTab(tk.Frame):
     def _clear_fields(self):
         for v in (self.v_distance, self.v_distance_km, self.v_total_time, self.v_date,
                   self.v_location, self.v_location_be, self.v_hr_avg, self.v_hr_max,
-                  self.v_sneakers, self.v_video, self.v_photos):
+                  self.v_sneakers, self.v_video, self.v_medal, self.v_photos):
             v.set("")
         self.prev_text.delete("1.0", "end")
 
@@ -572,6 +648,7 @@ class EditPBTab(tk.Frame):
         self.v_hr_max.set(str(pb.get("hr_max", "")))
         self.v_sneakers.set(pb.get("sneakers", ""))
         self.v_video.set(pb.get("video", ""))
+        self.v_medal.set(pb.get("medal", ""))
         self.v_photos.set("")
         self.prev_text.delete("1.0", "end")
         for r in pb.get("previous_records", []):
@@ -581,6 +658,12 @@ class EditPBTab(tk.Frame):
         folder = filedialog.askdirectory(title="Select photos folder")
         if folder:
             self.v_photos.set(folder)
+
+    def _browse_medal(self):
+        path = filedialog.askopenfilename(title="Select medal photo",
+            filetypes=[("Images", "*.jpg *.jpeg *.png *.webp *.gif")])
+        if path:
+            self.v_medal.set(path)
 
     def _parse_previous(self):
         records = []
