@@ -114,6 +114,28 @@ nav button.active { background: var(--accent); color: #fff; }
 
 .run-meta { flex: 1 1 auto; }
 
+.run-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.run-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 20px;
+  padding: 3px 10px 3px 6px;
+}
+.run-tag img { width: 16px; height: 16px; object-fit: contain; }
+
 .run-when {
   font-size: 12px;
   font-weight: 600;
@@ -729,6 +751,12 @@ const I18N = {
     det_max_hr:     "Max HR",
     det_sneakers:   "Sneakers",
     det_video:      "Video",
+    tag_sprint:     "Sprint",
+    tag_mid:        "Middle distance",
+    tag_long:       "Long distance",
+    tag_marathon:   "Marathon",
+    tag_ultra:      "Ultramarathon",
+    tag_trail:      "Trail",
     photos:         "Photos",
     no_photos:      "No photos added yet.",
     date_place:     "Date & Place",
@@ -799,6 +827,12 @@ const I18N = {
     det_max_hr:     "Макс. пульс",
     det_sneakers:   "Красоўкі",
     det_video:      "Відэа",
+    tag_sprint:     "Спрынт",
+    tag_mid:        "Сярэдняя дыстанцыя",
+    tag_long:       "Доўгая дыстанцыя",
+    tag_marathon:   "Марафон",
+    tag_ultra:      "Ультрамарафон",
+    tag_trail:      "Трэйл",
     photos:         "Фота",
     no_photos:      "Фота пакуль не дададзены.",
     date_place:     "Дата і месца",
@@ -1076,6 +1110,21 @@ function resetFilters() {
 
 // ── Render: All Runs ──────────────────────────────────────────
 
+function runTags(run) {
+  var tags = [];
+  var m = run.distance_km * 1000;
+  var icon, key;
+  if (m <= 400)        { icon = 'sprint';   key = 'tag_sprint'; }
+  else if (m <= 3000)  { icon = 'short';    key = 'tag_mid'; }
+  else if (m < 42195)  { icon = 'long';     key = 'tag_long'; }
+  else if (m === 42195){ icon = 'marathon'; key = 'tag_marathon'; }
+  else                 { icon = 'ultra';    key = 'tag_ultra'; }
+  tags.push('<span class="run-tag"><img src="data/icons/' + icon + '.png" alt="">' + t(key) + '</span>');
+  if ((run.elevation || 0) > 0)
+    tags.push('<span class="run-tag"><img src="data/icons/trail.png" alt="">' + t('tag_trail') + '</span>');
+  return '<div class="run-tags">' + tags.join('') + '</div>';
+}
+
 function renderRuns(runs) {
   if (!runs) runs = RUNS;
   var sorted = runs.slice().sort(function(a, b) {
@@ -1088,6 +1137,7 @@ function renderRuns(runs) {
         '<div class="run-meta">' +
           '<div class="run-when">' + fmtDate(run.date) + '</div>' +
           '<div class="run-location">' + locStr(run) + '</div>' +
+          runTags(run) +
         '</div>' +
         '<div class="run-dist">' + run.distance_km + '<small> ' + t('km') + '</small></div>' +
       '</div>' +
@@ -1103,7 +1153,7 @@ function renderRuns(runs) {
           : '';
         return '<div class="run-stats" style="grid-template-columns:repeat(' + cols + ',1fr)">' +
           '<div class="stat"><div class="stat-label">' + t('pace') + '</div><div class="stat-value">' + calcPace(run.distance_km, run.total_time) + '</div><div class="stat-sub">' + t('min_km') + '</div></div>' +
-          '<div class="stat"><div class="stat-label">' + t('avg_hr') + '</div><div class="stat-value">' + run.hr_avg + '</div><div class="stat-sub">' + t('bpm') + '</div></div>' +
+          '<div class="stat"><div class="stat-label">' + t('avg_hr') + '</div><div class="stat-value">' + (run.hr_avg || '--') + '</div><div class="stat-sub">' + (run.hr_avg ? t('bpm') : '') + '</div></div>' +
           '<div class="stat"><div class="stat-label">' + t('total_time') + '</div><div class="stat-value">' + run.total_time + '</div></div>' +
           elevStat +
         '</div>' +
@@ -1119,8 +1169,8 @@ function renderRuns(runs) {
           '<div class="details-row"><span class="details-key">' + t('det_location') + '</span>' + locStr(run) + '</div>' +
           '<div class="details-row"><span class="details-key">' + t('det_distance') + '</span>' + run.distance_km + ' ' + t('km') + '</div>' +
           '<div class="details-row"><span class="details-key">' + t('det_pace') + '</span>' + calcPace(run.distance_km, run.total_time) + ' ' + t('min_km') + '</div>' +
-          '<div class="details-row"><span class="details-key">' + t('det_avg_hr') + '</span>' + run.hr_avg + ' ' + t('bpm') + '</div>' +
-          '<div class="details-row"><span class="details-key">' + t('det_max_hr') + '</span>' + run.hr_max + ' ' + t('bpm') + '</div>' +
+          '<div class="details-row"><span class="details-key">' + t('det_avg_hr') + '</span>' + (run.hr_avg || '--') + (run.hr_avg ? ' ' + t('bpm') : '') + '</div>' +
+          '<div class="details-row"><span class="details-key">' + t('det_max_hr') + '</span>' + (run.hr_max || '--') + (run.hr_max ? ' ' + t('bpm') : '') + '</div>' +
           elevDetail +
           '<div class="details-row"><span class="details-key">' + t('det_sneakers') + '</span>' + run.sneakers + '</div>' +
           (run.video ? '<div class="details-row"><span class="details-key">' + t('det_video') + '</span><a href="' + run.video + '" target="_blank" rel="noopener">' + run.video + '</a></div>' : '') +
@@ -1137,7 +1187,7 @@ function renderRuns(runs) {
 // ── Render: Personal Bests ────────────────────────────────────
 
 function renderPBs() {
-  document.getElementById('page-pbs').innerHTML = PERSONAL_BESTS.map(function(pb) {
+  document.getElementById('page-pbs').innerHTML = PERSONAL_BESTS.slice().sort(function(a, b) { return b.distance_km - a.distance_km; }).map(function(pb) {
     var photosHtml = (pb.photos && pb.photos.length > 0)
       ? '<div class="pb-photos"><div class="photos-label">' + t('photos') + '</div>' + photoGrid(pb.photos) + '</div>'
       : '';
@@ -1172,8 +1222,8 @@ function renderPBs() {
           '<div class="stat-value">' + calcPace(pb.distance_km, pb.total_time) + '</div>' +
           '<div class="stat-sub">' + t('min_km') + '</div></div>' +
         '<div class="pb-stat"><div class="stat-label">' + t('heart_rate') + '</div>' +
-          '<div class="stat-value">' + pb.hr_avg + ' <span style="font-size:11px;color:var(--muted);font-weight:600">' + t('avg') + '</span></div>' +
-          '<div class="stat-sub">' + t('max') + ' ' + pb.hr_max + ' ' + t('bpm') + '</div></div>' +
+          '<div class="stat-value">' + (pb.hr_avg || '--') + (pb.hr_avg ? ' <span style="font-size:11px;color:var(--muted);font-weight:600">' + t('avg') + '</span>' : '') + '</div>' +
+          '<div class="stat-sub">' + (pb.hr_max ? t('max') + ' ' + pb.hr_max + ' ' + t('bpm') : '--') + '</div></div>' +
       '</div>' +
 
       '<div style="padding:12px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">' +

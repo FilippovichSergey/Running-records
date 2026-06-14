@@ -1,0 +1,20 @@
+{
+  "date": "2024-06-16",
+  "location": "Tbilisi (Lisi)",
+  "location_be": "Тбілісі (Лісі)",
+  "distance_km": 44.27,
+  "total_time": "6:56:29",
+  "hr_avg": 141,
+  "hr_max": 166,
+  "elevation": 2543,
+  "sneakers": "Nike Pegasus Trail GTX 4",
+  "video": "",
+  "photos": [
+    "data/photos/2024-06-16/IMG_0613.JPG",
+    "data/photos/2024-06-16/IMG_0616.JPG",
+    "data/photos/2024-06-16/IMG_0619.JPG",
+    "data/photos/2024-06-16/IMG_0627.JPG",
+    "data/photos/2024-06-16/IMG_0631.JPG",
+    "data/photos/2024-06-16/IMG_0633.JPG"
+  ]
+}

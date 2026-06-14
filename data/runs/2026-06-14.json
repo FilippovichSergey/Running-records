@@ -1,0 +1,16 @@
+{
+  "date": "2026-06-14",
+  "location": "Mtirala",
+  "location_be": "Мцірала",
+  "distance_km": 10.15,
+  "total_time": "1:12:26",
+  "hr_avg": 164,
+  "hr_max": 176,
+  "elevation": 900,
+  "sneakers": "Nike Pegasus Trail GTX 4",
+  "video": "",
+  "photos": [
+    "data/photos/2026-06-14/IMG_0423.jpg",
+    "data/photos/2026-06-14/IMG_0427.JPG"
+  ]
+}

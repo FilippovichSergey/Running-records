@@ -1,0 +1,17 @@
+{
+  "date": "2025-07-17",
+  "location": "Mestia",
+  "location_be": "Месція",
+  "distance_km": 21.51,
+  "total_time": "2:47:18",
+  "hr_avg": 153,
+  "hr_max": 181,
+  "elevation": 1187,
+  "sneakers": "Nike Pegasus Trail GTX 4",
+  "video": "https://www.youtube.com/watch?v=EQy_DC_G-1k",
+  "photos": [
+    "data/photos/2025-07-17/DSC07001.jpg",
+    "data/photos/2025-07-17/IMG_4409.JPG",
+    "data/photos/2025-07-17/IMG_4413.JPG"
+  ]
+}

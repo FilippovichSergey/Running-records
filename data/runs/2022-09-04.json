@@ -1,0 +1,15 @@
+{
+  "date": "2022-09-04",
+  "location": "Kazbegi",
+  "location_be": "Казбегі",
+  "distance_km": 14.43,
+  "total_time": "2:40:49",
+  "hr_avg": 153,
+  "hr_max": 204,
+  "elevation": 1181,
+  "sneakers": "",
+  "video": "",
+  "photos": [
+    "data/photos/2022-09-04/IMG_20220904_124207.jpg"
+  ]
+}

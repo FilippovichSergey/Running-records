@@ -1,0 +1,21 @@
+{
+  "date": "2024-05-11",
+  "location": "Batumi (Botanical garden)",
+  "location_be": "Батумі (Батанічны сад)",
+  "distance_km": 20.92,
+  "total_time": "2:35:09",
+  "hr_avg": 164,
+  "hr_max": 190,
+  "elevation": 989,
+  "sneakers": "Nike Pegasus Trail GTX 4",
+  "video": "",
+  "photos": [
+    "data/photos/2024-05-11/_DSC3423_add.jpg",
+    "data/photos/2024-05-11/_DSC4293.jpg",
+    "data/photos/2024-05-11/_DSC5086_add.jpg",
+    "data/photos/2024-05-11/IMG_2558.jpg",
+    "data/photos/2024-05-11/IMG_3467.jpg",
+    "data/photos/2024-05-11/IMG_9635.jpg",
+    "data/photos/2024-05-11/RDV03082.jpg"
+  ]
+}

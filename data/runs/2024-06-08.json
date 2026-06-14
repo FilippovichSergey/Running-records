@@ -1,0 +1,21 @@
+{
+  "date": "2024-06-08",
+  "location": "Batumi (multirace)",
+  "location_be": "Батумі (мульцігонка)",
+  "distance_km": 4.36,
+  "total_time": "0:22:15",
+  "hr_avg": 167,
+  "hr_max": 176,
+  "elevation": 0,
+  "sneakers": "Nike Pegasus Trail GTX 4",
+  "video": "",
+  "photos": [
+    "data/photos/2024-06-08/DSC_4258.jpg",
+    "data/photos/2024-06-08/DSC_4370.jpg",
+    "data/photos/2024-06-08/DSC_4500.jpg",
+    "data/photos/2024-06-08/DSC_5107.jpg",
+    "data/photos/2024-06-08/DSC_5165.jpg",
+    "data/photos/2024-06-08/DSC_5230.jpg",
+    "data/photos/2024-06-08/DSC_5656.jpg"
+  ]
+}

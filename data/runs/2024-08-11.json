@@ -1,0 +1,18 @@
+{
+  "date": "2024-08-11",
+  "location": "Kazbegi",
+  "location_be": "Казбегі",
+  "distance_km": 9.67,
+  "total_time": "1:36:36",
+  "hr_avg": 157,
+  "hr_max": 177,
+  "elevation": 874,
+  "sneakers": "Nike Pegasus Trail GTX 4",
+  "video": "https://www.youtube.com/watch?v=0LiCRSc5R3Q",
+  "photos": [
+    "data/photos/2024-08-11/085db9f0-03ac-48cf-a7f1-0ad73972ce85.jpg",
+    "data/photos/2024-08-11/3d02c254-5b20-4682-a92b-e3608d4849b8.jpg",
+    "data/photos/2024-08-11/541436df-f822-499e-b1e9-365f76f72ffa.jpg",
+    "data/photos/2024-08-11/cc1f7f1d-6186-4143-b87a-a48390964ec1.jpg"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "date": "2025-01-25",
+  "location": "Batumi",
+  "location_be": "Батумі",
+  "distance_km": 10.0,
+  "total_time": "0:42:54",
+  "hr_avg": 167,
+  "hr_max": 181,
+  "elevation": 0,
+  "sneakers": "Nike Vaporfly 4",
+  "video": "",
+  "photos": [
+    "data/photos/2025-01-25/DSC00255.jpg",
+    "data/photos/2025-01-25/DSC00257.jpg",
+    "data/photos/2025-01-25/DSC00259.jpg",
+    "data/photos/2025-01-25/DSC00263.jpg"
+  ]
+}

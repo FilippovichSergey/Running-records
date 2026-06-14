@@ -1,0 +1,17 @@
+{
+  "date": "2024-12-21",
+  "location": "Batumi",
+  "location_be": "Батумі",
+  "distance_km": 67.0,
+  "total_time": "10:00:00",
+  "hr_avg": 0,
+  "hr_max": 0,
+  "elevation": 0,
+  "sneakers": "Nike Pegasus 38",
+  "video": "https://www.youtube.com/watch?v=b2eu2Tf_7zc",
+  "photos": [
+    "data/photos/2024-12-21/DSC08215.jpg",
+    "data/photos/2024-12-21/DSC08545.jpg",
+    "data/photos/2024-12-21/photo_2024-12-21_16-48-31.jpg"
+  ]
+}

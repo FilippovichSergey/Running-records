@@ -1,0 +1,18 @@
+{
+  "date": "2025-08-31",
+  "location": "Kazbegi",
+  "location_be": "Казбегі",
+  "distance_km": 14.5,
+  "total_time": "2:38:46",
+  "hr_avg": 147,
+  "hr_max": 174,
+  "elevation": 1225,
+  "sneakers": "Nike Pegasus Trail GTX 4",
+  "video": "https://www.youtube.com/watch?v=ry3T82Up1i0",
+  "photos": [
+    "data/photos/2025-08-31/KazbegiMarathon2025-20250903044548-a2e4cb5e0d1b.jpg",
+    "data/photos/2025-08-31/KazbegiMarathon2025-20250903044550-7736ec991f98.jpg",
+    "data/photos/2025-08-31/KazbegiMarathon2025-20250903125455-2dc41bffc34c.jpg",
+    "data/photos/2025-08-31/KazbegiMarathon2025-20250904231510-b05b9851a940.jpg"
+  ]
+}
