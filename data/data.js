@@ -150,8 +150,8 @@ const RUNS_DATA = [
   },
   {
     "date": "2024-12-21",
-    "location": "Batumi",
-    "location_be": "Батумі",
+    "location": "Batumi (Backyard)",
+    "location_be": "Батумі (Бэк'ярд)",
     "distance_km": 67.0,
     "total_time": "10:00:00",
     "hr_avg": 0,
@@ -305,14 +305,15 @@ const RUNS_DATA = [
   },
   {
     "date": "2025-12-20",
-    "location": "Batumi (backyard)",
-    "location_be": "Батумі (бэк'ярд)",
+    "location": "Batumi (Backyard)",
+    "location_be": "Батумі (Бэк'ярд)",
     "distance_km": 100.5,
     "total_time": "15:00:00",
     "hr_avg": 0,
     "hr_max": 0,
     "elevation": 0,
     "sneakers": "Asics Gel Nimbus 27",
+    "video": "",
     "photos": [
       "data/photos/2025-12-20/DSC01511.jpg",
       "data/photos/2025-12-20/DSC01885.jpg",

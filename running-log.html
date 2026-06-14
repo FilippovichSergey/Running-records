@@ -711,6 +711,10 @@ nav button.active { background: var(--accent); color: #fff; }
     <select id="filter-distance" onchange="applyFilters()"></select>
   </div>
   <div class="filter-group">
+    <span class="filter-label" id="flabel-dtype"></span>
+    <select id="filter-dtype" onchange="applyFilters()"></select>
+  </div>
+  <div class="filter-group">
     <span class="filter-label" id="flabel-search"></span>
     <input type="text" id="filter-search" oninput="applyFilters()" placeholder="…">
   </div>
@@ -860,10 +864,12 @@ const I18N = {
     pbc_time:        "Time",
     filter_year:     "Year",
     filter_distance: "Distance",
+    filter_dtype:    "Type",
     filter_search:   "Location",
     filter_reset:    "Reset",
     all_years:       "All years",
     all_distances:   "All distances",
+    all_types:       "All types",
     runs_shown:     function(n, t) { return n + ' / ' + t + ' runs'; },
     photos_details: "Photos & details",
     hide_details:   "Hide details",
@@ -944,10 +950,12 @@ const I18N = {
     pbc_time:        "Час",
     filter_year:     "Год",
     filter_distance: "Адлегласць",
+    filter_dtype:    "Тып",
     filter_search:   "Месца",
     filter_reset:    "Скінуць",
     all_years:       "Усе гады",
     all_distances:   "Усе адлегласці",
+    all_types:       "Усе тыпы",
     runs_shown:     function(n, t) { return n + ' / ' + t + ' забегаў'; },
     photos_details: "Фота і падрабязнасці",
     hide_details:   "Схаваць падрабязнасці",
@@ -1215,11 +1223,20 @@ function buildFilterOptions() {
   dSel.innerHTML = '<option value="">' + t('all_distances') + '</option>' +
     distances.map(d => '<option value="' + d + '">' + d + ' ' + t('km') + '</option>').join('');
 
+  var dtSel = document.getElementById('filter-dtype');
+  var dtVal = dtSel.value;
+  var usedKeys = new Set(RUNS.map(function(r) { var dt = getDistanceType(r); return dt ? dt.key : ''; }));
+  dtSel.innerHTML = '<option value="">' + t('all_types') + '</option>' +
+    DTYPE_DEFS.filter(function(d) { return usedKeys.has(d.key); })
+              .map(function(d) { return '<option value="' + d.key + '">' + t(d.tag) + '</option>'; }).join('');
+  if (dtVal) dtSel.value = dtVal;
+
   if (yVal) ySel.value = yVal;
   if (dVal) dSel.value = dVal;
 
   document.getElementById('flabel-year').textContent     = t('filter_year');
   document.getElementById('flabel-distance').textContent = t('filter_distance');
+  document.getElementById('flabel-dtype').textContent    = t('filter_dtype');
   document.getElementById('flabel-search').textContent   = t('filter_search');
   document.getElementById('filter-reset').textContent    = t('filter_reset');
 }
@@ -1227,11 +1244,13 @@ function buildFilterOptions() {
 function applyFilters() {
   var year     = document.getElementById('filter-year').value;
   var distance = document.getElementById('filter-distance').value;
+  var dtype    = document.getElementById('filter-dtype').value;
   var search   = document.getElementById('filter-search').value.trim().toLowerCase();
 
   var filtered = RUNS.filter(function(r) {
     if (year     && r.date.slice(0, 4) !== year)               return false;
     if (distance && r.distance_km !== parseFloat(distance))    return false;
+    if (dtype    && getDistanceType(r).key !== dtype)          return false;
     if (search   && !locStr(r).toLowerCase().includes(search)) return false;
     return true;
   });
@@ -1244,22 +1263,31 @@ function applyFilters() {
 function resetFilters() {
   document.getElementById('filter-year').value     = '';
   document.getElementById('filter-distance').value = '';
+  document.getElementById('filter-dtype').value    = '';
   document.getElementById('filter-search').value   = '';
   applyFilters();
 }
 
 // ── Render: All Runs ──────────────────────────────────────────
 
+var DTYPE_DEFS = [
+  { key: 'sprint',   icon: 'sprint',   tag: 'tag_sprint',   test: function(m) { return m <= 400; } },
+  { key: 'mid',      icon: 'short',    tag: 'tag_mid',      test: function(m) { return m <= 3000; } },
+  { key: 'long',     icon: 'long',     tag: 'tag_long',     test: function(m) { return m < 42195; } },
+  { key: 'marathon', icon: 'marathon', tag: 'tag_marathon',  test: function(m) { return m === 42195; } },
+  { key: 'ultra',    icon: 'ultra',    tag: 'tag_ultra',    test: function(m) { return true; } },
+];
+
+function getDistanceType(run) {
+  var m = Math.round(run.distance_km * 1000);
+  for (var i = 0; i < DTYPE_DEFS.length; i++) {
+    if (DTYPE_DEFS[i].test(m)) return DTYPE_DEFS[i];
+  }
+}
+
 function runTags(run) {
-  var tags = [];
-  var m = run.distance_km * 1000;
-  var icon, key;
-  if (m <= 400)        { icon = 'sprint';   key = 'tag_sprint'; }
-  else if (m <= 3000)  { icon = 'short';    key = 'tag_mid'; }
-  else if (m < 42195)  { icon = 'long';     key = 'tag_long'; }
-  else if (m === 42195){ icon = 'marathon'; key = 'tag_marathon'; }
-  else                 { icon = 'ultra';    key = 'tag_ultra'; }
-  tags.push('<span class="run-tag"><img src="data/icons/' + icon + '.png" alt="">' + t(key) + '</span>');
+  var dt   = getDistanceType(run);
+  var tags = ['<span class="run-tag"><img src="data/icons/' + dt.icon + '.png" alt="">' + t(dt.tag) + '</span>'];
   if ((run.elevation || 0) > 0)
     tags.push('<span class="run-tag"><img src="data/icons/trail.png" alt="">' + t('tag_trail') + '</span>');
   return '<div class="run-tags">' + tags.join('') + '</div>';
