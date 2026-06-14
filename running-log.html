@@ -307,6 +307,15 @@ nav button.active { background: var(--accent); color: #fff; }
   color: var(--accent);
   letter-spacing: -1.5px;
 }
+.pb-prog {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2a9d4e;
+  background: #e8f8ee;
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
 
 .pb-stats {
   display: grid;
@@ -1208,10 +1217,26 @@ function renderPBs() {
         '<p class="no-photos">' + t('first_time') + '</p></div>';
     }
 
+    var progHtml = '';
+    if (pb.previous_records && pb.previous_records.length > 0) {
+      var prev = pb.previous_records.slice().sort(function(a, b) { return b.date.localeCompare(a.date); })[0];
+      var prevSec = timeToSec(prev.time), curSec = timeToSec(pb.total_time);
+      if (prevSec > curSec) {
+        var diffSec = prevSec - curSec;
+        var pct = (diffSec / prevSec * 100).toFixed(1);
+        var mm = Math.floor(diffSec / 60), ss = diffSec % 60;
+        var diffFmt = (mm > 0 ? mm + ':' + (ss < 10 ? '0' : '') : '') + (mm > 0 ? ss : ss + 's');
+        progHtml = '<span class="pb-prog">−' + diffFmt + ' / −' + pct + '%</span>';
+      }
+    }
+
     return '<article class="pb-card">' +
       '<div class="pb-head">' +
         '<div class="pb-dist-name">' + pb.distance + '</div>' +
-        '<div class="pb-time">' + pb.total_time + '</div>' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<div class="pb-time">' + pb.total_time + '</div>' +
+          progHtml +
+        '</div>' +
       '</div>' +
 
       '<div class="pb-stats">' +
