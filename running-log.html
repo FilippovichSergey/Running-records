@@ -733,43 +733,42 @@ nav button.active { background: var(--accent); color: #fff; }
 <div id="page-pbs" class="page"></div>
 
 <div id="page-activities" class="page">
-  <div class="act-controls">
-    <div class="filter-group">
-      <span class="filter-label" id="actl-type"></span>
-      <select id="act-type" onchange="renderActivities()"></select>
-    </div>
-    <div class="filter-group">
-      <span class="filter-label" id="actl-metric"></span>
-      <select id="act-metric" onchange="renderActivities()">
-        <option value="distance" id="aom-distance"></option>
-        <option value="runs"     id="aom-runs"></option>
-        <option value="time"     id="aom-time"></option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <span class="filter-label" id="actl-period"></span>
-      <select id="act-period" onchange="onActPeriodChange()">
-        <option value="week"       id="aop-week"></option>
-        <option value="curr_month" id="aop-curr_month"></option>
-        <option value="last_month" id="aop-last_month"></option>
-        <option value="curr_year"  id="aop-curr_year"></option>
-        <option value="last_year"  id="aop-last_year"></option>
-        <option value="custom"     id="aop-custom"></option>
-        <option value="all"        id="aop-all"></option>
-      </select>
-    </div>
-    <div id="act-custom-wrap" class="filter-group" style="display:none">
-      <input type="date" id="act-from" onchange="renderActivities()"
-        style="border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:13px;padding:5px 10px;outline:none">
-      <span style="color:var(--muted);padding:0 4px">–</span>
-      <input type="date" id="act-to" onchange="renderActivities()"
-        style="border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:13px;padding:5px 10px;outline:none">
-    </div>
-  </div>
-
   <div class="chart-card" style="margin-bottom:20px">
-    <div class="chart-toggle-row">
+    <div class="cmp-head">
       <button class="chart-toggle-btn" id="act-chart-toggle" onclick="toggleActChart()">▾</button>
+      <div class="act-controls">
+        <div class="filter-group">
+          <span class="filter-label" id="actl-type"></span>
+          <select id="act-type" onchange="renderActivities()"></select>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label" id="actl-metric"></span>
+          <select id="act-metric" onchange="renderActivities()">
+            <option value="distance" id="aom-distance"></option>
+            <option value="runs"     id="aom-runs"></option>
+            <option value="time"     id="aom-time"></option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label" id="actl-period"></span>
+          <select id="act-period" onchange="onActPeriodChange()">
+            <option value="week"       id="aop-week"></option>
+            <option value="curr_month" id="aop-curr_month"></option>
+            <option value="last_month" id="aop-last_month"></option>
+            <option value="curr_year"  id="aop-curr_year"></option>
+            <option value="last_year"  id="aop-last_year"></option>
+            <option value="custom"     id="aop-custom"></option>
+            <option value="all"        id="aop-all"></option>
+          </select>
+        </div>
+        <div id="act-custom-wrap" class="filter-group" style="display:none">
+          <input type="date" id="act-from" onchange="renderActivities()"
+            style="border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:13px;padding:5px 10px;outline:none">
+          <span style="color:var(--muted);padding:0 4px">–</span>
+          <input type="date" id="act-to" onchange="renderActivities()"
+            style="border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:13px;padding:5px 10px;outline:none">
+        </div>
+      </div>
     </div>
     <div id="act-chart-body">
       <svg class="chart-svg" id="act-svg" viewBox="0 0 760 160"
