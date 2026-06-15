@@ -12,7 +12,8 @@
       "mcp__visualize__read_me",
       "mcp__visualize__show_widget",
       "Bash(ls \"D:\\\\IT\\\\Running_records\\\\\")",
-      "Bash(grep -n \"viewport\" \"/mnt/d/IT/Running_records/running-log.html\")"
+      "Bash(grep -n \"viewport\" \"/mnt/d/IT/Running_records/running-log.html\")",
+      "PowerShell(Select-String -Path \"D:\\\\IT\\\\Running_records\\\\data\\\\data.js\" -Pattern \"data/photos/\" | Select-Object -First 5 | ForEach-Object { $_.Line.Trim\\(\\) })"
     ]
   }
 }

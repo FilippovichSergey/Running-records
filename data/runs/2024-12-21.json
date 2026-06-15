@@ -1,4 +1,4 @@
-{
+﻿{
   "date": "2024-12-21",
   "location": "Batumi (Backyard)",
   "location_be": "Батумі (Бэк'ярд)",
@@ -10,8 +10,8 @@
   "sneakers": "Nike Pegasus 38",
   "video": "https://www.youtube.com/watch?v=b2eu2Tf_7zc",
   "photos": [
-    "data/photos/2024-12-21/DSC08215.jpg",
-    "data/photos/2024-12-21/DSC08545.jpg",
-    "data/photos/2024-12-21/photo_2024-12-21_16-48-31.jpg"
+    "data/photos/resized/2024-12-21/DSC08215.jpg",
+    "data/photos/resized/2024-12-21/DSC08545.jpg",
+    "data/photos/resized/2024-12-21/photo_2024-12-21_16-48-31.jpg"
   ]
 }

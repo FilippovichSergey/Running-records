@@ -1,4 +1,4 @@
-{
+﻿{
   "date": "2023-09-04",
   "location": "Kazbegi",
   "location_be": "Казбегі",
@@ -9,9 +9,9 @@
   "elevation": 2105,
   "sneakers": "Nike Pegasus Trail GTX 4",
   "video": "",
-  "medal": "data/photos/2023-09-04/medal.jpg",
+  "medal": "data/photos/resized/2023-09-04/medal.jpg",
   "photos": [
-    "data/photos/2023-09-04/IMG_20230902_160623.jpg",
-    "data/photos/2023-09-04/IMG_20230903_095140.jpg"
+    "data/photos/resized/2023-09-04/IMG_20230902_160623.jpg",
+    "data/photos/resized/2023-09-04/IMG_20230903_095140.jpg"
   ]
 }

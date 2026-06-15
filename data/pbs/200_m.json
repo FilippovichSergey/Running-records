@@ -1,4 +1,4 @@
-{
+﻿{
   "distance": "200 m",
   "distance_km": 0.2,
   "total_time": "0:00:27.40",
@@ -10,10 +10,10 @@
   "sneakers": "Nike Pegasus 38",
   "video": "",
   "photos": [
-    "data/photos/pb_200_m/DSC01910.jpg",
-    "data/photos/pb_200_m/SSS_Watermarked (35).jpg",
-    "data/photos/pb_200_m/SSS_Watermarked (36).jpg",
-    "data/photos/pb_200_m/SSS_Watermarked (45).jpg"
+    "data/photos/resized/pb_200_m/DSC01910.jpg",
+    "data/photos/resized/pb_200_m/SSS_Watermarked (35).jpg",
+    "data/photos/resized/pb_200_m/SSS_Watermarked (36).jpg",
+    "data/photos/resized/pb_200_m/SSS_Watermarked (45).jpg"
   ],
   "previous_records": []
 }

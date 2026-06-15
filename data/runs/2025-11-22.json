@@ -1,4 +1,4 @@
-{
+﻿{
   "date": "2025-11-22",
   "location": "Tbilisi",
   "location_be": "Тбілісі",
@@ -10,8 +10,8 @@
   "sneakers": "Nike Zoom Fly 4",
   "video": "",
   "photos": [
-    "data/photos/2025-11-22/IMG_4890.JPG",
-    "data/photos/2025-11-22/IMG_4891.JPG",
-    "data/photos/2025-11-22/IMG_4895.JPG"
+    "data/photos/resized/2025-11-22/IMG_4890.JPG",
+    "data/photos/resized/2025-11-22/IMG_4891.JPG",
+    "data/photos/resized/2025-11-22/IMG_4895.JPG"
   ]
 }

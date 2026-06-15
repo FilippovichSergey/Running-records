@@ -1,4 +1,4 @@
-{
+﻿{
   "date": "2025-12-20",
   "location": "Batumi (Backyard)",
   "location_be": "Батумі (Бэк'ярд)",
@@ -9,12 +9,12 @@
   "elevation": 0,
   "sneakers": "Asics Gel Nimbus 27",
   "video": "",
-  "medal": "data/photos/2025-12-20/medal.jpg",
+  "medal": "data/photos/resized/2025-12-20/medal.jpg",
   "photos": [
-    "data/photos/2025-12-20/DSC01511.jpg",
-    "data/photos/2025-12-20/DSC01885.jpg",
-    "data/photos/2025-12-20/IMG_3447.JPG",
-    "data/photos/2025-12-20/IMG_4044.JPG",
-    "data/photos/2025-12-20/photo_2026-01-06_20-57-54.jpg"
+    "data/photos/resized/2025-12-20/DSC01511.jpg",
+    "data/photos/resized/2025-12-20/DSC01885.jpg",
+    "data/photos/resized/2025-12-20/IMG_3447.JPG",
+    "data/photos/resized/2025-12-20/IMG_4044.JPG",
+    "data/photos/resized/2025-12-20/photo_2026-01-06_20-57-54.jpg"
   ]
 }

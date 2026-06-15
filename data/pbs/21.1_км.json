@@ -1,4 +1,4 @@
-{
+﻿{
   "distance": "21.1 км",
   "distance_km": 21.1,
   "total_time": "1:40:08",
@@ -10,10 +10,10 @@
   "sneakers": "Nike Vaporfly 4",
   "video": "",
   "photos": [
-    "data/photos/pb_21.1_км/IMG_2312.JPG",
-    "data/photos/pb_21.1_км/IMG_2313.JPG",
-    "data/photos/pb_21.1_км/IMG_2340.JPG",
-    "data/photos/pb_21.1_км/IMG_2341.JPG"
+    "data/photos/resized/pb_21.1_км/IMG_2312.JPG",
+    "data/photos/resized/pb_21.1_км/IMG_2313.JPG",
+    "data/photos/resized/pb_21.1_км/IMG_2340.JPG",
+    "data/photos/resized/pb_21.1_км/IMG_2341.JPG"
   ],
   "previous_records": []
 }

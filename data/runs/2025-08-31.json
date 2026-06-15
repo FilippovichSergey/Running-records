@@ -1,4 +1,4 @@
-{
+﻿{
   "date": "2025-08-31",
   "location": "Kazbegi",
   "location_be": "Казбегі",
@@ -9,11 +9,11 @@
   "elevation": 1225,
   "sneakers": "Nike Pegasus Trail GTX 4",
   "video": "https://www.youtube.com/watch?v=ry3T82Up1i0",
-  "medal": "data/photos/2025-08-31/medal.jpg",
+  "medal": "data/photos/resized/2025-08-31/medal.jpg",
   "photos": [
-    "data/photos/2025-08-31/KazbegiMarathon2025-20250903044548-a2e4cb5e0d1b.jpg",
-    "data/photos/2025-08-31/KazbegiMarathon2025-20250903044550-7736ec991f98.jpg",
-    "data/photos/2025-08-31/KazbegiMarathon2025-20250903125455-2dc41bffc34c.jpg",
-    "data/photos/2025-08-31/KazbegiMarathon2025-20250904231510-b05b9851a940.jpg"
+    "data/photos/resized/2025-08-31/KazbegiMarathon2025-20250903044548-a2e4cb5e0d1b.jpg",
+    "data/photos/resized/2025-08-31/KazbegiMarathon2025-20250903044550-7736ec991f98.jpg",
+    "data/photos/resized/2025-08-31/KazbegiMarathon2025-20250903125455-2dc41bffc34c.jpg",
+    "data/photos/resized/2025-08-31/KazbegiMarathon2025-20250904231510-b05b9851a940.jpg"
   ]
 }

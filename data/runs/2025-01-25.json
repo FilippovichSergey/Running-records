@@ -1,4 +1,4 @@
-{
+﻿{
   "date": "2025-01-25",
   "location": "Batumi",
   "location_be": "Батумі",
@@ -10,9 +10,9 @@
   "sneakers": "Nike Vaporfly 4",
   "video": "",
   "photos": [
-    "data/photos/2025-01-25/DSC00255.jpg",
-    "data/photos/2025-01-25/DSC00257.jpg",
-    "data/photos/2025-01-25/DSC00259.jpg",
-    "data/photos/2025-01-25/DSC00263.jpg"
+    "data/photos/resized/2025-01-25/DSC00255.jpg",
+    "data/photos/resized/2025-01-25/DSC00257.jpg",
+    "data/photos/resized/2025-01-25/DSC00259.jpg",
+    "data/photos/resized/2025-01-25/DSC00263.jpg"
   ]
 }

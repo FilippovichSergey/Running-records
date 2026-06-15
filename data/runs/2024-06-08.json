@@ -1,4 +1,4 @@
-{
+﻿{
   "date": "2024-06-08",
   "location": "Batumi (multirace)",
   "location_be": "Батумі (мульцігонка)",
@@ -9,14 +9,14 @@
   "elevation": 0,
   "sneakers": "Nike Pegasus Trail GTX 4",
   "video": "",
-  "medal": "data/photos/2024-06-08/medal.jpg",
+  "medal": "data/photos/resized/2024-06-08/medal.jpg",
   "photos": [
-    "data/photos/2024-06-08/DSC_4258.jpg",
-    "data/photos/2024-06-08/DSC_4370.jpg",
-    "data/photos/2024-06-08/DSC_4500.jpg",
-    "data/photos/2024-06-08/DSC_5107.jpg",
-    "data/photos/2024-06-08/DSC_5165.jpg",
-    "data/photos/2024-06-08/DSC_5230.jpg",
-    "data/photos/2024-06-08/DSC_5656.jpg"
+    "data/photos/resized/2024-06-08/DSC_4258.jpg",
+    "data/photos/resized/2024-06-08/DSC_4370.jpg",
+    "data/photos/resized/2024-06-08/DSC_4500.jpg",
+    "data/photos/resized/2024-06-08/DSC_5107.jpg",
+    "data/photos/resized/2024-06-08/DSC_5165.jpg",
+    "data/photos/resized/2024-06-08/DSC_5230.jpg",
+    "data/photos/resized/2024-06-08/DSC_5656.jpg"
   ]
 }

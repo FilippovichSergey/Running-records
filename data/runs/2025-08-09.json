@@ -1,4 +1,4 @@
-{
+﻿{
   "date": "2025-08-09",
   "location": "Tbilisi",
   "location_be": "Тбілісі",
@@ -10,9 +10,9 @@
   "sneakers": "Nike Pegasus 38",
   "video": "",
   "photos": [
-    "data/photos/2025-08-09/DSC01910.jpg",
-    "data/photos/2025-08-09/SSS_Watermarked (35).jpg",
-    "data/photos/2025-08-09/SSS_Watermarked (36).jpg",
-    "data/photos/2025-08-09/SSS_Watermarked (45).jpg"
+    "data/photos/resized/2025-08-09/DSC01910.jpg",
+    "data/photos/resized/2025-08-09/SSS_Watermarked (35).jpg",
+    "data/photos/resized/2025-08-09/SSS_Watermarked (36).jpg",
+    "data/photos/resized/2025-08-09/SSS_Watermarked (45).jpg"
   ]
 }
