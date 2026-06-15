@@ -10,7 +10,8 @@
       "Bash(python -c ' *)",
       "PowerShell(New-Item -ItemType Directory -Force \"D:\\\\IT\\\\Running_records\\\\data\\\\activities\")",
       "mcp__visualize__read_me",
-      "mcp__visualize__show_widget"
+      "mcp__visualize__show_widget",
+      "Bash(ls \"D:\\\\IT\\\\Running_records\\\\\")"
     ]
   }
 }
