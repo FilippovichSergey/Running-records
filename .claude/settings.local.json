@@ -11,7 +11,8 @@
       "PowerShell(New-Item -ItemType Directory -Force \"D:\\\\IT\\\\Running_records\\\\data\\\\activities\")",
       "mcp__visualize__read_me",
       "mcp__visualize__show_widget",
-      "Bash(ls \"D:\\\\IT\\\\Running_records\\\\\")"
+      "Bash(ls \"D:\\\\IT\\\\Running_records\\\\\")",
+      "Bash(grep -n \"viewport\" \"/mnt/d/IT/Running_records/running-log.html\")"
     ]
   }
 }
