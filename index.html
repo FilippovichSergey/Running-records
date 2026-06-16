@@ -722,24 +722,58 @@ nav button.active { background: var(--accent); color: #fff; }
   margin-top: 2px;
 }
 
+/* ── Burger button (hidden on desktop) ── */
+.burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.burger span {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.8);
+  transition: transform 0.22s, opacity 0.22s, width 0.22s;
+  transform-origin: center;
+}
+.burger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.burger.open span:nth-child(2) { opacity: 0; width: 0; }
+.burger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
 /* ── Responsive ── */
 @media (max-width: 640px) {
-  /* Header: logo+controls top row, nav second row */
+  /* Header: single row, nav hidden behind burger */
   header {
-    height: auto;
-    flex-wrap: wrap;
-    padding: 10px 16px 0;
+    height: 54px;
+    padding: 0 14px;
     gap: 8px;
+    position: relative;
   }
-  nav {
-    order: 10;
-    width: 100%;
-    justify-content: center;
-    padding: 8px 0 10px;
+  .burger { display: flex; }
+  #main-nav {
+    display: none;
+    position: absolute;
+    top: 54px;
+    left: 0; right: 0;
+    background: #1a1a1a;
+    flex-direction: column;
+    padding: 8px 12px 14px;
+    gap: 4px;
     border-top: 1px solid rgba(255,255,255,0.1);
-    gap: 2px;
+    z-index: 199;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
   }
-  nav button { padding: 6px 12px; font-size: 13px; }
+  #main-nav.open { display: flex; }
+  #main-nav button { width: 100%; text-align: left; padding: 10px 14px; font-size: 15px; border-radius: 10px; }
 
   /* Pages */
   .page { padding: 16px 12px 48px; }
@@ -793,7 +827,7 @@ nav button.active { background: var(--accent); color: #fff; }
 
 <header>
   <div class="logo" id="logo">Sergey's <em>Running</em> Log</div>
-  <nav>
+  <nav id="main-nav">
     <button class="active" id="nav-runs" onclick="showPage('runs', this)">All Runs</button>
     <button id="nav-pbs" onclick="showPage('pbs', this)">Personal Bests</button>
     <button id="nav-activities" onclick="showPage('activities', this)">Activities</button>
@@ -805,6 +839,9 @@ nav button.active { background: var(--accent); color: #fff; }
     <button id="lang-en" class="active" onclick="setLang('en')">EN</button>
     <button id="lang-be" onclick="setLang('be')">BE</button>
   </div>
+  <button class="burger" id="burger" onclick="toggleNav()" aria-label="Menu" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
 </header>
 
 <!-- Lightbox -->
@@ -2088,6 +2125,21 @@ function renderCmpChart() {
 
 // ── Language switch ───────────────────────────────────────────
 
+function toggleNav() {
+  var nav    = document.getElementById('main-nav');
+  var burger = document.getElementById('burger');
+  var open   = nav.classList.toggle('open');
+  burger.classList.toggle('open', open);
+  burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function closeNav() {
+  document.getElementById('main-nav').classList.remove('open');
+  var burger = document.getElementById('burger');
+  burger.classList.remove('open');
+  burger.setAttribute('aria-expanded', 'false');
+}
+
 function toggleTheme() {
   var dark = document.documentElement.classList.toggle('dark');
   document.getElementById('theme-toggle').textContent = dark ? '☽' : '☀';
@@ -2138,6 +2190,7 @@ function showPage(name, btn) {
   document.getElementById('runs-filterbar').style.display = name === 'runs' ? ''      : 'none';
   document.getElementById('pbs-chart').style.display      = name === 'pbs'  ? 'block' : 'none';
   if (name === 'activities') { initActivitiesControls(); buildYearJumps(); renderActivities(); }
+  closeNav();
 }
 
 var _lbSet = [], _lbIdx = 0;
