@@ -723,11 +723,69 @@ nav button.active { background: var(--accent); color: #fff; }
 }
 
 /* ── Responsive ── */
-@media (max-width: 580px) {
-  .run-stats { grid-template-columns: repeat(2, 1fr); }
-  .pb-stats { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 640px) {
+  /* Header: logo+controls top row, nav second row */
+  header {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 10px 16px 0;
+    gap: 8px;
+  }
+  nav {
+    order: 10;
+    width: 100%;
+    justify-content: center;
+    padding: 8px 0 10px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    gap: 2px;
+  }
+  nav button { padding: 6px 12px; font-size: 13px; }
+
+  /* Pages */
+  .page { padding: 16px 12px 48px; }
+
+  /* Run card */
+  .run-top { padding: 14px 16px 12px; gap: 10px; }
+  .run-location { font-size: 17px; }
   .run-dist { font-size: 26px; }
-  .pb-time { font-size: 26px; }
+  .run-medal { width: 48px; height: 48px; }
+  .run-stats { grid-template-columns: repeat(2, 1fr); }
+  .stat { padding: 10px 12px; }
+  .stat-value { font-size: 16px; }
+  .run-details { padding: 14px 16px; }
+  .expand-row { padding: 0 16px; }
+
+  /* PB card */
+  .pb-head { padding: 16px 18px; flex-wrap: wrap; gap: 4px; }
+  .pb-dist-name { font-size: 20px; flex: 1 1 100%; }
+  .pb-time { font-size: 28px; }
+  .pb-prog { font-size: 12px; padding: 3px 8px; }
+  .pb-stats { grid-template-columns: repeat(2, 1fr); }
+  .pb-stat { padding: 10px 14px; }
+  .pb-photos { padding: 12px 16px; }
+  .pb-history { padding: 12px 16px; }
+  .history-row { flex-wrap: wrap; gap: 8px; }
+  .history-loc { margin-left: 0; }
+
+  /* Filter bar */
+  .filter-bar { padding: 0 12px; margin-top: 14px; gap: 8px; }
+  .filter-bar select,
+  .filter-bar input[type="text"] { font-size: 13px; max-width: 120px; }
+  #filter-reset { margin-left: 0; }
+
+  /* Chart */
+  .chart-wrap { padding: 0 12px; }
+  .chart-card { padding: 14px 14px 12px; }
+
+  /* Activities */
+  .cmp-head { padding: 10px 14px 8px; gap: 8px; }
+  .act-summary { padding: 12px 14px; gap: 16px; }
+  .act-sum-val { font-size: 18px; }
+  .act-row { padding: 10px 14px; gap: 10px; font-size: 13px; }
+  .act-search-bar input[type="search"] { flex: 1 1 100%; }
+
+  /* Photos grid: 2 columns on small screens */
+  .photos-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
 }
 </style>
 </head>
