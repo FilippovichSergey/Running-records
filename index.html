@@ -179,6 +179,13 @@ nav button.active { background: var(--accent); color: #fff; }
   letter-spacing: -0.4px;
   line-height: 1.1;
 }
+.run-location mark {
+  background: #ffe066;
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 1px;
+}
+:root.dark .run-location mark { background: #b8860b; }
 
 .run-dist {
   font-size: 34px;
@@ -501,11 +508,14 @@ nav button.active { background: var(--accent); color: #fff; }
 }
 #filter-reset:hover { border-color: var(--accent); color: var(--accent); }
 
-#runs-count {
+#runs-count-bar {
+  max-width: 880px;
+  margin: 6px auto 0;
+  padding: 0 24px;
   font-size: 12px;
   color: var(--muted);
   font-weight: 600;
-  margin-left: 4px;
+  min-height: 16px;
 }
 
 /* ── Trend chart ── */
@@ -890,8 +900,8 @@ nav button.active { background: var(--accent); color: #fff; }
     <input type="text" id="filter-search" oninput="applyFilters()" placeholder="…">
   </div>
   <button id="filter-reset" onclick="resetFilters()"></button>
-  <span id="runs-count"></span>
 </div>
+<div id="runs-count-bar"></div>
 
 <div id="page-runs" class="page visible"></div>
 
@@ -1435,8 +1445,8 @@ function applyFilters() {
     return true;
   });
 
-  renderRuns(filtered);
-  document.getElementById('runs-count').textContent =
+  renderRuns(filtered, search);
+  document.getElementById('runs-count-bar').textContent =
     (filtered.length < RUNS.length) ? t('runs_shown')(filtered.length, RUNS.length) : '';
 }
 
@@ -1473,7 +1483,13 @@ function runTags(run) {
   return '<div class="run-tags">' + tags.join('') + '</div>';
 }
 
-function renderRuns(runs) {
+function hlText(text, query) {
+  if (!query) return text;
+  var re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+  return text.replace(re, '<mark>$1</mark>');
+}
+
+function renderRuns(runs, searchQuery) {
   if (!runs) runs = RUNS;
   var sorted = runs.slice().sort(function(a, b) {
     return new Date(b.date) - new Date(a.date);
@@ -1484,7 +1500,7 @@ function renderRuns(runs) {
       '<div class="run-top" onclick="toggleDetails(' + i + ')">' +
         '<div class="run-meta">' +
           '<div class="run-when">' + fmtDate(run.date) + '</div>' +
-          '<div class="run-location">' + locStr(run) + '</div>' +
+          '<div class="run-location">' + hlText(locStr(run), searchQuery) + '</div>' +
           runTags(run) +
         '</div>' +
         (run.medal ? '<img class="run-medal" src="' + run.medal + '" alt="medal" loading="lazy" onclick="event.stopPropagation()">' : '') +
