@@ -444,12 +444,16 @@ nav button.active { background: var(--accent); color: #fff; }
 .filter-bar {
   max-width: 880px;
   margin: 24px auto 0;
-  padding: 0 24px;
+  padding: 0 24px 4px;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   gap: 10px;
   align-items: center;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.filter-bar::-webkit-scrollbar { display: none; }
 
 .filter-group {
   display: flex;
@@ -492,7 +496,7 @@ nav button.active { background: var(--accent); color: #fff; }
   padding: 5px 12px;
   cursor: pointer;
   transition: all 0.15s;
-  margin-left: auto;
+  flex-shrink: 0;
 }
 #filter-reset:hover { border-color: var(--accent); color: var(--accent); }
 
@@ -818,7 +822,6 @@ nav button.active { background: var(--accent); color: #fff; }
   .filter-bar { padding: 0 12px; margin-top: 14px; gap: 8px; }
   .filter-bar select,
   .filter-bar input[type="text"] { font-size: 13px; max-width: 120px; }
-  #filter-reset { margin-left: 0; }
 
   /* Chart */
   .chart-wrap { padding: 0 12px; }
