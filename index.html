@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sergey's Running Log</title>
+<meta name="description" content="Personal running log — race results, personal bests, and training activity stats for Sergey Filippovich.">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Sergey's Running Log">
+<meta property="og:description" content="Race results, personal bests, and Garmin training stats — all in one place.">
+<meta property="og:url" content="https://running-records-lac.vercel.app/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Sergey's Running Log">
+<meta name="twitter:description" content="Race results, personal bests, and Garmin training stats — all in one place.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23e8521b'/><text x='16' y='23' font-size='20' text-anchor='middle'>🏃</text></svg>">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -13,17 +22,19 @@
   --bg: #f0ede8;
   --card: #ffffff;
   --text: #1a1a1a;
-  --muted: #888;
+  --muted: #6b6b6b;
   --border: #e5e1da;
   --shadow: 0 2px 16px rgba(0,0,0,0.07);
+  --subtle: #f5f3ef;
 }
 :root.dark {
   --bg: #141414;
   --card: #1e1e1e;
   --text: #e8e4de;
-  --muted: #777;
+  --muted: #999;
   --border: #2e2e2e;
   --shadow: 0 2px 16px rgba(0,0,0,0.4);
+  --subtle: #252525;
 }
 
 body {
@@ -119,7 +130,7 @@ nav button.active { background: var(--accent); color: #fff; }
   cursor: pointer;
   user-select: none;
 }
-.run-top:hover { background: #fafaf8; }
+.run-top:hover { background: var(--subtle); }
 
 .run-meta { flex: 1 1 auto; }
 
@@ -231,7 +242,7 @@ nav button.active { background: var(--accent); color: #fff; }
 .expand-row {
   border-top: 1px solid var(--border);
   padding: 0 24px;
-  background: #fafaf8;
+  background: var(--subtle);
 }
 .expand-btn {
   display: block;
@@ -253,7 +264,7 @@ nav button.active { background: var(--accent); color: #fff; }
   display: none;
   padding: 20px 24px;
   border-top: 1px solid var(--border);
-  background: #fafaf8;
+  background: var(--subtle);
 }
 .run-details.open { display: block; }
 
@@ -337,12 +348,13 @@ nav button.active { background: var(--accent); color: #fff; }
 .pb-prog {
   font-size: 13px;
   font-weight: 700;
-  color: #2a9d4e;
+  color: #1a7a3a;
   background: #e8f8ee;
   border-radius: 20px;
   padding: 3px 10px;
   white-space: nowrap;
 }
+:root.dark .pb-prog { color: #6dba6d; background: rgba(45,106,45,.15); }
 
 .pb-stats {
   display: grid;
@@ -704,7 +716,8 @@ nav button.active { background: var(--accent); color: #fff; }
   border: 1px solid var(--border);
   white-space: nowrap;
 }
-.act-type.trail { background: #edf7ed; color: #2d6a2d; border-color: #a5c8a5; }
+.act-type.trail { background: #edf7ed; color: #1e5c1e; border-color: #a5c8a5; }
+:root.dark .act-type.trail { background: rgba(45,106,45,.15); color: #6dba6d; border-color: rgba(45,106,45,.4); }
 
 .act-stat { display: flex; flex-direction: column; }
 .act-stat-val {
@@ -844,6 +857,8 @@ nav button.active { background: var(--accent); color: #fff; }
   </button>
 </header>
 
+<main>
+
 <!-- Lightbox -->
 <div id="lightbox" onclick="closeLb()">
   <button id="lb-close" onclick="closeLb()">×</button>
@@ -854,20 +869,20 @@ nav button.active { background: var(--accent); color: #fff; }
 
 <div id="runs-filterbar" class="filter-bar">
   <div class="filter-group">
-    <span class="filter-label" id="flabel-year"></span>
+    <label class="filter-label" for="filter-year" id="flabel-year"></label>
     <select id="filter-year" onchange="applyFilters()"></select>
   </div>
 
   <div class="filter-group">
-    <span class="filter-label" id="flabel-distance"></span>
+    <label class="filter-label" for="filter-distance" id="flabel-distance"></label>
     <select id="filter-distance" onchange="applyFilters()"></select>
   </div>
   <div class="filter-group">
-    <span class="filter-label" id="flabel-dtype"></span>
+    <label class="filter-label" for="filter-dtype" id="flabel-dtype"></label>
     <select id="filter-dtype" onchange="applyFilters()"></select>
   </div>
   <div class="filter-group">
-    <span class="filter-label" id="flabel-search"></span>
+    <label class="filter-label" for="filter-search" id="flabel-search"></label>
     <input type="text" id="filter-search" oninput="applyFilters()" placeholder="…">
   </div>
   <button id="filter-reset" onclick="resetFilters()"></button>
@@ -880,7 +895,7 @@ nav button.active { background: var(--accent); color: #fff; }
   <div class="chart-card">
     <div class="chart-header">
       <div class="filter-group">
-        <span class="filter-label" id="pbc-label-dist"></span>
+        <label class="filter-label" for="pbc-distance" id="pbc-label-dist"></label>
         <select id="pbc-distance" onchange="renderPBChart()"></select>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
@@ -905,11 +920,11 @@ nav button.active { background: var(--accent); color: #fff; }
       <button class="chart-toggle-btn" id="act-chart-toggle" onclick="toggleActChart()">▾</button>
       <div class="act-controls">
         <div class="filter-group">
-          <span class="filter-label" id="actl-type"></span>
+          <label class="filter-label" for="act-type" id="actl-type"></label>
           <select id="act-type" onchange="renderActivities()"></select>
         </div>
         <div class="filter-group">
-          <span class="filter-label" id="actl-metric"></span>
+          <label class="filter-label" for="act-metric" id="actl-metric"></label>
           <select id="act-metric" onchange="renderActivities()">
             <option value="distance" id="aom-distance"></option>
             <option value="runs"     id="aom-runs"></option>
@@ -917,7 +932,7 @@ nav button.active { background: var(--accent); color: #fff; }
           </select>
         </div>
         <div class="filter-group">
-          <span class="filter-label" id="actl-period"></span>
+          <label class="filter-label" for="act-period" id="actl-period"></label>
           <select id="act-period" onchange="onActPeriodChange()">
             <option value="week"       id="aop-week"></option>
             <option value="curr_month" id="aop-curr_month"></option>
@@ -948,7 +963,7 @@ nav button.active { background: var(--accent); color: #fff; }
       <button class="chart-toggle-btn" id="cmp-chart-toggle" onclick="toggleCmpChart()">▾</button>
       <span class="cmp-title-lbl" id="cmpl-title"></span>
       <div class="cmp-head-controls">
-        <span class="filter-label" id="cmpl-period"></span>
+        <label class="filter-label" for="cmp-period" id="cmpl-period"></label>
         <select id="cmp-period" onchange="onCmpPeriodChange()">
           <option value="week"   id="cop-week"></option>
           <option value="month"  id="cop-month"></option>
@@ -985,6 +1000,8 @@ nav button.active { background: var(--accent); color: #fff; }
 
   <div id="act-list"></div>
 </div>
+
+</main>
 
 <script src="data/data.js"></script>
 <script src="data/activities.js" onerror="void 0"></script>
