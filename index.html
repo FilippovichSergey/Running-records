@@ -881,20 +881,20 @@ nav button.active { background: var(--accent); color: #fff; }
 <div id="runs-filterbar" class="filter-bar">
   <div class="filter-group">
     <label class="filter-label" for="filter-year" id="flabel-year"></label>
-    <select id="filter-year" onchange="applyFilters()"></select>
+    <select id="filter-year" onchange="applyFilters('year')"></select>
   </div>
 
   <div class="filter-group">
     <label class="filter-label" for="filter-distance" id="flabel-distance"></label>
-    <select id="filter-distance" onchange="applyFilters()"></select>
+    <select id="filter-distance" onchange="applyFilters('distance')"></select>
   </div>
   <div class="filter-group">
     <label class="filter-label" for="filter-dtype" id="flabel-dtype"></label>
-    <select id="filter-dtype" onchange="applyFilters()"></select>
+    <select id="filter-dtype" onchange="applyFilters('dtype')"></select>
   </div>
   <div class="filter-group">
     <label class="filter-label" for="filter-search" id="flabel-search"></label>
-    <input type="text" id="filter-search" oninput="applyFilters()" placeholder="…">
+    <input type="text" id="filter-search" oninput="applyFilters('search')" placeholder="…">
   </div>
   <button id="filter-reset" onclick="resetFilters()"></button>
 </div>
@@ -1428,7 +1428,31 @@ function buildFilterOptions() {
   document.getElementById('filter-reset').textContent    = t('filter_reset');
 }
 
-function applyFilters() {
+function repopulateDependent(year) {
+  var pool = year ? RUNS.filter(function(r) { return r.date.slice(0, 4) === year; }) : RUNS;
+
+  var dSel  = document.getElementById('filter-distance');
+  var dtSel = document.getElementById('filter-dtype');
+  var dVal  = dSel.value, dtVal = dtSel.value;
+
+  var distances = [...new Set(pool.map(function(r) { return r.distance_km; }))].sort(function(a, b) { return a - b; });
+  dSel.innerHTML = '<option value="">' + t('all_distances') + '</option>' +
+    distances.map(function(d) { return '<option value="' + d + '">' + d + ' ' + t('km') + '</option>'; }).join('');
+  if (dVal && distances.includes(parseFloat(dVal))) dSel.value = dVal;
+
+  var usedKeys = new Set(pool.map(function(r) { var dt = getDistanceType(r); return dt ? dt.key : ''; }));
+  dtSel.innerHTML = '<option value="">' + t('all_types') + '</option>' +
+    DTYPE_DEFS.filter(function(d) { return usedKeys.has(d.key); })
+              .map(function(d) { return '<option value="' + d.key + '">' + t(d.tag) + '</option>'; }).join('');
+  if (dtVal && usedKeys.has(dtVal)) dtSel.value = dtVal;
+}
+
+function applyFilters(active) {
+  if (active === 'year')     { repopulateDependent(document.getElementById('filter-year').value); document.getElementById('filter-distance').value = ''; document.getElementById('filter-dtype').value = ''; document.getElementById('filter-search').value = ''; }
+  if (active === 'distance') { document.getElementById('filter-dtype').value = ''; document.getElementById('filter-search').value = ''; }
+  if (active === 'dtype')    { document.getElementById('filter-distance').value = ''; document.getElementById('filter-search').value = ''; }
+  if (active === 'search')   { document.getElementById('filter-distance').value = ''; document.getElementById('filter-dtype').value = ''; }
+
   var year     = document.getElementById('filter-year').value;
   var distance = document.getElementById('filter-distance').value;
   var dtype    = document.getElementById('filter-dtype').value;
