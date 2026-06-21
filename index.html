@@ -458,6 +458,7 @@ nav button.active { background: var(--accent); color: #fff; }
   scrollbar-width: none;
 }
 .filter-bar::-webkit-scrollbar { display: none; }
+.filter-bar::after { content: ''; flex-shrink: 0; width: 24px; }
 
 .filter-group {
   display: flex;
