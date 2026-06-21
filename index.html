@@ -899,6 +899,10 @@ nav button.active { background: var(--accent); color: #fff; }
     <label class="filter-label" for="filter-search" id="flabel-search"></label>
     <input type="text" id="filter-search" oninput="applyFilters('search')" placeholder="…">
   </div>
+  <div class="filter-group">
+    <label class="filter-label" for="filter-trail" id="flabel-trail"></label>
+    <select id="filter-trail" onchange="applyFilters('trail')"></select>
+  </div>
   <button id="filter-reset" onclick="resetFilters()"></button>
 </div>
 <div id="runs-count-bar"></div>
@@ -1062,6 +1066,10 @@ const I18N = {
     dist_10_42:      "10 – 42 km",
     dist_gt42:       "> 42 km",
     dist_custom:     "Custom",
+    filter_trail:    "Trail",
+    trail_all:       "All",
+    trail_yes:       "Trail",
+    trail_no:        "Non-trail",
     all_types:       "All types",
     runs_shown:     function(n, t) { return n + ' / ' + t + ' runs'; },
     photos_details: "Photos & details",
@@ -1154,6 +1162,10 @@ const I18N = {
     dist_10_42:      "10 – 42 км",
     dist_gt42:       "> 42 км",
     dist_custom:     "Адвольная",
+    filter_trail:    "Трэйл",
+    trail_all:       "Усе",
+    trail_yes:       "Трэйл",
+    trail_no:        "Не трэйл",
     all_types:       "Усе тыпы",
     runs_shown:     function(n, t) { return n + ' / ' + t + ' забегаў'; },
     photos_details: "Фота і падрабязнасці",
@@ -1458,6 +1470,13 @@ function buildFilterOptions() {
   document.getElementById('flabel-distance').textContent = t('filter_distance');
   document.getElementById('flabel-dtype').textContent    = t('filter_dtype');
   document.getElementById('flabel-search').textContent   = t('filter_search');
+  document.getElementById('flabel-trail').textContent    = t('filter_trail');
+  var trSel = document.getElementById('filter-trail');
+  var trVal = trSel.value;
+  trSel.innerHTML = '<option value="">' + t('trail_all') + '</option>' +
+    '<option value="yes">' + t('trail_yes') + '</option>' +
+    '<option value="no">'  + t('trail_no')  + '</option>';
+  if (trVal) trSel.value = trVal;
   document.getElementById('filter-reset').textContent    = t('filter_reset');
 }
 
@@ -1477,22 +1496,25 @@ function repopulateDependent(year) {
 }
 
 function applyFilters(active) {
-  if (active === 'year')     { repopulateDependent(document.getElementById('filter-year').value); document.getElementById('filter-distance').value = ''; document.getElementById('filter-dtype').value = ''; document.getElementById('filter-search').value = ''; }
+  if (active === 'year')     { repopulateDependent(document.getElementById('filter-year').value); document.getElementById('filter-distance').value = ''; document.getElementById('filter-dtype').value = ''; document.getElementById('filter-search').value = ''; document.getElementById('filter-trail').value = ''; }
   if (active === 'distance') {
     var customInput = document.getElementById('filter-dist-custom');
     var isCustom = document.getElementById('filter-distance').value === 'custom';
     customInput.style.display = isCustom ? '' : 'none';
     if (!isCustom) customInput.value = '';
-    document.getElementById('filter-dtype').value = '';
+    document.getElementById('filter-dtype').value  = '';
     document.getElementById('filter-search').value = '';
+    document.getElementById('filter-trail').value  = '';
   }
-  if (active === 'dtype')    { document.getElementById('filter-distance').value = ''; document.getElementById('filter-search').value = ''; }
-  if (active === 'search')   { document.getElementById('filter-distance').value = ''; document.getElementById('filter-dtype').value = ''; }
+  if (active === 'dtype')  { document.getElementById('filter-distance').value = ''; document.getElementById('filter-search').value = ''; document.getElementById('filter-trail').value = ''; }
+  if (active === 'search') { document.getElementById('filter-distance').value = ''; document.getElementById('filter-dtype').value  = ''; document.getElementById('filter-trail').value  = ''; }
+  if (active === 'trail')  { document.getElementById('filter-distance').value = ''; document.getElementById('filter-dtype').value  = ''; document.getElementById('filter-search').value = ''; }
 
   var year     = document.getElementById('filter-year').value;
   var distance = document.getElementById('filter-distance').value;
   var dtype    = document.getElementById('filter-dtype').value;
   var search   = document.getElementById('filter-search').value.trim().toLowerCase();
+  var trail    = document.getElementById('filter-trail').value;
 
   var filtered = RUNS.filter(function(r) {
     if (year     && r.date.slice(0, 4) !== year)               return false;
@@ -1503,6 +1525,8 @@ function applyFilters(active) {
     } else if (distance && !distRangeTest(r, distance))        return false;
     if (dtype    && getDistanceType(r).key !== dtype)          return false;
     if (search   && !locStr(r).toLowerCase().includes(search)) return false;
+    if (trail === 'yes' && !(r.elevation > 0))                 return false;
+    if (trail === 'no'  &&   r.elevation > 0)                  return false;
     return true;
   });
 
@@ -1514,8 +1538,11 @@ function applyFilters(active) {
 function resetFilters() {
   document.getElementById('filter-year').value     = '';
   document.getElementById('filter-distance').value = '';
+  document.getElementById('filter-dist-custom').value  = '';
+  document.getElementById('filter-dist-custom').style.display = 'none';
   document.getElementById('filter-dtype').value    = '';
   document.getElementById('filter-search').value   = '';
+  document.getElementById('filter-trail').value    = '';
   applyFilters();
 }
 
