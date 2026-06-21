@@ -1054,6 +1054,10 @@ const I18N = {
     filter_reset:    "Reset",
     all_years:       "All years",
     all_distances:   "All distances",
+    dist_lt5:        "< 5 km",
+    dist_5_10:       "5 – 9.99 km",
+    dist_10_42:      "10 – 42 km",
+    dist_gt42:       "> 42 km",
     all_types:       "All types",
     runs_shown:     function(n, t) { return n + ' / ' + t + ' runs'; },
     photos_details: "Photos & details",
@@ -1141,6 +1145,10 @@ const I18N = {
     filter_reset:    "Скінуць",
     all_years:       "Усе гады",
     all_distances:   "Усе адлегласці",
+    dist_lt5:        "< 5 км",
+    dist_5_10:       "5 – 9.99 км",
+    dist_10_42:      "10 – 42 км",
+    dist_gt42:       "> 42 км",
     all_types:       "Усе тыпы",
     runs_shown:     function(n, t) { return n + ' / ' + t + ' забегаў'; },
     photos_details: "Фота і падрабязнасці",
@@ -1396,10 +1404,29 @@ function renderPBChart() {
 
 // ── Filters ───────────────────────────────────────────────────
 
-function buildFilterOptions() {
-  var years     = [...new Set(RUNS.map(r => r.date.slice(0, 4)))].sort().reverse();
+var DIST_RANGES = [
+  { key: 'lt5',   label: 'dist_lt5',   test: function(d) { return d < 5; } },
+  { key: '5_10',  label: 'dist_5_10',  test: function(d) { return d >= 5 && d < 10; } },
+  { key: '10_42', label: 'dist_10_42', test: function(d) { return d >= 10 && d <= 42; } },
+  { key: 'gt42',  label: 'dist_gt42',  test: function(d) { return d > 42; } },
+];
 
-  var distances = [...new Set(RUNS.map(r => r.distance_km))].sort((a, b) => a - b);
+function distRangeTest(run, rangeKey) {
+  var r = DIST_RANGES.find(function(r) { return r.key === rangeKey; });
+  return r ? r.test(run.distance_km) : true;
+}
+
+function buildDistOptions(pool, dSel, keepVal) {
+  var usedRanges = DIST_RANGES.filter(function(r) {
+    return pool.some(function(run) { return r.test(run.distance_km); });
+  });
+  dSel.innerHTML = '<option value="">' + t('all_distances') + '</option>' +
+    usedRanges.map(function(r) { return '<option value="' + r.key + '">' + t(r.label) + '</option>'; }).join('');
+  if (keepVal && usedRanges.some(function(r) { return r.key === keepVal; })) dSel.value = keepVal;
+}
+
+function buildFilterOptions() {
+  var years = [...new Set(RUNS.map(r => r.date.slice(0, 4)))].sort().reverse();
 
   var ySel = document.getElementById('filter-year');
   var dSel = document.getElementById('filter-distance');
@@ -1407,8 +1434,7 @@ function buildFilterOptions() {
 
   ySel.innerHTML = '<option value="">' + t('all_years') + '</option>' +
     years.map(y => '<option value="' + y + '">' + y + '</option>').join('');
-  dSel.innerHTML = '<option value="">' + t('all_distances') + '</option>' +
-    distances.map(d => '<option value="' + d + '">' + d + ' ' + t('km') + '</option>').join('');
+  buildDistOptions(RUNS, dSel, dVal);
 
   var dtSel = document.getElementById('filter-dtype');
   var dtVal = dtSel.value;
@@ -1419,7 +1445,6 @@ function buildFilterOptions() {
   if (dtVal) dtSel.value = dtVal;
 
   if (yVal) ySel.value = yVal;
-  if (dVal) dSel.value = dVal;
 
   document.getElementById('flabel-year').textContent     = t('filter_year');
   document.getElementById('flabel-distance').textContent = t('filter_distance');
@@ -1429,16 +1454,12 @@ function buildFilterOptions() {
 }
 
 function repopulateDependent(year) {
-  var pool = year ? RUNS.filter(function(r) { return r.date.slice(0, 4) === year; }) : RUNS;
-
+  var pool  = year ? RUNS.filter(function(r) { return r.date.slice(0, 4) === year; }) : RUNS;
   var dSel  = document.getElementById('filter-distance');
   var dtSel = document.getElementById('filter-dtype');
   var dVal  = dSel.value, dtVal = dtSel.value;
 
-  var distances = [...new Set(pool.map(function(r) { return r.distance_km; }))].sort(function(a, b) { return a - b; });
-  dSel.innerHTML = '<option value="">' + t('all_distances') + '</option>' +
-    distances.map(function(d) { return '<option value="' + d + '">' + d + ' ' + t('km') + '</option>'; }).join('');
-  if (dVal && distances.includes(parseFloat(dVal))) dSel.value = dVal;
+  buildDistOptions(pool, dSel, dVal);
 
   var usedKeys = new Set(pool.map(function(r) { var dt = getDistanceType(r); return dt ? dt.key : ''; }));
   dtSel.innerHTML = '<option value="">' + t('all_types') + '</option>' +
@@ -1460,7 +1481,7 @@ function applyFilters(active) {
 
   var filtered = RUNS.filter(function(r) {
     if (year     && r.date.slice(0, 4) !== year)               return false;
-    if (distance && r.distance_km !== parseFloat(distance))    return false;
+    if (distance && !distRangeTest(r, distance))               return false;
     if (dtype    && getDistanceType(r).key !== dtype)          return false;
     if (search   && !locStr(r).toLowerCase().includes(search)) return false;
     return true;
