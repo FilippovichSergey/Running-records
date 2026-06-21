@@ -887,6 +887,9 @@ nav button.active { background: var(--accent); color: #fff; }
   <div class="filter-group">
     <label class="filter-label" for="filter-distance" id="flabel-distance"></label>
     <select id="filter-distance" onchange="applyFilters('distance')"></select>
+    <input type="number" id="filter-dist-custom" min="0" step="0.01"
+      style="display:none;width:80px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:13px;padding:5px 8px;outline:none"
+      oninput="applyFilters('distance')" placeholder="km">
   </div>
   <div class="filter-group">
     <label class="filter-label" for="filter-dtype" id="flabel-dtype"></label>
@@ -1058,6 +1061,7 @@ const I18N = {
     dist_5_10:       "5 – 9.99 km",
     dist_10_42:      "10 – 42 km",
     dist_gt42:       "> 42 km",
+    dist_custom:     "Custom",
     all_types:       "All types",
     runs_shown:     function(n, t) { return n + ' / ' + t + ' runs'; },
     photos_details: "Photos & details",
@@ -1149,6 +1153,7 @@ const I18N = {
     dist_5_10:       "5 – 9.99 км",
     dist_10_42:      "10 – 42 км",
     dist_gt42:       "> 42 км",
+    dist_custom:     "Адвольная",
     all_types:       "Усе тыпы",
     runs_shown:     function(n, t) { return n + ' / ' + t + ' забегаў'; },
     photos_details: "Фота і падрабязнасці",
@@ -1421,8 +1426,11 @@ function buildDistOptions(pool, dSel, keepVal) {
     return pool.some(function(run) { return r.test(run.distance_km); });
   });
   dSel.innerHTML = '<option value="">' + t('all_distances') + '</option>' +
-    usedRanges.map(function(r) { return '<option value="' + r.key + '">' + t(r.label) + '</option>'; }).join('');
-  if (keepVal && usedRanges.some(function(r) { return r.key === keepVal; })) dSel.value = keepVal;
+    usedRanges.map(function(r) { return '<option value="' + r.key + '">' + t(r.label) + '</option>'; }).join('') +
+    '<option value="custom">' + t('dist_custom') + '</option>';
+  if (keepVal && (keepVal === 'custom' || usedRanges.some(function(r) { return r.key === keepVal; }))) dSel.value = keepVal;
+  var customInput = document.getElementById('filter-dist-custom');
+  if (customInput) customInput.style.display = (dSel.value === 'custom') ? '' : 'none';
 }
 
 function buildFilterOptions() {
@@ -1470,7 +1478,14 @@ function repopulateDependent(year) {
 
 function applyFilters(active) {
   if (active === 'year')     { repopulateDependent(document.getElementById('filter-year').value); document.getElementById('filter-distance').value = ''; document.getElementById('filter-dtype').value = ''; document.getElementById('filter-search').value = ''; }
-  if (active === 'distance') { document.getElementById('filter-dtype').value = ''; document.getElementById('filter-search').value = ''; }
+  if (active === 'distance') {
+    var customInput = document.getElementById('filter-dist-custom');
+    var isCustom = document.getElementById('filter-distance').value === 'custom';
+    customInput.style.display = isCustom ? '' : 'none';
+    if (!isCustom) customInput.value = '';
+    document.getElementById('filter-dtype').value = '';
+    document.getElementById('filter-search').value = '';
+  }
   if (active === 'dtype')    { document.getElementById('filter-distance').value = ''; document.getElementById('filter-search').value = ''; }
   if (active === 'search')   { document.getElementById('filter-distance').value = ''; document.getElementById('filter-dtype').value = ''; }
 
@@ -1481,7 +1496,11 @@ function applyFilters(active) {
 
   var filtered = RUNS.filter(function(r) {
     if (year     && r.date.slice(0, 4) !== year)               return false;
-    if (distance && !distRangeTest(r, distance))               return false;
+    if (distance === 'custom') {
+      var cv = parseFloat(document.getElementById('filter-dist-custom').value);
+      if (!isNaN(cv) && Math.abs(r.distance_km - cv) > 0.05) return false;
+      if (isNaN(cv)) return false;
+    } else if (distance && !distRangeTest(r, distance))        return false;
     if (dtype    && getDistanceType(r).key !== dtype)          return false;
     if (search   && !locStr(r).toLowerCase().includes(search)) return false;
     return true;
