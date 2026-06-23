@@ -170,34 +170,37 @@ class RunTab(tk.Frame):
         today = date.today().isoformat()
 
         self.v_date        = labeled_entry(self, "Date (YYYY-MM-DD)", 0, today)
-        self.v_location    = labeled_entry(self, "Location (EN)", 1)
-        self.v_location_be = labeled_entry(self, "Location (BE)", 2)
-        self.v_dist        = labeled_entry(self, "Distance (km)", 3)
-        self.v_total_time  = labeled_entry(self, "Total time (H:MM:SS)", 4)
-        self.v_hr_avg      = labeled_entry(self, "Avg HR (bpm)", 5)
-        self.v_hr_max      = labeled_entry(self, "Max HR (bpm)", 6)
-        self.v_elevation   = labeled_entry(self, "Elevation (m)", 7, "0")
+        self.v_race        = labeled_entry(self, "Race name", 1)
+        self.v_location    = labeled_entry(self, "Location (EN)", 2)
+        self.v_location_be = labeled_entry(self, "Location (BE)", 3)
+        self.v_country     = labeled_entry(self, "Country (EN)", 4)
+        self.v_country_be  = labeled_entry(self, "Country (BE)", 5)
+        self.v_dist        = labeled_entry(self, "Distance (km)", 6)
+        self.v_total_time  = labeled_entry(self, "Total time (H:MM:SS)", 7)
+        self.v_hr_avg      = labeled_entry(self, "Avg HR (bpm)", 8)
+        self.v_hr_max      = labeled_entry(self, "Max HR (bpm)", 9)
+        self.v_elevation   = labeled_entry(self, "Elevation (m)", 10, "0")
 
-        tk.Label(self, text="Sneakers", anchor="e", width=16).grid(row=8, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Sneakers", anchor="e", width=16).grid(row=11, column=0, sticky="e", **PAD)
         self.v_sneakers = tk.StringVar()
         self.cb_sneakers_run = ttk.Combobox(self, textvariable=self.v_sneakers, width=ENTRY_W - 2)
         self.cb_sneakers_run['values'] = load_sneakers()
-        self.cb_sneakers_run.grid(row=8, column=1, sticky="ew", **PAD)
+        self.cb_sneakers_run.grid(row=11, column=1, sticky="ew", **PAD)
 
-        self.v_video = labeled_entry(self, "Video link", 9)
+        self.v_video = labeled_entry(self, "Video link", 12)
 
-        tk.Label(self, text="Medal photo", anchor="e", width=16).grid(row=10, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Medal photo", anchor="e", width=16).grid(row=13, column=0, sticky="e", **PAD)
         medal_frame = tk.Frame(self)
-        medal_frame.grid(row=10, column=1, sticky="ew", **PAD)
+        medal_frame.grid(row=13, column=1, sticky="ew", **PAD)
         medal_frame.columnconfigure(0, weight=1)
         self.v_medal = tk.StringVar()
         tk.Entry(medal_frame, textvariable=self.v_medal).grid(row=0, column=0, sticky="ew")
         tk.Button(medal_frame, text="Browse…", command=self._browse_medal).grid(row=0, column=1, padx=(6, 0))
 
         # Photos folder row
-        tk.Label(self, text="Photos folder", anchor="e", width=16).grid(row=11, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Photos folder", anchor="e", width=16).grid(row=14, column=0, sticky="e", **PAD)
         ph_frame = tk.Frame(self)
-        ph_frame.grid(row=11, column=1, sticky="ew", **PAD)
+        ph_frame.grid(row=14, column=1, sticky="ew", **PAD)
         ph_frame.columnconfigure(0, weight=1)
         self.v_photos = tk.StringVar()
         tk.Entry(ph_frame, textvariable=self.v_photos).grid(row=0, column=0, sticky="ew")
@@ -205,7 +208,7 @@ class RunTab(tk.Frame):
 
         tk.Button(self, text="💾  Save Run", command=self._save,
                   bg="#e8521b", fg="white", font=("", 11, "bold"),
-                  padx=18, pady=6).grid(row=12, column=0, columnspan=2, pady=16)
+                  padx=18, pady=6).grid(row=15, column=0, columnspan=2, pady=16)
 
     def _browse(self):
         folder = filedialog.askdirectory(title="Select photos folder")
@@ -227,8 +230,11 @@ class RunTab(tk.Frame):
 
         run = {
             "date":        self.v_date.get().strip(),
+            "race_name":   self.v_race.get().strip(),
             "location":    self.v_location.get().strip(),
             "location_be": self.v_location_be.get().strip(),
+            "country":     self.v_country.get().strip(),
+            "country_be":  self.v_country_be.get().strip(),
             "distance_km": dist,
             "total_time":  self.v_total_time.get().strip(),
             "hr_avg":      int(self.v_hr_avg.get() or 0),
@@ -264,44 +270,47 @@ class PBTab(tk.Frame):
         self.v_distance_km = labeled_entry(self, "Distance (km)", 1)
         self.v_total_time  = labeled_entry(self, "Total time (H:MM:SS)", 2)
         self.v_date        = labeled_entry(self, "Date (YYYY-MM-DD)", 3, today)
-        self.v_location    = labeled_entry(self, "Location (EN)", 4)
-        self.v_location_be = labeled_entry(self, "Location (BE)", 5)
-        self.v_hr_avg      = labeled_entry(self, "Avg HR (bpm)", 6)
-        self.v_hr_max      = labeled_entry(self, "Max HR (bpm)", 7)
+        self.v_race        = labeled_entry(self, "Race name", 4)
+        self.v_location    = labeled_entry(self, "Location (EN)", 5)
+        self.v_location_be = labeled_entry(self, "Location (BE)", 6)
+        self.v_country     = labeled_entry(self, "Country (EN)", 7)
+        self.v_country_be  = labeled_entry(self, "Country (BE)", 8)
+        self.v_hr_avg      = labeled_entry(self, "Avg HR (bpm)", 9)
+        self.v_hr_max      = labeled_entry(self, "Max HR (bpm)", 10)
 
-        tk.Label(self, text="Sneakers", anchor="e", width=16).grid(row=8, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Sneakers", anchor="e", width=16).grid(row=11, column=0, sticky="e", **PAD)
         self.v_sneakers = tk.StringVar()
         self.cb_sneakers_pb = ttk.Combobox(self, textvariable=self.v_sneakers, width=ENTRY_W - 2)
         self.cb_sneakers_pb['values'] = load_sneakers()
-        self.cb_sneakers_pb.grid(row=8, column=1, sticky="ew", **PAD)
+        self.cb_sneakers_pb.grid(row=11, column=1, sticky="ew", **PAD)
 
-        self.v_video = labeled_entry(self, "Video link", 9)
+        self.v_video = labeled_entry(self, "Video link", 12)
 
-        tk.Label(self, text="Medal photo", anchor="e", width=16).grid(row=10, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Medal photo", anchor="e", width=16).grid(row=13, column=0, sticky="e", **PAD)
         medal_frame = tk.Frame(self)
-        medal_frame.grid(row=10, column=1, sticky="ew", **PAD)
+        medal_frame.grid(row=13, column=1, sticky="ew", **PAD)
         medal_frame.columnconfigure(0, weight=1)
         self.v_medal = tk.StringVar()
         tk.Entry(medal_frame, textvariable=self.v_medal).grid(row=0, column=0, sticky="ew")
         tk.Button(medal_frame, text="Browse…", command=self._browse_medal).grid(row=0, column=1, padx=(6, 0))
 
-        tk.Label(self, text="Photos folder", anchor="e", width=16).grid(row=11, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Photos folder", anchor="e", width=16).grid(row=14, column=0, sticky="e", **PAD)
         ph_frame = tk.Frame(self)
-        ph_frame.grid(row=11, column=1, sticky="ew", **PAD)
+        ph_frame.grid(row=14, column=1, sticky="ew", **PAD)
         ph_frame.columnconfigure(0, weight=1)
         self.v_photos = tk.StringVar()
         tk.Entry(ph_frame, textvariable=self.v_photos).grid(row=0, column=0, sticky="ew")
         tk.Button(ph_frame, text="Browse…", command=self._browse).grid(row=0, column=1, padx=(6, 0))
 
-        tk.Label(self, text="Previous records", anchor="e", width=16).grid(row=12, column=0, sticky="ne", **PAD)
+        tk.Label(self, text="Previous records", anchor="e", width=16).grid(row=15, column=0, sticky="ne", **PAD)
         self.prev_text = tk.Text(self, height=4, width=ENTRY_W)
-        self.prev_text.grid(row=12, column=1, sticky="ew", **PAD)
+        self.prev_text.grid(row=15, column=1, sticky="ew", **PAD)
         tk.Label(self, text="Format: time|date|location\none per line",
-                 fg="grey", font=("", 8)).grid(row=13, column=1, sticky="w", padx=8)
+                 fg="grey", font=("", 8)).grid(row=16, column=1, sticky="w", padx=8)
 
         tk.Button(self, text="💾  Save Personal Best", command=self._save,
                   bg="#e8521b", fg="white", font=("", 11, "bold"),
-                  padx=18, pady=6).grid(row=14, column=0, columnspan=2, pady=16)
+                  padx=18, pady=6).grid(row=17, column=0, columnspan=2, pady=16)
 
     def _browse(self):
         folder = filedialog.askdirectory(title="Select photos folder")
@@ -334,8 +343,11 @@ class PBTab(tk.Frame):
             "distance_km":      dist_km,
             "total_time":       self.v_total_time.get().strip(),
             "date":             self.v_date.get().strip(),
+            "race_name":        self.v_race.get().strip(),
             "location":         self.v_location.get().strip(),
             "location_be":      self.v_location_be.get().strip(),
+            "country":          self.v_country.get().strip(),
+            "country_be":       self.v_country_be.get().strip(),
             "hr_avg":           int(self.v_hr_avg.get() or 0),
             "hr_max":           int(self.v_hr_max.get() or 0),
             "sneakers":         self.v_sneakers.get().strip(),
@@ -384,43 +396,46 @@ class EditRunTab(tk.Frame):
 
         # ── Fields ───────────────────────────────────────────────
         self.v_date        = labeled_entry(self, "Date (YYYY-MM-DD)", 2)
-        self.v_location    = labeled_entry(self, "Location (EN)", 3)
-        self.v_location_be = labeled_entry(self, "Location (BE)", 4)
-        self.v_dist        = labeled_entry(self, "Distance (km)", 5)
-        self.v_total_time  = labeled_entry(self, "Total time (H:MM:SS)", 6)
-        self.v_hr_avg      = labeled_entry(self, "Avg HR (bpm)", 7)
-        self.v_hr_max      = labeled_entry(self, "Max HR (bpm)", 8)
-        self.v_elevation   = labeled_entry(self, "Elevation (m)", 9)
+        self.v_race        = labeled_entry(self, "Race name", 3)
+        self.v_location    = labeled_entry(self, "Location (EN)", 4)
+        self.v_location_be = labeled_entry(self, "Location (BE)", 5)
+        self.v_country     = labeled_entry(self, "Country (EN)", 6)
+        self.v_country_be  = labeled_entry(self, "Country (BE)", 7)
+        self.v_dist        = labeled_entry(self, "Distance (km)", 8)
+        self.v_total_time  = labeled_entry(self, "Total time (H:MM:SS)", 9)
+        self.v_hr_avg      = labeled_entry(self, "Avg HR (bpm)", 10)
+        self.v_hr_max      = labeled_entry(self, "Max HR (bpm)", 11)
+        self.v_elevation   = labeled_entry(self, "Elevation (m)", 12)
 
-        tk.Label(self, text="Sneakers", anchor="e", width=16).grid(row=10, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Sneakers", anchor="e", width=16).grid(row=13, column=0, sticky="e", **PAD)
         self.v_sneakers = tk.StringVar()
         self.cb_sneakers = ttk.Combobox(self, textvariable=self.v_sneakers, width=ENTRY_W - 2)
         self.cb_sneakers['values'] = load_sneakers()
-        self.cb_sneakers.grid(row=10, column=1, sticky="ew", **PAD)
+        self.cb_sneakers.grid(row=13, column=1, sticky="ew", **PAD)
 
-        self.v_video = labeled_entry(self, "Video link", 11)
+        self.v_video = labeled_entry(self, "Video link", 14)
 
-        tk.Label(self, text="Medal photo", anchor="e", width=16).grid(row=12, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Medal photo", anchor="e", width=16).grid(row=15, column=0, sticky="e", **PAD)
         medal_frame = tk.Frame(self)
-        medal_frame.grid(row=12, column=1, sticky="ew", **PAD)
+        medal_frame.grid(row=15, column=1, sticky="ew", **PAD)
         medal_frame.columnconfigure(0, weight=1)
         self.v_medal = tk.StringVar()
         tk.Entry(medal_frame, textvariable=self.v_medal).grid(row=0, column=0, sticky="ew")
         tk.Button(medal_frame, text="Browse…", command=self._browse_medal).grid(row=0, column=1, padx=(6, 0))
 
-        tk.Label(self, text="Add photos folder", anchor="e", width=16).grid(row=13, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Add photos folder", anchor="e", width=16).grid(row=16, column=0, sticky="e", **PAD)
         ph_frame = tk.Frame(self)
-        ph_frame.grid(row=13, column=1, sticky="ew", **PAD)
+        ph_frame.grid(row=16, column=1, sticky="ew", **PAD)
         ph_frame.columnconfigure(0, weight=1)
         self.v_photos = tk.StringVar()
         tk.Entry(ph_frame, textvariable=self.v_photos).grid(row=0, column=0, sticky="ew")
         tk.Button(ph_frame, text="Browse…", command=self._browse).grid(row=0, column=1, padx=(6, 0))
 
         tk.Label(self, text="(leave blank to keep\nexisting photos)",
-                 fg="grey", font=("", 8)).grid(row=14, column=1, sticky="w", padx=8)
+                 fg="grey", font=("", 8)).grid(row=17, column=1, sticky="w", padx=8)
 
         btn_frame = tk.Frame(self)
-        btn_frame.grid(row=15, column=0, columnspan=2, pady=14)
+        btn_frame.grid(row=18, column=0, columnspan=2, pady=14)
         tk.Button(btn_frame, text="💾  Save Changes", command=self._save,
                   bg="#e8521b", fg="white", font=("", 11, "bold"),
                   padx=14, pady=6).pack(side="left", padx=6)
@@ -439,7 +454,8 @@ class EditRunTab(tk.Frame):
         self._clear_fields()
 
     def _clear_fields(self):
-        for v in (self.v_date, self.v_location, self.v_location_be, self.v_dist, self.v_total_time,
+        for v in (self.v_date, self.v_race, self.v_location, self.v_location_be,
+                  self.v_country, self.v_country_be, self.v_dist, self.v_total_time,
                   self.v_hr_avg, self.v_hr_max, self.v_elevation, self.v_sneakers, self.v_video,
                   self.v_medal, self.v_photos):
             v.set("")
@@ -451,8 +467,11 @@ class EditRunTab(tk.Frame):
         self.selected_index = sel[0]
         r = self.runs[self.selected_index]
         self.v_date.set(r.get("date", ""))
+        self.v_race.set(r.get("race_name", ""))
         self.v_location.set(r.get("location", ""))
         self.v_location_be.set(r.get("location_be", ""))
+        self.v_country.set(r.get("country", ""))
+        self.v_country_be.set(r.get("country_be", ""))
         self.v_dist.set(str(r.get("distance_km", "")))
         self.v_total_time.set(r.get("total_time", ""))
         self.v_hr_avg.set(str(r.get("hr_avg", "")))
@@ -487,8 +506,11 @@ class EditRunTab(tk.Frame):
 
         run = {
             "date":        self.v_date.get().strip(),
+            "race_name":   self.v_race.get().strip(),
             "location":    self.v_location.get().strip(),
             "location_be": self.v_location_be.get().strip(),
+            "country":     self.v_country.get().strip(),
+            "country_be":  self.v_country_be.get().strip(),
             "distance_km": dist,
             "total_time":  self.v_total_time.get().strip(),
             "hr_avg":      int(self.v_hr_avg.get() or 0),
@@ -571,43 +593,46 @@ class EditPBTab(tk.Frame):
         self.v_distance_km = labeled_entry(self, "Distance (km)", 3)
         self.v_total_time  = labeled_entry(self, "Total time (H:MM:SS)", 4)
         self.v_date        = labeled_entry(self, "Date (YYYY-MM-DD)", 5)
-        self.v_location    = labeled_entry(self, "Location (EN)", 6)
-        self.v_location_be = labeled_entry(self, "Location (BE)", 7)
-        self.v_hr_avg      = labeled_entry(self, "Avg HR (bpm)", 8)
-        self.v_hr_max      = labeled_entry(self, "Max HR (bpm)", 9)
+        self.v_race        = labeled_entry(self, "Race name", 6)
+        self.v_location    = labeled_entry(self, "Location (EN)", 7)
+        self.v_location_be = labeled_entry(self, "Location (BE)", 8)
+        self.v_country     = labeled_entry(self, "Country (EN)", 9)
+        self.v_country_be  = labeled_entry(self, "Country (BE)", 10)
+        self.v_hr_avg      = labeled_entry(self, "Avg HR (bpm)", 11)
+        self.v_hr_max      = labeled_entry(self, "Max HR (bpm)", 12)
 
-        tk.Label(self, text="Sneakers", anchor="e", width=16).grid(row=10, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Sneakers", anchor="e", width=16).grid(row=13, column=0, sticky="e", **PAD)
         self.v_sneakers = tk.StringVar()
         self.cb_sneakers = ttk.Combobox(self, textvariable=self.v_sneakers, width=ENTRY_W - 2)
         self.cb_sneakers['values'] = load_sneakers()
-        self.cb_sneakers.grid(row=10, column=1, sticky="ew", **PAD)
+        self.cb_sneakers.grid(row=13, column=1, sticky="ew", **PAD)
 
-        self.v_video = labeled_entry(self, "Video link", 11)
+        self.v_video = labeled_entry(self, "Video link", 14)
 
-        tk.Label(self, text="Medal photo", anchor="e", width=16).grid(row=12, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Medal photo", anchor="e", width=16).grid(row=15, column=0, sticky="e", **PAD)
         medal_frame = tk.Frame(self)
-        medal_frame.grid(row=12, column=1, sticky="ew", **PAD)
+        medal_frame.grid(row=15, column=1, sticky="ew", **PAD)
         medal_frame.columnconfigure(0, weight=1)
         self.v_medal = tk.StringVar()
         tk.Entry(medal_frame, textvariable=self.v_medal).grid(row=0, column=0, sticky="ew")
         tk.Button(medal_frame, text="Browse…", command=self._browse_medal).grid(row=0, column=1, padx=(6, 0))
 
-        tk.Label(self, text="Add photos folder", anchor="e", width=16).grid(row=13, column=0, sticky="e", **PAD)
+        tk.Label(self, text="Add photos folder", anchor="e", width=16).grid(row=16, column=0, sticky="e", **PAD)
         ph_frame = tk.Frame(self)
-        ph_frame.grid(row=13, column=1, sticky="ew", **PAD)
+        ph_frame.grid(row=16, column=1, sticky="ew", **PAD)
         ph_frame.columnconfigure(0, weight=1)
         self.v_photos = tk.StringVar()
         tk.Entry(ph_frame, textvariable=self.v_photos).grid(row=0, column=0, sticky="ew")
         tk.Button(ph_frame, text="Browse…", command=self._browse).grid(row=0, column=1, padx=(6, 0))
 
-        tk.Label(self, text="Previous records", anchor="e", width=16).grid(row=14, column=0, sticky="ne", **PAD)
+        tk.Label(self, text="Previous records", anchor="e", width=16).grid(row=17, column=0, sticky="ne", **PAD)
         self.prev_text = tk.Text(self, height=4, width=ENTRY_W)
-        self.prev_text.grid(row=14, column=1, sticky="ew", **PAD)
+        self.prev_text.grid(row=17, column=1, sticky="ew", **PAD)
         tk.Label(self, text="Format: time|date|location\none per line",
-                 fg="grey", font=("", 8)).grid(row=15, column=1, sticky="w", padx=8)
+                 fg="grey", font=("", 8)).grid(row=18, column=1, sticky="w", padx=8)
 
         btn_frame = tk.Frame(self)
-        btn_frame.grid(row=16, column=0, columnspan=2, pady=14)
+        btn_frame.grid(row=19, column=0, columnspan=2, pady=14)
         tk.Button(btn_frame, text="💾  Save Changes", command=self._save,
                   bg="#e8521b", fg="white", font=("", 11, "bold"),
                   padx=14, pady=6).pack(side="left", padx=6)
@@ -627,7 +652,8 @@ class EditPBTab(tk.Frame):
 
     def _clear_fields(self):
         for v in (self.v_distance, self.v_distance_km, self.v_total_time, self.v_date,
-                  self.v_location, self.v_location_be, self.v_hr_avg, self.v_hr_max,
+                  self.v_race, self.v_location, self.v_location_be, self.v_country,
+                  self.v_country_be, self.v_hr_avg, self.v_hr_max,
                   self.v_sneakers, self.v_video, self.v_medal, self.v_photos):
             v.set("")
         self.prev_text.delete("1.0", "end")
@@ -642,8 +668,11 @@ class EditPBTab(tk.Frame):
         self.v_distance_km.set(str(pb.get("distance_km", "")))
         self.v_total_time.set(pb.get("total_time", ""))
         self.v_date.set(pb.get("date", ""))
+        self.v_race.set(pb.get("race_name", ""))
         self.v_location.set(pb.get("location", ""))
         self.v_location_be.set(pb.get("location_be", ""))
+        self.v_country.set(pb.get("country", ""))
+        self.v_country_be.set(pb.get("country_be", ""))
         self.v_hr_avg.set(str(pb.get("hr_avg", "")))
         self.v_hr_max.set(str(pb.get("hr_max", "")))
         self.v_sneakers.set(pb.get("sneakers", ""))
@@ -689,12 +718,16 @@ class EditPBTab(tk.Frame):
             "distance_km":      dist_km,
             "total_time":       self.v_total_time.get().strip(),
             "date":             self.v_date.get().strip(),
+            "race_name":        self.v_race.get().strip(),
             "location":         self.v_location.get().strip(),
             "location_be":      self.v_location_be.get().strip(),
+            "country":          self.v_country.get().strip(),
+            "country_be":       self.v_country_be.get().strip(),
             "hr_avg":           int(self.v_hr_avg.get() or 0),
             "hr_max":           int(self.v_hr_max.get() or 0),
             "sneakers":         self.v_sneakers.get().strip(),
             "video":            self.v_video.get().strip(),
+            "medal":            old_pb.get("medal", ""),
             "photos":           old_pb.get("photos", []),
             "previous_records": self._parse_previous(),
         }
@@ -704,9 +737,14 @@ class EditPBTab(tk.Frame):
         if old_path != new_path and old_path.exists():
             old_path.unlink()
 
+        event_key = "pb_" + pb["distance"].lower().replace(" ", "_").replace("/", "")
+
+        new_medal = self.v_medal.get().strip()
+        if new_medal and new_medal != old_pb.get("medal", ""):
+            pb["medal"] = copy_medal(new_medal, event_key)
+
         new_folder = self.v_photos.get().strip()
         if new_folder:
-            event_key = "pb_" + pb["distance"].lower().replace(" ", "_").replace("/", "")
             new_photos = copy_photos(new_folder, event_key)
             pb["photos"] = pb["photos"] + new_photos
 
