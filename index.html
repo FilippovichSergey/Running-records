@@ -1510,18 +1510,7 @@ function buildDistOptions(pool, dSel, keepVal) {
 }
 
 function buildFilterOptions() {
-  var years = [...new Set(RUNS.map(r => r.date.slice(0, 4)))].sort().reverse();
-
-  var ySel = document.getElementById('filter-year');
-  var dSel = document.getElementById('filter-distance');
-  var yVal = ySel.value, dVal = dSel.value;
-
-  ySel.innerHTML = '<option value="">' + t('all_years') + '</option>' +
-    years.map(y => '<option value="' + y + '">' + y + '</option>').join('');
-  buildDistOptions(RUNS, dSel, dVal);
-
-  if (yVal) ySel.value = yVal;
-
+  // Static labels & placeholders only; option lists are built by rebuildFacets().
   document.getElementById('flabel-year').textContent     = t('filter_year');
   document.getElementById('flabel-distance').textContent = t('filter_distance');
   document.getElementById('flabel-search').textContent   = t('filter_search');
@@ -1529,19 +1518,67 @@ function buildFilterOptions() {
   document.getElementById('flabel-race').textContent     = t('filter_race');
   document.getElementById('filter-race').placeholder     = t('filter_race_ph');
   document.getElementById('flabel-trail').textContent    = t('filter_trail');
-  var trSel = document.getElementById('filter-trail');
-  var trVal = trSel.value;
-  trSel.innerHTML = '<option value="">' + t('trail_all') + '</option>' +
-    '<option value="yes">' + t('trail_yes') + '</option>' +
-    '<option value="no">'  + t('trail_no')  + '</option>';
-  if (trVal) trSel.value = trVal;
   document.getElementById('filter-reset').textContent    = t('filter_reset');
 }
 
-function repopulateDependent(year) {
-  var pool = year ? RUNS.filter(function(r) { return r.date.slice(0, 4) === year; }) : RUNS;
-  var dSel = document.getElementById('filter-distance');
-  buildDistOptions(pool, dSel, dSel.value);
+function currentFilters() {
+  var search = document.getElementById('filter-search').value.trim().toLowerCase();
+  if (search.length < 3) search = '';
+  var race = document.getElementById('filter-race').value.trim().toLowerCase();
+  if (race.length < 3) race = '';
+  return {
+    year:      document.getElementById('filter-year').value,
+    distance:  document.getElementById('filter-distance').value,
+    customVal: parseFloat(document.getElementById('filter-dist-custom').value),
+    search:    search,
+    race:      race,
+    trail:     document.getElementById('filter-trail').value,
+  };
+}
+
+// True if run r passes every active filter except `exclude` (used for faceting).
+function runPasses(r, f, exclude) {
+  if (exclude !== 'year'     && f.year && r.date.slice(0, 4) !== f.year) return false;
+  if (exclude !== 'distance' && f.distance) {
+    if (f.distance === 'custom') {
+      if (isNaN(f.customVal) || Math.abs(r.distance_km - f.customVal) > 0.05) return false;
+    } else if (!distRangeTest(r, f.distance)) return false;
+  }
+  if (exclude !== 'search' && f.search && !searchStr(r).includes(f.search)) return false;
+  if (exclude !== 'race'   && f.race   && (r.race_name || '').toLowerCase().indexOf(f.race) === -1) return false;
+  if (exclude !== 'trail'  && f.trail) {
+    if (f.trail === 'yes' && !(r.elevation > 0)) return false;
+    if (f.trail === 'no'  &&   r.elevation > 0)  return false;
+  }
+  return true;
+}
+
+// Each dropdown shows only options valid given the OTHER active filters.
+function rebuildFacets(f) {
+  // Year — runs matching all filters except Year
+  var ySel  = document.getElementById('filter-year');
+  var yPool = RUNS.filter(function(r) { return runPasses(r, f, 'year'); });
+  var years = [...new Set(yPool.map(function(r) { return r.date.slice(0, 4); }))];
+  if (f.year && years.indexOf(f.year) === -1) years.push(f.year);
+  years.sort().reverse();
+  ySel.innerHTML = '<option value="">' + t('all_years') + '</option>' +
+    years.map(function(y) { return '<option value="' + y + '">' + y + '</option>'; }).join('');
+  ySel.value = f.year;
+
+  // Distance — runs matching all filters except Distance (Custom always added)
+  var dSel  = document.getElementById('filter-distance');
+  var dPool = RUNS.filter(function(r) { return runPasses(r, f, 'distance'); });
+  buildDistOptions(dPool, dSel, f.distance);
+
+  // Trail — runs matching all filters except Trail
+  var trSel  = document.getElementById('filter-trail');
+  var trPool = RUNS.filter(function(r) { return runPasses(r, f, 'trail'); });
+  var hasYes = trPool.some(function(r) { return r.elevation > 0; });
+  var hasNo  = trPool.some(function(r) { return !(r.elevation > 0); });
+  trSel.innerHTML = '<option value="">' + t('trail_all') + '</option>' +
+    (hasYes || f.trail === 'yes' ? '<option value="yes">' + t('trail_yes') + '</option>' : '') +
+    (hasNo  || f.trail === 'no'  ? '<option value="no">'  + t('trail_no')  + '</option>' : '');
+  trSel.value = f.trail;
 }
 
 var _searchTimer;
@@ -1562,44 +1599,19 @@ function onRaceInput() {
   }, 300);
 }
 
-function applyFilters(active) {
-  if (active === 'year')     { repopulateDependent(document.getElementById('filter-year').value); document.getElementById('filter-distance').value = ''; document.getElementById('filter-search').value = ''; document.getElementById('filter-race').value = ''; document.getElementById('filter-trail').value = ''; }
-  if (active === 'distance') {
-    var customInput = document.getElementById('filter-dist-custom');
-    var isCustom = document.getElementById('filter-distance').value === 'custom';
-    customInput.style.display = isCustom ? '' : 'none';
-    if (!isCustom) customInput.value = '';
-    document.getElementById('filter-search').value = '';
-    document.getElementById('filter-race').value   = '';
-    document.getElementById('filter-trail').value  = '';
-  }
-  if (active === 'search') { document.getElementById('filter-distance').value = ''; document.getElementById('filter-race').value = ''; document.getElementById('filter-trail').value  = ''; }
-  if (active === 'race')   { document.getElementById('filter-distance').value = ''; document.getElementById('filter-search').value = ''; document.getElementById('filter-trail').value  = ''; }
-  if (active === 'trail')  { document.getElementById('filter-distance').value = ''; document.getElementById('filter-search').value = ''; document.getElementById('filter-race').value = ''; }
+function applyFilters() {
+  // Toggle the custom-distance input
+  var customInput = document.getElementById('filter-dist-custom');
+  var isCustom = document.getElementById('filter-distance').value === 'custom';
+  customInput.style.display = isCustom ? '' : 'none';
+  if (!isCustom) customInput.value = '';
 
-  var year     = document.getElementById('filter-year').value;
-  var distance = document.getElementById('filter-distance').value;
-  var search   = document.getElementById('filter-search').value.trim().toLowerCase();
-  if (search.length < 3) search = '';
-  var race     = document.getElementById('filter-race').value.trim().toLowerCase();
-  if (race.length < 3) race = '';
-  var trail    = document.getElementById('filter-trail').value;
+  var f = currentFilters();
+  rebuildFacets(f);                         // narrow each dropdown to valid options
 
-  var filtered = RUNS.filter(function(r) {
-    if (year     && r.date.slice(0, 4) !== year)               return false;
-    if (distance === 'custom') {
-      var cv = parseFloat(document.getElementById('filter-dist-custom').value);
-      if (!isNaN(cv) && Math.abs(r.distance_km - cv) > 0.05) return false;
-      if (isNaN(cv)) return false;
-    } else if (distance && !distRangeTest(r, distance))        return false;
-    if (search   && !searchStr(r).includes(search))            return false;
-    if (race     && (r.race_name || '').toLowerCase().indexOf(race) === -1) return false;
-    if (trail === 'yes' && !(r.elevation > 0))                 return false;
-    if (trail === 'no'  &&   r.elevation > 0)                  return false;
-    return true;
-  });
+  var filtered = RUNS.filter(function(r) { return runPasses(r, f, null); });
 
-  renderRuns(filtered, search, race);
+  renderRuns(filtered, f.search, f.race);
   document.getElementById('runs-count-bar').textContent =
     (filtered.length < RUNS.length) ? t('runs_shown')(filtered.length, RUNS.length) : '';
 }
