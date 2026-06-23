@@ -32,11 +32,11 @@ def load_all_runs():
     runs = []
     for f in sorted(RUNS_DIR.glob("*.json")):
         try:
-            data = json.loads(f.read_text("utf-8"))
+            data = json.loads(f.read_text("utf-8-sig"))   # utf-8-sig tolerates a BOM
             data["_path"] = f          # keep source path for reliable deletion
             runs.append(data)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Warning: could not read {f.name}: {e}")
     return runs
 
 
@@ -44,9 +44,9 @@ def load_all_pbs():
     pbs = []
     for f in sorted(PBS_DIR.glob("*.json")):
         try:
-            pbs.append(json.loads(f.read_text("utf-8")))
-        except Exception:
-            pass
+            pbs.append(json.loads(f.read_text("utf-8-sig")))
+        except Exception as e:
+            print(f"Warning: could not read {f.name}: {e}")
     return pbs
 
 
@@ -120,7 +120,7 @@ def copy_medal(src_file: str, event_key: str) -> str:
 
 def load_sneakers() -> list:
     if SNEAKERS_FILE.exists():
-        return json.loads(SNEAKERS_FILE.read_text("utf-8"))
+        return json.loads(SNEAKERS_FILE.read_text("utf-8-sig"))
     return []
 
 
