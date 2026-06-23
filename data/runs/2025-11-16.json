@@ -1,7 +1,10 @@
-﻿{
+{
   "date": "2025-11-16",
-  "location": "Batumi (Ekiden)",
-  "location_be": "Батумі (Экідэн)",
+  "race_name": "Ekiden Batumi 2025",
+  "location": "Batumi",
+  "location_be": "Батумі",
+  "country": "Georgia",
+  "country_be": "Грузія",
   "distance_km": 10.0,
   "total_time": "0:42:25",
   "hr_avg": 163,
@@ -9,7 +12,7 @@
   "elevation": 0,
   "sneakers": "Nike Zoom Fly 4",
   "video": "",
-  "medal": "data/photos/resized/2025-11-16/medal.jpg",
+  "medal": "data/photos/2025-11-16/medal.jpg",
   "photos": [
     "data/photos/resized/2025-11-16/IMG_4813.jpg",
     "data/photos/resized/2025-11-16/IMG_4822 (2).jpg",

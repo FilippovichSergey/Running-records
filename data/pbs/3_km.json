@@ -1,14 +1,18 @@
-﻿{
+{
   "distance": "3 km",
   "distance_km": 3.0,
   "total_time": "0:11:43.18",
   "date": "2025-11-21",
+  "race_name": "Golden Fall Race 2025",
   "location": "Tbilisi",
   "location_be": "Тбілісі",
+  "country": "Georgia",
+  "country_be": "Грузія",
   "hr_avg": 162,
   "hr_max": 177,
   "sneakers": "Nike Pegasus 38",
   "video": "",
+  "medal": "",
   "photos": [
     "data/photos/resized/pb_3_km/IMG_4890.JPG",
     "data/photos/resized/pb_3_km/IMG_4891.JPG",

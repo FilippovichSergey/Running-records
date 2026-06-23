@@ -1,7 +1,10 @@
-﻿{
+{
   "date": "2026-03-28",
-  "location": "Batumi (Argo)",
-  "location_be": "Батумі (Арго)",
+  "race_name": "ARGO SUMMIT CUP",
+  "location": "Batumi",
+  "location_be": "Батумі",
+  "country": "Georgia",
+  "country_be": "Грузія",
   "distance_km": 3.45,
   "total_time": "0:19:12",
   "hr_avg": 156,
@@ -9,7 +12,7 @@
   "elevation": 218,
   "sneakers": "Asics Gel Nimbus 27",
   "video": "",
-  "medal": "data/photos/resized/2026-03-28/medal.jpg",
+  "medal": "data/photos/2026-03-28/medal.jpg",
   "photos": [
     "data/photos/resized/2026-03-28/IMG_5253.png"
   ]

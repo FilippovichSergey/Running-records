@@ -1,7 +1,10 @@
-﻿{
+{
   "date": "2026-04-18",
+  "race_name": "April Run 2026",
   "location": "Batumi",
   "location_be": "Батумі",
+  "country": "Georgia",
+  "country_be": "Грузія",
   "distance_km": 10.0,
   "total_time": "0:40:05",
   "hr_avg": 164,
@@ -9,7 +12,7 @@
   "elevation": 0,
   "sneakers": "Nike Vaporfly 4",
   "video": "",
-  "medal": "data/photos/resized/2026-04-18/medal.jpg",
+  "medal": "data/photos/2026-04-18/medal.jpg",
   "photos": [
     "data/photos/resized/2026-04-18/IMG_5274.png",
     "data/photos/resized/2026-04-18/IMG_5287.JPG",

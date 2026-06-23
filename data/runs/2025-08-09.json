@@ -1,7 +1,10 @@
-﻿{
+{
   "date": "2025-08-09",
+  "race_name": "Night Race Sakartvelo Stadium Series 2025",
   "location": "Tbilisi",
   "location_be": "Тбілісі",
+  "country": "Georgia",
+  "country_be": "Грузія",
   "distance_km": 0.2,
   "total_time": "0:00:27.4",
   "hr_avg": 0,
@@ -9,6 +12,7 @@
   "elevation": 0,
   "sneakers": "Nike Pegasus 38",
   "video": "",
+  "medal": "",
   "photos": [
     "data/photos/resized/2025-08-09/DSC01910.jpg",
     "data/photos/resized/2025-08-09/SSS_Watermarked (35).jpg",

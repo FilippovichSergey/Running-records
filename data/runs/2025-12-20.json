@@ -1,7 +1,10 @@
-﻿{
+{
   "date": "2025-12-20",
-  "location": "Batumi (Backyard)",
-  "location_be": "Батумі (Бэк'ярд)",
+  "race_name": "Backyard Batumi 2025",
+  "location": "Batumi",
+  "location_be": "Батумі",
+  "country": "Georgia",
+  "country_be": "Грузія",
   "distance_km": 100.5,
   "total_time": "15:00:00",
   "hr_avg": 0,
@@ -9,7 +12,7 @@
   "elevation": 0,
   "sneakers": "Asics Gel Nimbus 27",
   "video": "",
-  "medal": "data/photos/resized/2025-12-20/medal.jpg",
+  "medal": "data/photos/2025-12-20/medal.jpg",
   "photos": [
     "data/photos/resized/2025-12-20/DSC01511.jpg",
     "data/photos/resized/2025-12-20/DSC01885.jpg",

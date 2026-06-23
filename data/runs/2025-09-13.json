@@ -1,7 +1,10 @@
-﻿{
+{
   "date": "2025-09-13",
+  "race_name": "Test run",
   "location": "Batumi",
   "location_be": "Батумі",
+  "country": "Georgia",
+  "country_be": "Грузія",
   "distance_km": 10.0,
   "total_time": "0:43:06",
   "hr_avg": 160,
@@ -9,6 +12,7 @@
   "elevation": 0,
   "sneakers": "Nike Zoom Fly 4",
   "video": "",
+  "medal": "",
   "photos": [
     "data/photos/resized/2025-09-13/_DSC0246.jpg"
   ]

@@ -1,7 +1,10 @@
-﻿{
+{
   "date": "2024-09-22",
+  "race_name": "Tbilisi Halfmarathon 2024",
   "location": "Tbilisi",
   "location_be": "Тбілісі",
+  "country": "Georgia",
+  "country_be": "Грузія",
   "distance_km": 21.1,
   "total_time": "1:40:08",
   "hr_avg": 158,
@@ -9,6 +12,7 @@
   "elevation": 0,
   "sneakers": "Nike Vaporfly 4",
   "video": "",
+  "medal": "",
   "photos": [
     "data/photos/resized/2024-09-22/IMG_2312.JPG",
     "data/photos/resized/2024-09-22/IMG_2313.JPG",

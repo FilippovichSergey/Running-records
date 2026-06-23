@@ -1,7 +1,10 @@
-﻿{
+{
   "date": "2025-01-25",
+  "race_name": "Test Run",
   "location": "Batumi",
   "location_be": "Батумі",
+  "country": "Gergia",
+  "country_be": "Грузія",
   "distance_km": 10.0,
   "total_time": "0:42:54",
   "hr_avg": 167,
@@ -9,6 +12,7 @@
   "elevation": 0,
   "sneakers": "Nike Vaporfly 4",
   "video": "",
+  "medal": "",
   "photos": [
     "data/photos/resized/2025-01-25/DSC00255.jpg",
     "data/photos/resized/2025-01-25/DSC00257.jpg",

@@ -1,7 +1,10 @@
-﻿{
+{
   "date": "2024-12-21",
-  "location": "Batumi (Backyard)",
-  "location_be": "Батумі (Бэк'ярд)",
+  "race_name": "Backyard Batumi 2024",
+  "location": "Batumi",
+  "location_be": "Батумі",
+  "country": "Georgia",
+  "country_be": "Грузія",
   "distance_km": 67.0,
   "total_time": "10:00:00",
   "hr_avg": 0,
@@ -9,6 +12,7 @@
   "elevation": 0,
   "sneakers": "Nike Pegasus 38",
   "video": "https://www.youtube.com/watch?v=b2eu2Tf_7zc",
+  "medal": "",
   "photos": [
     "data/photos/resized/2024-12-21/DSC08215.jpg",
     "data/photos/resized/2024-12-21/DSC08545.jpg",

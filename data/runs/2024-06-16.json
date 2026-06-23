@@ -1,7 +1,10 @@
-﻿{
+{
   "date": "2024-06-16",
+  "race_name": "Lisi Trail Race 2024",
   "location": "Tbilisi (Lisi)",
   "location_be": "Тбілісі (Лісі)",
+  "country": "Georgia",
+  "country_be": "Грузія",
   "distance_km": 44.27,
   "total_time": "6:56:29",
   "hr_avg": 141,
@@ -9,7 +12,7 @@
   "elevation": 2543,
   "sneakers": "Nike Pegasus Trail GTX 4",
   "video": "",
-  "medal": "data/photos/resized/2024-06-16/medal.jpg",
+  "medal": "data/photos/2024-06-16/medal.jpg",
   "photos": [
     "data/photos/resized/2024-06-16/IMG_0613.JPG",
     "data/photos/resized/2024-06-16/IMG_0616.JPG",
