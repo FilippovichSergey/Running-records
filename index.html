@@ -1322,7 +1322,7 @@ function buildPBChartOptions() {
 
   var sel    = document.getElementById('pbc-distance');
   var curVal = sel.value;
-  sel.innerHTML = PERSONAL_BESTS.map(function(pb) {
+  sel.innerHTML = PERSONAL_BESTS.slice().sort(function(a, b) { return a.distance_km - b.distance_km; }).map(function(pb) {
     return '<option value="' + pb.distance + '">' + pbDistLabel(pb) + '</option>';
   }).join('');
   if (curVal && PERSONAL_BESTS.some(function(pb) { return pb.distance === curVal; }))
