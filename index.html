@@ -1067,6 +1067,7 @@ const I18N = {
     filter_year:     "Year",
     filter_distance: "Distance",
     filter_search:   "Location",
+    filter_search_ph: "e.g. Batumi",
     filter_reset:    "Reset",
     all_years:       "All years",
     all_distances:   "All distances",
@@ -1161,6 +1162,7 @@ const I18N = {
     filter_year:     "Год",
     filter_distance: "Адлегласць",
     filter_search:   "Месца",
+    filter_search_ph: "напр. Батумі",
     filter_reset:    "Скінуць",
     all_years:       "Усе гады",
     all_distances:   "Усе адлегласці",
@@ -1474,6 +1476,7 @@ function buildFilterOptions() {
   document.getElementById('flabel-year').textContent     = t('filter_year');
   document.getElementById('flabel-distance').textContent = t('filter_distance');
   document.getElementById('flabel-search').textContent   = t('filter_search');
+  document.getElementById('filter-search').placeholder   = t('filter_search_ph');
   document.getElementById('flabel-trail').textContent    = t('filter_trail');
   var trSel = document.getElementById('filter-trail');
   var trVal = trSel.value;
