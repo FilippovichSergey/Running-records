@@ -202,6 +202,14 @@ nav button.active { background: var(--accent); color: #fff; }
   letter-spacing: 0;
 }
 
+.run-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
 .run-medal {
   width: 64px;
   height: 64px;
@@ -209,7 +217,6 @@ nav button.active { background: var(--accent); color: #fff; }
   border-radius: 50%;
   border: 2px solid var(--border);
   flex-shrink: 0;
-  align-self: flex-start;
 }
 
 /* Stats row */
@@ -1595,8 +1602,10 @@ function renderRuns(runs, searchQuery) {
           '<div class="run-location">' + hlText(locStr(run), searchQuery) + '</div>' +
           runTags(run) +
         '</div>' +
-        (run.medal ? '<img class="run-medal" src="' + run.medal + '" alt="medal" loading="lazy" onclick="event.stopPropagation()">' : '') +
-        '<div class="run-dist">' + run.distance_km + '<small> ' + t('km') + '</small></div>' +
+        '<div class="run-right">' +
+          (run.medal ? '<img class="run-medal" src="' + run.medal + '" alt="medal" loading="lazy" onclick="event.stopPropagation()">' : '') +
+          '<div class="run-dist">' + run.distance_km + '<small> ' + t('km') + '</small></div>' +
+        '</div>' +
       '</div>' +
 
       (function() {
