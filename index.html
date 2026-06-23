@@ -907,7 +907,7 @@ nav button.active { background: var(--accent); color: #fff; }
   </div>
   <div class="filter-group">
     <label class="filter-label" for="filter-search" id="flabel-search"></label>
-    <input type="text" id="filter-search" oninput="applyFilters('search')" placeholder="…">
+    <input type="text" id="filter-search" oninput="onSearchInput()" placeholder="…">
   </div>
   <div class="filter-group">
     <label class="filter-label" for="filter-trail" id="flabel-trail"></label>
@@ -1483,6 +1483,15 @@ function repopulateDependent(year) {
   buildDistOptions(pool, dSel, dSel.value);
 }
 
+var _searchTimer;
+function onSearchInput() {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(function() {
+    var v = document.getElementById('filter-search').value.trim();
+    if (v.length === 0 || v.length >= 3) applyFilters('search');
+  }, 300);
+}
+
 function applyFilters(active) {
   if (active === 'year')     { repopulateDependent(document.getElementById('filter-year').value); document.getElementById('filter-distance').value = ''; document.getElementById('filter-search').value = ''; document.getElementById('filter-trail').value = ''; }
   if (active === 'distance') {
@@ -1499,6 +1508,7 @@ function applyFilters(active) {
   var year     = document.getElementById('filter-year').value;
   var distance = document.getElementById('filter-distance').value;
   var search   = document.getElementById('filter-search').value.trim().toLowerCase();
+  if (search.length < 3) search = '';
   var trail    = document.getElementById('filter-trail').value;
 
   var filtered = RUNS.filter(function(r) {
