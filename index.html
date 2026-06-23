@@ -217,7 +217,10 @@ nav button.active { background: var(--accent); color: #fff; }
   border-radius: 50%;
   border: 2px solid var(--border);
   flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.15s;
 }
+.run-medal:hover { transform: scale(1.08); }
 
 /* Stats row */
 .run-stats {
@@ -1572,7 +1575,7 @@ function renderRuns(runs, searchQuery) {
           runTags(run) +
         '</div>' +
         '<div class="run-right">' +
-          (run.medal ? '<img class="run-medal" src="' + run.medal + '" alt="medal" loading="lazy" onclick="event.stopPropagation()">' : '') +
+          (run.medal ? '<img class="run-medal" src="' + run.medal + '" alt="medal" loading="lazy" onclick="event.stopPropagation(); openLbSingle(this.src)">' : '') +
           '<div class="run-dist">' + run.distance_km + '<small> ' + t('km') + '</small></div>' +
         '</div>' +
       '</div>' +
@@ -2305,6 +2308,11 @@ var _lbSet = [], _lbIdx = 0;
 function openLb(setId, idx) {
   _lbSet = (photoGrid._sets && photoGrid._sets[setId]) || [];
   _lbIdx = idx || 0;
+  _lbShow();
+}
+function openLbSingle(src) {
+  _lbSet = [src];
+  _lbIdx = 0;
   _lbShow();
 }
 function _lbShow() {
