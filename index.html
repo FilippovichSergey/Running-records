@@ -1067,7 +1067,7 @@ const I18N = {
     filter_year:     "Year",
     filter_distance: "Distance",
     filter_search:   "Location",
-    filter_search_ph: "e.g. Batumi",
+    filter_search_ph: "e.g. Batumi or Georgia",
     filter_reset:    "Reset",
     all_years:       "All years",
     all_distances:   "All distances",
@@ -1162,7 +1162,7 @@ const I18N = {
     filter_year:     "Год",
     filter_distance: "Адлегласць",
     filter_search:   "Месца",
-    filter_search_ph: "напр. Батумі",
+    filter_search_ph: "напр. Батумі або Грузія",
     filter_reset:    "Скінуць",
     all_years:       "Усе гады",
     all_distances:   "Усе адлегласці",
@@ -1241,6 +1241,10 @@ const t = key => I18N[LANG][key];
 
 function locStr(obj) {
   return (LANG === 'be' && obj.location_be) ? obj.location_be : obj.location;
+}
+
+function searchStr(obj) {
+  return (locStr(obj) + ' ' + (obj.country || '') + ' ' + (obj.country_be || '')).toLowerCase();
 }
 
 function pbDistLabel(pb) {
@@ -1528,7 +1532,7 @@ function applyFilters(active) {
       if (!isNaN(cv) && Math.abs(r.distance_km - cv) > 0.05) return false;
       if (isNaN(cv)) return false;
     } else if (distance && !distRangeTest(r, distance))        return false;
-    if (search   && !locStr(r).toLowerCase().includes(search)) return false;
+    if (search   && !searchStr(r).includes(search))            return false;
     if (trail === 'yes' && !(r.elevation > 0))                 return false;
     if (trail === 'no'  &&   r.elevation > 0)                  return false;
     return true;
