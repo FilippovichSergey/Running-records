@@ -1241,6 +1241,13 @@ function locStr(obj) {
   return (LANG === 'be' && obj.location_be) ? obj.location_be : obj.location;
 }
 
+function pbDistLabel(pb) {
+  var m = /^\s*([\d.,]+)\s*(km|км|m|м)\s*$/i.exec(pb.distance || '');
+  if (!m) return pb.distance;
+  var isMeters = /^(m|м)$/i.test(m[2]);
+  return m[1] + ' ' + (isMeters ? t('m') : t('km'));
+}
+
 // ── Helpers ───────────────────────────────────────────────────
 
 var BE_MONTHS = [
@@ -1316,7 +1323,7 @@ function buildPBChartOptions() {
   var sel    = document.getElementById('pbc-distance');
   var curVal = sel.value;
   sel.innerHTML = PERSONAL_BESTS.map(function(pb) {
-    return '<option value="' + pb.distance + '">' + pb.distance + '</option>';
+    return '<option value="' + pb.distance + '">' + pbDistLabel(pb) + '</option>';
   }).join('');
   if (curVal && PERSONAL_BESTS.some(function(pb) { return pb.distance === curVal; }))
     sel.value = curVal;
@@ -1671,7 +1678,7 @@ function renderPBs() {
 
     return '<article class="pb-card">' +
       '<div class="pb-head">' +
-        '<div class="pb-dist-name">' + pb.distance + '</div>' +
+        '<div class="pb-dist-name">' + pbDistLabel(pb) + '</div>' +
         '<div style="display:flex;align-items:center;gap:10px;">' +
           '<div class="pb-time">' + pb.total_time + '</div>' +
           progHtml +
