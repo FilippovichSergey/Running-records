@@ -176,13 +176,15 @@ nav button.active { background: var(--accent); color: #fff; }
   letter-spacing: -0.4px;
   line-height: 1.1;
 }
-.run-location mark {
+.run-location mark,
+.run-race mark {
   background: #ffe066;
   color: inherit;
   border-radius: 3px;
   padding: 0 1px;
 }
-:root.dark .run-location mark { background: #b8860b; }
+:root.dark .run-location mark,
+:root.dark .run-race mark { background: #b8860b; }
 
 .run-race {
   flex: 1 1 auto;
@@ -936,6 +938,10 @@ nav button.active { background: var(--accent); color: #fff; }
     <input type="text" id="filter-search" oninput="onSearchInput()" placeholder="…">
   </div>
   <div class="filter-group">
+    <label class="filter-label" for="filter-race" id="flabel-race"></label>
+    <input type="text" id="filter-race" oninput="onRaceInput()" placeholder="…">
+  </div>
+  <div class="filter-group">
     <label class="filter-label" for="filter-trail" id="flabel-trail"></label>
     <select id="filter-trail" onchange="applyFilters('trail')" style="min-width:95px"></select>
   </div>
@@ -1094,6 +1100,8 @@ const I18N = {
     filter_distance: "Distance",
     filter_search:   "Location",
     filter_search_ph: "e.g. Batumi or Georgia",
+    filter_race:     "Race",
+    filter_race_ph:  "Kazbegi",
     filter_reset:    "Reset",
     all_years:       "All years",
     all_distances:   "All distances",
@@ -1189,6 +1197,8 @@ const I18N = {
     filter_distance: "Адлегласць",
     filter_search:   "Месца",
     filter_search_ph: "напр. Батумі або Грузія",
+    filter_race:     "Забег",
+    filter_race_ph:  "Kazbegi",
     filter_reset:    "Скінуць",
     all_years:       "Усе гады",
     all_distances:   "Усе адлегласці",
@@ -1507,6 +1517,8 @@ function buildFilterOptions() {
   document.getElementById('flabel-distance').textContent = t('filter_distance');
   document.getElementById('flabel-search').textContent   = t('filter_search');
   document.getElementById('filter-search').placeholder   = t('filter_search_ph');
+  document.getElementById('flabel-race').textContent     = t('filter_race');
+  document.getElementById('filter-race').placeholder     = t('filter_race_ph');
   document.getElementById('flabel-trail').textContent    = t('filter_trail');
   var trSel = document.getElementById('filter-trail');
   var trVal = trSel.value;
@@ -1532,23 +1544,36 @@ function onSearchInput() {
   }, 300);
 }
 
+var _raceTimer;
+function onRaceInput() {
+  clearTimeout(_raceTimer);
+  _raceTimer = setTimeout(function() {
+    var v = document.getElementById('filter-race').value.trim();
+    if (v.length === 0 || v.length >= 3) applyFilters('race');
+  }, 300);
+}
+
 function applyFilters(active) {
-  if (active === 'year')     { repopulateDependent(document.getElementById('filter-year').value); document.getElementById('filter-distance').value = ''; document.getElementById('filter-search').value = ''; document.getElementById('filter-trail').value = ''; }
+  if (active === 'year')     { repopulateDependent(document.getElementById('filter-year').value); document.getElementById('filter-distance').value = ''; document.getElementById('filter-search').value = ''; document.getElementById('filter-race').value = ''; document.getElementById('filter-trail').value = ''; }
   if (active === 'distance') {
     var customInput = document.getElementById('filter-dist-custom');
     var isCustom = document.getElementById('filter-distance').value === 'custom';
     customInput.style.display = isCustom ? '' : 'none';
     if (!isCustom) customInput.value = '';
     document.getElementById('filter-search').value = '';
+    document.getElementById('filter-race').value   = '';
     document.getElementById('filter-trail').value  = '';
   }
-  if (active === 'search') { document.getElementById('filter-distance').value = ''; document.getElementById('filter-trail').value  = ''; }
-  if (active === 'trail')  { document.getElementById('filter-distance').value = ''; document.getElementById('filter-search').value = ''; }
+  if (active === 'search') { document.getElementById('filter-distance').value = ''; document.getElementById('filter-race').value = ''; document.getElementById('filter-trail').value  = ''; }
+  if (active === 'race')   { document.getElementById('filter-distance').value = ''; document.getElementById('filter-search').value = ''; document.getElementById('filter-trail').value  = ''; }
+  if (active === 'trail')  { document.getElementById('filter-distance').value = ''; document.getElementById('filter-search').value = ''; document.getElementById('filter-race').value = ''; }
 
   var year     = document.getElementById('filter-year').value;
   var distance = document.getElementById('filter-distance').value;
   var search   = document.getElementById('filter-search').value.trim().toLowerCase();
   if (search.length < 3) search = '';
+  var race     = document.getElementById('filter-race').value.trim().toLowerCase();
+  if (race.length < 3) race = '';
   var trail    = document.getElementById('filter-trail').value;
 
   var filtered = RUNS.filter(function(r) {
@@ -1559,12 +1584,13 @@ function applyFilters(active) {
       if (isNaN(cv)) return false;
     } else if (distance && !distRangeTest(r, distance))        return false;
     if (search   && !searchStr(r).includes(search))            return false;
+    if (race     && (r.race_name || '').toLowerCase().indexOf(race) === -1) return false;
     if (trail === 'yes' && !(r.elevation > 0))                 return false;
     if (trail === 'no'  &&   r.elevation > 0)                  return false;
     return true;
   });
 
-  renderRuns(filtered, search);
+  renderRuns(filtered, search, race);
   document.getElementById('runs-count-bar').textContent =
     (filtered.length < RUNS.length) ? t('runs_shown')(filtered.length, RUNS.length) : '';
 }
@@ -1575,6 +1601,7 @@ function resetFilters() {
   document.getElementById('filter-dist-custom').value  = '';
   document.getElementById('filter-dist-custom').style.display = 'none';
   document.getElementById('filter-search').value   = '';
+  document.getElementById('filter-race').value     = '';
   document.getElementById('filter-trail').value    = '';
   applyFilters();
 }
@@ -1610,7 +1637,7 @@ function hlText(text, query) {
   return text.replace(re, '<mark>$1</mark>');
 }
 
-function renderRuns(runs, searchQuery) {
+function renderRuns(runs, searchQuery, raceQuery) {
   if (!runs) runs = RUNS;
   var sorted = runs.slice().sort(function(a, b) {
     return new Date(b.date) - new Date(a.date);
@@ -1624,7 +1651,7 @@ function renderRuns(runs, searchQuery) {
           '<div class="run-location">' + hlText(locStr(run), searchQuery) + '</div>' +
           runTags(run) +
         '</div>' +
-        (run.race_name ? '<div class="run-race">' + run.race_name + '</div>' : '') +
+        (run.race_name ? '<div class="run-race">' + hlText(run.race_name, raceQuery) + '</div>' : '') +
         '<div class="run-right">' +
           (run.medal ? '<img class="run-medal" src="' + run.medal + '" alt="medal" loading="lazy" onclick="event.stopPropagation(); openLbSingle(this.src)">' : '') +
           '<div class="run-dist">' + run.distance_km + '<small> ' + t('km') + '</small></div>' +
