@@ -184,6 +184,18 @@ nav button.active { background: var(--accent); color: #fff; }
 }
 :root.dark .run-location mark { background: #b8860b; }
 
+.run-race {
+  flex: 1 1 auto;
+  align-self: center;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  font-style: italic;
+  color: var(--muted);
+  padding: 0 12px;
+  min-width: 0;
+}
+
 .run-dist {
   font-size: 34px;
   font-weight: 900;
@@ -354,6 +366,16 @@ nav button.active { background: var(--accent); color: #fff; }
   font-size: 24px;
   font-weight: 900;
   letter-spacing: -0.5px;
+}
+.pb-race {
+  flex: 1 1 auto;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  font-style: italic;
+  color: rgba(255,255,255,0.6);
+  padding: 0 14px;
+  min-width: 0;
 }
 .pb-time {
   font-size: 34px;
@@ -1598,6 +1620,7 @@ function renderRuns(runs, searchQuery) {
           '<div class="run-location">' + hlText(locStr(run), searchQuery) + '</div>' +
           runTags(run) +
         '</div>' +
+        (run.race_name ? '<div class="run-race">' + run.race_name + '</div>' : '') +
         '<div class="run-right">' +
           (run.medal ? '<img class="run-medal" src="' + run.medal + '" alt="medal" loading="lazy" onclick="event.stopPropagation(); openLbSingle(this.src)">' : '') +
           '<div class="run-dist">' + run.distance_km + '<small> ' + t('km') + '</small></div>' +
@@ -1686,6 +1709,7 @@ function renderPBs() {
     return '<article class="pb-card">' +
       '<div class="pb-head">' +
         '<div class="pb-dist-name">' + pbDistLabel(pb) + '</div>' +
+        (pb.race_name ? '<div class="pb-race">' + pb.race_name + '</div>' : '') +
         '<div style="display:flex;align-items:center;gap:10px;">' +
           '<div class="pb-time">' + pb.total_time + '</div>' +
           progHtml +
