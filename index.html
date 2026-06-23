@@ -845,7 +845,16 @@ nav button.active { background: var(--accent); color: #fff; }
   .page { padding: 16px 12px 48px; }
 
   /* Run card */
-  .run-top { padding: 14px 16px 12px; gap: 10px; }
+  .run-top { padding: 14px 16px 12px; gap: 10px; flex-wrap: wrap; }
+  .run-meta { order: 1; }
+  .run-right { order: 2; }
+  .run-race {
+    order: 3;
+    flex-basis: 100%;
+    text-align: left;
+    padding: 8px 0 0;
+    font-size: 17px;
+  }
   .run-location { font-size: 17px; }
   .run-dist { font-size: 26px; width: 92px; }
   .run-medal { width: 48px; height: 48px; }
