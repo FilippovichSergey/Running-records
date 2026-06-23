@@ -2,8 +2,11 @@
 const RUNS_DATA = [
   {
     "date": "2022-09-04",
+    "race_name": "Kazbegi Marathon 2022",
     "location": "Kazbegi",
     "location_be": "Казбегі",
+    "country": "Georgia",
+    "country_be": "Грузія",
     "distance_km": 14.43,
     "total_time": "2:40:49",
     "hr_avg": 153,
@@ -11,7 +14,7 @@ const RUNS_DATA = [
     "elevation": 1181,
     "sneakers": "",
     "video": "",
-    "medal": "data/photos/resized/2022-09-04/medal.jpg",
+    "medal": "data/photos/2022-09-04/medal.jpg",
     "photos": [
       "data/photos/resized/2022-09-04/IMG_20220904_124207.jpg"
     ]
