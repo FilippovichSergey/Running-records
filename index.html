@@ -121,15 +121,84 @@ nav button.active { background: var(--accent); color: #fff; }
   overflow: hidden;
 }
 
-.run-top {
-  padding: 20px 24px 16px;
+/* Photo strip header */
+.rc-strip {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-rows: 170px;
+  gap: 2px;
+}
+.rc-strip.single { grid-template-columns: 1fr; }
+.rc-strip img {
+  width: 100%;
+  height: 170px;
+  object-fit: cover;
+  display: block;
+  cursor: pointer;
+}
+.rc-strip img.rc-medal {
+  position: absolute;
+  right: 18px;
+  bottom: -26px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--card);
+  box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  cursor: pointer;
+  z-index: 2;
+  transition: transform 0.15s;
+}
+.rc-strip img.rc-medal:hover { transform: scale(1.08); }
+
+/* Card body */
+.rc-body { padding: 18px 24px 14px; }
+.rc-meta {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.rc-titlerow {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
+  margin-top: 5px;
+}
+.rc-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.05;
+  min-width: 0;
+}
+.rc-dist {
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -1.5px;
+  color: var(--accent);
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.rc-dist small {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0;
 }
 
-.run-meta { flex: 1 1 auto; }
+.run-card mark {
+  background: #ffe066;
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 1px;
+}
+:root.dark .run-card mark { background: #b8860b; }
 
 .run-tags {
   display: flex;
@@ -161,91 +230,10 @@ nav button.active { background: var(--accent); color: #fff; }
 
 .run-tag-emoji { font-size: 14px; line-height: 1; }
 
-.run-when {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 4px;
-}
-
-.run-location {
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.4px;
-  line-height: 1.1;
-}
-.run-location mark,
-.run-race mark {
-  background: #ffe066;
-  color: inherit;
-  border-radius: 3px;
-  padding: 0 1px;
-}
-:root.dark .run-location mark,
-:root.dark .run-race mark { background: #b8860b; }
-
-.run-race {
-  flex: 1 1 auto;
-  align-self: flex-start;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 64px;
-  text-align: center;
-  font-size: 20px;
-  font-weight: 800;
-  font-style: normal;
-  letter-spacing: -0.4px;
-  line-height: 1.1;
-  color: var(--muted);
-  padding: 0 12px;
-  min-width: 0;
-}
-
-.run-dist {
-  font-size: 34px;
-  font-weight: 900;
-  color: var(--accent);
-  letter-spacing: -1.5px;
-  line-height: 1;
-  white-space: nowrap;
-  flex-shrink: 0;
-  width: 120px;
-  text-align: right;
-}
-.run-dist small {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--muted);
-  letter-spacing: 0;
-}
-
-.run-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-  align-self: flex-start;
-}
-
-.run-medal {
-  width: 64px;
-  height: 64px;
-  object-fit: cover;
-  border-radius: 50%;
-  border: 2px solid var(--border);
-  flex-shrink: 0;
-  cursor: pointer;
-  transition: transform 0.15s;
-}
-.run-medal:hover { transform: scale(1.08); }
-
 /* Stats row */
 .run-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   border-top: 1px solid var(--border);
 }
 .stat {
@@ -272,50 +260,6 @@ nav button.active { background: var(--accent); color: #fff; }
   font-size: 10px;
   color: var(--muted);
   margin-top: 1px;
-}
-
-/* Expand toggle */
-.expand-row {
-  border-top: 1px solid var(--border);
-  padding: 0 24px;
-  background: var(--subtle);
-}
-.expand-btn {
-  display: block;
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  padding: 10px 0;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  color: var(--accent);
-  cursor: pointer;
-  text-transform: uppercase;
-}
-
-/* Details panel */
-.run-details {
-  display: none;
-  padding: 20px 24px;
-  border-top: 1px solid var(--border);
-  background: var(--subtle);
-}
-.run-details.open { display: block; }
-
-.details-row {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 6px;
-  font-size: 14px;
-  line-height: 1.4;
-}
-.details-key {
-  color: var(--muted);
-  font-weight: 600;
-  min-width: 88px;
-  flex-shrink: 0;
 }
 
 /* Photos */
@@ -792,6 +736,66 @@ nav button.active { background: var(--accent); color: #fff; }
   margin-top: 2px;
 }
 
+/* ── Overview tab ── */
+#page-overview { max-width: none; padding: 0 0 56px; }
+
+.ov-hero { position: relative; height: 480px; background: #1a1a1a; overflow: hidden; }
+.ov-hero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 42%; }
+.ov-hero-grad { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,18,16,.4) 0%, rgba(20,18,16,0) 30%, rgba(20,18,16,.55) 70%, rgba(20,18,16,.92) 100%); }
+.ov-hero-inner { position: relative; max-width: 940px; margin: 0 auto; height: 100%; }
+.ov-eyebrow { position: absolute; left: 40px; top: 40px; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,.85); }
+.ov-headline { position: absolute; left: 40px; right: 40px; bottom: 128px; font-size: 54px; font-weight: 900; letter-spacing: -2px; line-height: 1; color: #fff; max-width: 680px; }
+.ov-statrow { position: absolute; left: 40px; right: 40px; bottom: 38px; display: flex; gap: 44px; align-items: flex-end; }
+.ov-stat-num { font-size: 34px; font-weight: 900; letter-spacing: -1px; color: #fff; line-height: 1; }
+.ov-stat-num small { font-size: 14px; color: rgba(255,255,255,.6); font-weight: 700; letter-spacing: 0; }
+.ov-stat-lbl { margin-top: 5px; font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,.6); }
+.ov-explore {
+  margin-left: auto;
+  font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+  color: #fff; background: var(--accent); border: none; border-radius: 20px;
+  padding: 8px 17px; cursor: pointer;
+}
+
+.ov-col { max-width: 940px; margin: 0 auto; }
+.ov-mem { padding: 34px 40px 20px; }
+.ov-mem-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
+.ov-mem-title { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.ov-mem-meta { font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); }
+.ov-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 140px 140px; gap: 10px; }
+.ov-cell { border-radius: 14px; overflow: hidden; position: relative; cursor: pointer; }
+.ov-cell.big { grid-row: span 2; }
+.ov-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ov-cap { position: absolute; left: 14px; bottom: 12px; color: #fff; font-size: 14px; font-weight: 800; letter-spacing: -.2px; text-shadow: 0 1px 5px rgba(0,0,0,.6); }
+.ov-more { background: #1a1a1a; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 15px; font-weight: 800; }
+.ov-more small { font-size: 10px; font-weight: 600; color: rgba(255,255,255,.6); letter-spacing: .5px; margin-top: 2px; }
+
+.ov-latest { padding: 14px 40px 0; }
+.ov-latest-lbl { font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.ov-latest-card { background: var(--card); border-radius: 18px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 20px; padding: 18px 24px; }
+.ov-latest-medal { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); flex-shrink: 0; cursor: pointer; }
+.ov-latest-meta { font-size: 12px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.ov-latest-name { font-size: 20px; font-weight: 800; letter-spacing: -.4px; }
+.ov-pb-pill { font-size: 12px; font-weight: 700; color: #1a7a3a; background: #e8f8ee; border-radius: 20px; padding: 5px 12px; white-space: nowrap; flex-shrink: 0; }
+:root.dark .ov-pb-pill { color: #6dba6d; background: rgba(45,106,45,.15); }
+.ov-latest-right { margin-left: auto; text-align: right; flex-shrink: 0; }
+.ov-latest-time { font-size: 32px; font-weight: 900; letter-spacing: -1.4px; color: var(--accent); line-height: 1; }
+.ov-latest-sub { margin-top: 4px; font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); }
+
+/* ── PB progression chart ── */
+.pbp-wrap { padding: 18px 24px 8px; border-bottom: 1px solid var(--border); }
+.pbp-label { font-size: 9px; font-weight: 700; letter-spacing: .9px; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.pbp-bars { display: flex; align-items: flex-end; gap: 12px; padding-top: 18px; }
+.pbp-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pbp-bar { width: 100%; max-width: 34px; border-radius: 6px 6px 0 0; position: relative; }
+.pbp-bar.old { background: #efe9df; }
+.pbp-bar.mid { background: #f6b79c; }
+.pbp-bar.pb  { background: var(--accent); }
+:root.dark .pbp-bar.old { background: #3a3a3a; }
+:root.dark .pbp-bar.mid { background: #8a5a3f; }
+.pbp-pblabel { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 800; color: var(--accent); }
+.pbp-year { font-size: 9px; font-weight: 700; color: var(--muted); }
+.pbp-year.pb { color: var(--text); font-weight: 800; }
+
 /* ── Burger button (hidden on desktop) ── */
 .burger {
   display: none;
@@ -849,27 +853,28 @@ nav button.active { background: var(--accent); color: #fff; }
   .page { padding: 16px 12px 48px; }
 
   /* Run card */
-  .run-top { padding: 14px 16px 12px; gap: 10px; flex-wrap: wrap; }
-  .run-meta { order: 1; }
-  .run-right { order: 2; }
-  .run-race {
-    order: 3;
-    flex-basis: 100%;
-    display: block;
-    min-height: 0;
-    align-self: auto;
-    text-align: left;
-    padding: 8px 0 0;
-    font-size: 17px;
-  }
-  .run-location { font-size: 17px; }
-  .run-dist { font-size: 26px; width: 92px; }
-  .run-medal { width: 48px; height: 48px; }
+  .rc-strip { grid-template-rows: 120px; }
+  .rc-strip img { height: 120px; }
+  .rc-strip img.rc-medal { width: 52px; height: 52px; bottom: -20px; right: 14px; }
+  .rc-body { padding: 14px 16px 12px; }
+  .rc-title { font-size: 18px; }
+  .rc-dist { font-size: 26px; }
   .run-stats { grid-template-columns: repeat(2, 1fr); }
   .stat { padding: 10px 12px; }
   .stat-value { font-size: 16px; }
-  .run-details { padding: 14px 16px; }
-  .expand-row { padding: 0 16px; }
+
+  /* Overview */
+  .ov-hero { height: 420px; }
+  .ov-eyebrow { left: 16px; top: 20px; }
+  .ov-headline { left: 16px; right: 16px; bottom: 158px; font-size: 32px; letter-spacing: -1px; }
+  .ov-statrow { left: 16px; right: 16px; bottom: 20px; gap: 18px; flex-wrap: wrap; }
+  .ov-stat-num { font-size: 24px; }
+  .ov-mem { padding: 24px 12px 12px; }
+  .ov-latest { padding: 8px 12px 0; }
+  .ov-grid { grid-template-columns: 1fr 1fr; grid-template-rows: 150px 110px 110px; }
+  .ov-cell.big { grid-column: span 2; grid-row: auto; }
+  .ov-latest-card { flex-wrap: wrap; gap: 12px; padding: 14px 16px; }
+  .ov-latest-right { margin-left: 0; text-align: left; width: 100%; }
 
   /* PB card */
   .pb-head { padding: 16px 18px; flex-wrap: wrap; gap: 4px; }
@@ -910,7 +915,8 @@ nav button.active { background: var(--accent); color: #fff; }
 <header>
   <div class="logo" id="logo">Sergey's <em>Running</em> Log</div>
   <nav id="main-nav">
-    <button class="active" id="nav-runs" onclick="showPage('runs', this)">All Runs</button>
+    <button class="active" id="nav-overview" onclick="showPage('overview', this)">Overview</button>
+    <button id="nav-runs" onclick="showPage('runs', this)">All Runs</button>
     <button id="nav-pbs" onclick="showPage('pbs', this)">Personal Bests</button>
     <button id="nav-activities" onclick="showPage('activities', this)">Activities</button>
   </nav>
@@ -936,7 +942,9 @@ nav button.active { background: var(--accent); color: #fff; }
   <button id="lb-next" onclick="event.stopPropagation();lbNav(1)">&#8250;</button>
 </div>
 
-<div id="runs-filterbar" class="filter-bar">
+<div id="page-overview" class="page visible"></div>
+
+<div id="runs-filterbar" class="filter-bar" style="display:none">
   <div class="filter-group">
     <label class="filter-label" for="filter-year" id="flabel-year"></label>
     <select id="filter-year" onchange="applyFilters('year')"></select>
@@ -963,9 +971,9 @@ nav button.active { background: var(--accent); color: #fff; }
   </div>
   <button id="filter-reset" onclick="resetFilters()"></button>
 </div>
-<div id="runs-count-bar"></div>
+<div id="runs-count-bar" style="display:none"></div>
 
-<div id="page-runs" class="page visible"></div>
+<div id="page-runs" class="page"></div>
 
 <div id="pbs-chart" class="chart-wrap" style="display:none">
   <div class="chart-card">
@@ -1094,8 +1102,21 @@ const ACTIVITIES     = typeof ACTIVITIES_DATA !== "undefined" ? ACTIVITIES_DATA 
 const I18N = {
   en: {
     logo:           "Sergey's <em>Running</em> Log",
+    nav_overview:   "Overview",
     nav_runs:       "All Runs",
     nav_pbs:        "Personal Bests",
+    ov_since:       function(y) { return 'Since ' + y + ' · Georgia'; },
+    ov_headline:    function(km, n) { return '<span style="color:var(--accent)">' + km + '&nbsp;km</span> raced across ' + n + ' finish lines.'; },
+    ov_climbed:     "Climbed",
+    ov_longest:     "Longest race",
+    ov_fastest5k:   "Fastest 5K",
+    ov_explore:     "Explore the log →",
+    ov_memories:    "Race memories",
+    ov_meta:        function(p, m) { return p + ' photos · ' + m + ' medals'; },
+    ov_more_photos: "photos",
+    ov_latest:      "Latest race",
+    ov_new_pb:      function(d) { return 'NEW ' + d + ' PB'; },
+    pbp_label:      function(n) { return n >= 2 ? n + ' years, chipping away' : 'Chipping away'; },
     pace:           "Pace",
     avg_hr:         "Avg HR",
     max_hr:         "Max HR",
@@ -1191,8 +1212,21 @@ const I18N = {
   },
   be: {
     logo:           "<em>Бегавы</em> дзённік Сяргея",
+    nav_overview:   "Агляд",
     nav_runs:       "Усе забегі",
     nav_pbs:        "Асабістыя рэкорды",
+    ov_since:       function(y) { return 'З ' + y + ' · Грузія'; },
+    ov_headline:    function(km, n) { return '<span style="color:var(--accent)">' + km + '&nbsp;км</span> на ' + n + ' фінішах.'; },
+    ov_climbed:     "Набор вышыні",
+    ov_longest:     "Самая доўгая",
+    ov_fastest5k:   "Хуткі 5К",
+    ov_explore:     "Адкрыць журнал →",
+    ov_memories:    "Успаміны з гонак",
+    ov_meta:        function(p, m) { return p + ' фота · ' + m + ' медалёў'; },
+    ov_more_photos: "фота",
+    ov_latest:      "Апошняя гонка",
+    ov_new_pb:      function(d) { return 'НОВЫ РЭКОРД ' + d; },
+    pbp_label:      function(n) { if (n < 2) return 'Прагрэс'; var w = (n >= 2 && n <= 4) ? 'гады' : 'гадоў'; return n + ' ' + w + ' прагрэсу'; },
     pace:           "Тэмп",
     avg_hr:         "Сяр. пульс",
     max_hr:         "Макс. пульс",
@@ -1671,61 +1705,138 @@ function renderRuns(runs, searchQuery, raceQuery) {
     return new Date(b.date) - new Date(a.date);
   });
 
+  photoGrid._sets = photoGrid._sets || {};
+
   document.getElementById('page-runs').innerHTML = sorted.map(function(run, i) {
+    var photos = run.photos || [];
+    var lbSet  = photos.length ? photos : (run.medal ? [run.medal] : []);
+    var setId  = 'run' + i;
+    photoGrid._sets[setId] = lbSet;
+
+    // Photo strip: first 3 run photos; pad with the medal, then cycle if fewer
+    var stripHtml = '';
+    if (photos.length > 0) {
+      var strip = photos.slice(0, 3);
+      if (strip.length < 3 && run.medal) strip.push(run.medal);
+      var base = strip.slice();
+      while (strip.length < 3) strip.push(base[strip.length % base.length]);
+      stripHtml = '<div class="rc-strip">' +
+        strip.map(function(src, n) {
+          var idx = Math.min(n, lbSet.length - 1);
+          return '<img src="' + src + '" alt="" loading="lazy" onclick="openLb(\'' + setId + '\',' + idx + ')">';
+        }).join('') +
+        (run.medal ? '<img class="rc-medal" src="' + run.medal + '" alt="medal" loading="lazy" onclick="event.stopPropagation(); openLbSingle(this.src)">' : '') +
+      '</div>';
+    } else if (run.medal) {
+      stripHtml = '<div class="rc-strip single">' +
+        '<img src="' + run.medal + '" alt="medal" loading="lazy" onclick="openLbSingle(this.src)">' +
+      '</div>';
+    }
+
+    var title = run.race_name
+      ? hlText(run.race_name, raceQuery)
+      : hlText(locStr(run), searchQuery);
+    var elev = run.elevation || 0;
+
     return '<article class="run-card">' +
-      '<div class="run-top">' +
-        '<div class="run-meta">' +
-          '<div class="run-when">' + fmtDate(run.date) + '</div>' +
-          '<div class="run-location">' + hlText(locStr(run), searchQuery) + '</div>' +
-          runTags(run) +
+      stripHtml +
+      '<div class="rc-body">' +
+        '<div class="rc-meta">' + fmtDate(run.date) + ' · ' + hlText(locStr(run), searchQuery) + '</div>' +
+        '<div class="rc-titlerow">' +
+          '<div class="rc-title">' + title + '</div>' +
+          '<div class="rc-dist">' + run.distance_km + '<small> ' + t('km') + '</small></div>' +
         '</div>' +
-        (run.race_name ? '<div class="run-race">' + hlText(run.race_name, raceQuery) + '</div>' : '') +
-        '<div class="run-right">' +
-          (run.medal ? '<img class="run-medal" src="' + run.medal + '" alt="medal" loading="lazy" onclick="event.stopPropagation(); openLbSingle(this.src)">' : '') +
-          '<div class="run-dist">' + run.distance_km + '<small> ' + t('km') + '</small></div>' +
-        '</div>' +
+        runTags(run) +
       '</div>' +
-
-      (function() {
-        var elev = run.elevation || 0;
-        var cols = elev > 0 ? 4 : 3;
-        var elevStat = elev > 0
-          ? '<div class="stat"><div class="stat-label">' + t('elevation') + '</div><div class="stat-value">' + elev + '</div><div class="stat-sub">' + t('m') + '</div></div>'
-          : '';
-        var elevDetail = elev === 0
-          ? '<div class="details-row"><span class="details-key">' + t('elevation') + '</span>' + elev + ' ' + t('m') + '</div>'
-          : '';
-        return '<div class="run-stats" style="grid-template-columns:repeat(' + cols + ',1fr)">' +
-          '<div class="stat"><div class="stat-label">' + t('pace') + '</div><div class="stat-value">' + calcPace(run.distance_km, run.total_time) + '</div><div class="stat-sub">' + t('min_km') + '</div></div>' +
-          '<div class="stat"><div class="stat-label">' + t('avg_hr') + '</div><div class="stat-value">' + (run.hr_avg || '--') + '</div><div class="stat-sub">' + (run.hr_avg ? t('bpm') : '') + '</div></div>' +
-          '<div class="stat"><div class="stat-label">' + t('total_time') + '</div><div class="stat-value">' + run.total_time + '</div></div>' +
-          elevStat +
-        '</div>' +
-
-        '<div class="expand-row">' +
-          '<button class="expand-btn" id="ebtn-' + i + '" onclick="event.stopPropagation(); toggleDetails(' + i + ')">' +
-            '&#9658; &nbsp;' + t('photos_details') +
-          '</button>' +
-        '</div>' +
-
-        '<div class="run-details" id="det-' + i + '">' +
-          '<div class="details-row"><span class="details-key">' + t('det_date') + '</span>' + fmtDate(run.date) + '</div>' +
-          '<div class="details-row"><span class="details-key">' + t('det_location') + '</span>' + locStr(run) + '</div>' +
-          '<div class="details-row"><span class="details-key">' + t('det_distance') + '</span>' + run.distance_km + ' ' + t('km') + '</div>' +
-          '<div class="details-row"><span class="details-key">' + t('det_pace') + '</span>' + calcPace(run.distance_km, run.total_time) + ' ' + t('min_km') + '</div>' +
-          '<div class="details-row"><span class="details-key">' + t('det_avg_hr') + '</span>' + (run.hr_avg || '--') + (run.hr_avg ? ' ' + t('bpm') : '') + '</div>' +
-          '<div class="details-row"><span class="details-key">' + t('det_max_hr') + '</span>' + (run.hr_max || '--') + (run.hr_max ? ' ' + t('bpm') : '') + '</div>' +
-          elevDetail +
-          '<div class="details-row"><span class="details-key">' + t('det_sneakers') + '</span>' + run.sneakers + '</div>' +
-          (run.video ? '<div class="details-row"><span class="details-key">' + t('det_video') + '</span><a href="' + run.video + '" target="_blank" rel="noopener">' + run.video + '</a></div>' : '') +
-          '<div class="photos-wrap">' +
-            '<div class="photos-label">' + t('photos') + '</div>' +
-            photoGrid(run.photos) +
-          '</div>' +
-        '</div>';
-      }()) +
+      '<div class="run-stats">' +
+        '<div class="stat"><div class="stat-label">' + t('pace') + '</div><div class="stat-value">' + calcPace(run.distance_km, run.total_time) + '</div><div class="stat-sub">' + t('min_km') + '</div></div>' +
+        '<div class="stat"><div class="stat-label">' + t('elevation') + '</div><div class="stat-value">' + (elev > 0 ? elev : '—') + '</div><div class="stat-sub">' + (elev > 0 ? t('m') : '') + '</div></div>' +
+        '<div class="stat"><div class="stat-label">' + t('avg_hr') + '</div><div class="stat-value">' + (run.hr_avg || '--') + '</div><div class="stat-sub">' + (run.hr_avg ? t('bpm') : '') + '</div></div>' +
+        '<div class="stat"><div class="stat-label">' + t('total_time') + '</div><div class="stat-value">' + run.total_time + '</div></div>' +
+      '</div>' +
     '</article>';
   }).join('');
+}
+
+// ── Render: Overview ──────────────────────────────────────────
+
+function renderOverview() {
+  var el = document.getElementById('page-overview');
+  if (!el) return;
+  if (RUNS.length === 0) { el.innerHTML = ''; return; }
+
+  var totalKm   = RUNS.reduce(function(s, r) { return s + r.distance_km; }, 0);
+  var climbed   = RUNS.reduce(function(s, r) { return s + (r.elevation || 0); }, 0);
+  var longest   = Math.max.apply(null, RUNS.map(function(r) { return r.distance_km; }));
+  var firstYear = Math.min.apply(null, RUNS.map(function(r) { return +r.date.slice(0, 4); }));
+  var sorted    = RUNS.slice().sort(function(a, b) { return b.date.localeCompare(a.date); });
+  var latest    = sorted[0];
+  var pb5       = PERSONAL_BESTS.find(function(p) { return p.distance_km === 5; });
+
+  // Hero photo: the photo-rich run with the most elevation (mountains first)
+  var withPhotos = sorted.filter(function(r) { return r.photos && r.photos.length; });
+  var heroRun = withPhotos.slice().sort(function(a, b) { return (b.elevation || 0) - (a.elevation || 0); })[0];
+  var heroSrc = heroRun ? heroRun.photos[0] : '';
+
+  // All photos (newest first) back the memories lightbox
+  var allPhotos = [];
+  withPhotos.forEach(function(r) { allPhotos = allPhotos.concat(r.photos); });
+  photoGrid._sets = photoGrid._sets || {};
+  photoGrid._sets['ov'] = allPhotos;
+
+  var gridRuns = withPhotos.slice(0, 4);
+  var medals   = RUNS.filter(function(r) { return r.medal; }).length;
+
+  var cells = gridRuns.map(function(r, i) {
+    var idx = allPhotos.indexOf(r.photos[0]);
+    var cap = (i === 0 || i === 2)
+      ? '<div class="ov-cap">' + (r.race_name || locStr(r)) + ' · ' + r.distance_km + ' ' + t('km') + '</div>'
+      : '';
+    return '<div class="ov-cell' + (i === 0 ? ' big' : '') + '" onclick="openLb(\'ov\',' + idx + ')">' +
+      '<img src="' + r.photos[0] + '" alt="" loading="lazy">' + cap + '</div>';
+  });
+  var extra = Math.max(0, allPhotos.length - gridRuns.length);
+  cells.push('<div class="ov-cell ov-more" onclick="openLb(\'ov\',' + Math.min(4, Math.max(allPhotos.length - 1, 0)) + ')">+ ' + extra + '<small>' + t('ov_more_photos') + '</small></div>');
+
+  var newPb = PERSONAL_BESTS.find(function(p) { return p.date === latest.date; });
+
+  el.innerHTML =
+    '<div class="ov-hero">' +
+      (heroSrc ? '<img class="ov-hero-img" src="' + heroSrc + '" alt="">' : '') +
+      '<div class="ov-hero-grad"></div>' +
+      '<div class="ov-hero-inner">' +
+        '<div class="ov-eyebrow">' + t('ov_since')(firstYear) + '</div>' +
+        '<div class="ov-headline">' + t('ov_headline')(Math.round(totalKm), RUNS.length) + '</div>' +
+        '<div class="ov-statrow">' +
+          '<div><div class="ov-stat-num">' + climbed.toLocaleString() + '<small> ' + t('m') + '</small></div><div class="ov-stat-lbl">' + t('ov_climbed') + '</div></div>' +
+          '<div><div class="ov-stat-num">' + longest + '<small> ' + t('km') + '</small></div><div class="ov-stat-lbl">' + t('ov_longest') + '</div></div>' +
+          (pb5 ? '<div><div class="ov-stat-num">' + pb5.total_time.replace(/^0:/, '') + '</div><div class="ov-stat-lbl">' + t('ov_fastest5k') + '</div></div>' : '') +
+          '<button class="ov-explore" onclick="showPage(\'runs\', document.getElementById(\'nav-runs\'))">' + t('ov_explore') + '</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="ov-col ov-mem">' +
+      '<div class="ov-mem-head">' +
+        '<div class="ov-mem-title">' + t('ov_memories') + '</div>' +
+        '<div class="ov-mem-meta">' + t('ov_meta')(allPhotos.length, medals) + '</div>' +
+      '</div>' +
+      '<div class="ov-grid">' + cells.join('') + '</div>' +
+    '</div>' +
+    '<div class="ov-col ov-latest">' +
+      '<div class="ov-latest-lbl">' + t('ov_latest') + '</div>' +
+      '<div class="ov-latest-card">' +
+        (latest.medal ? '<img class="ov-latest-medal" src="' + latest.medal + '" alt="medal" onclick="openLbSingle(this.src)">' : '') +
+        '<div>' +
+          '<div class="ov-latest-meta">' + fmtDate(latest.date) + ' · ' + locStr(latest) + '</div>' +
+          '<div class="ov-latest-name">' + (latest.race_name || locStr(latest)) + '</div>' +
+        '</div>' +
+        (newPb ? '<div class="ov-pb-pill">' + t('ov_new_pb')(pbDistLabel(newPb)) + '</div>' : '') +
+        '<div class="ov-latest-right">' +
+          '<div class="ov-latest-time">' + latest.total_time.replace(/^0:/, '') + '</div>' +
+          '<div class="ov-latest-sub">' + latest.distance_km + ' ' + t('km') + ' · ' + calcPace(latest.distance_km, latest.total_time) + ' ' + t('min_km') + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
 }
 
 // ── Render: Personal Bests ────────────────────────────────────
@@ -1765,6 +1876,32 @@ function renderPBs() {
       }
     }
 
+    // Progression bar chart: history + current PB, bar height ∝ time (chipping away)
+    var chartHtml = '';
+    if (pb.previous_records && pb.previous_records.length >= 2) {
+      var bars = pb.previous_records.slice()
+        .sort(function(a, b) { return a.date.localeCompare(b.date); })
+        .map(function(r) { return { sec: timeToSec(r.time), year: r.date.slice(0, 4) }; });
+      bars.push({ sec: timeToSec(pb.total_time), year: pb.date.slice(0, 4), pb: true });
+      var maxSec = Math.max.apply(null, bars.map(function(b) { return b.sec; }));
+      var span   = parseInt(bars[bars.length - 1].year, 10) - parseInt(bars[0].year, 10);
+      var nBars  = bars.length;
+      chartHtml = '<div class="pbp-wrap">' +
+        '<div class="pbp-label">' + t('pbp_label')(span) + '</div>' +
+        '<div class="pbp-bars">' +
+        bars.map(function(b, bi) {
+          var h   = Math.max(18, Math.round(b.sec / maxSec * 100));
+          var cls = b.pb ? 'pb' : (bi < (nBars - 1) / 2 ? 'old' : 'mid');
+          return '<div class="pbp-col">' +
+            '<div class="pbp-bar ' + cls + '" style="height:' + h + 'px">' +
+              (b.pb ? '<div class="pbp-pblabel">PB</div>' : '') +
+            '</div>' +
+            '<div class="pbp-year' + (b.pb ? ' pb' : '') + '">’' + b.year.slice(2) + '</div>' +
+          '</div>';
+        }).join('') +
+        '</div></div>';
+    }
+
     return '<article class="pb-card">' +
       '<div class="pb-head">' +
         '<div class="pb-dist-name">' + pbDistLabel(pb) + '</div>' +
@@ -1786,6 +1923,8 @@ function renderPBs() {
           '<div class="stat-value">' + (pb.hr_avg || '--') + (pb.hr_avg ? ' <span style="font-size:11px;color:var(--muted);font-weight:600">' + t('avg') + '</span>' : '') + '</div>' +
           '<div class="stat-sub">' + (pb.hr_max ? t('max') + ' ' + pb.hr_max + ' ' + t('bpm') : '--') + '</div></div>' +
       '</div>' +
+
+      chartHtml +
 
       '<div style="padding:12px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">' +
         '<span class="stat-label" style="margin:0">' + t('sneakers') + '</span>' +
@@ -2377,10 +2516,12 @@ function setLang(lang) {
   document.getElementById('lang-en').classList.toggle('active', lang === 'en');
   document.getElementById('lang-be').classList.toggle('active', lang === 'be');
   document.getElementById('logo').innerHTML      = t('logo');
+  document.getElementById('nav-overview').textContent    = t('nav_overview');
   document.getElementById('nav-runs').textContent        = t('nav_runs');
   document.getElementById('nav-pbs').textContent         = t('nav_pbs');
   document.getElementById('nav-activities').textContent  = t('nav_activities');
 
+  renderOverview();
   buildFilterOptions();
   applyFilters();
   buildPBChartOptions();
@@ -2392,20 +2533,15 @@ function setLang(lang) {
 
 // ── Interactions ──────────────────────────────────────────────
 
-function toggleDetails(i) {
-  var det  = document.getElementById('det-'  + i);
-  var btn  = document.getElementById('ebtn-' + i);
-  var open = det.classList.toggle('open');
-  btn.textContent = open ? '▾  ' + t('hide_details') : '▸  ' + t('photos_details');
-}
-
 function showPage(name, btn) {
   document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('visible'); });
   document.querySelectorAll('nav button').forEach(function(b) { b.classList.remove('active'); });
   document.getElementById('page-' + name).classList.add('visible');
   btn.classList.add('active');
   document.getElementById('runs-filterbar').style.display = name === 'runs' ? ''      : 'none';
+  document.getElementById('runs-count-bar').style.display = name === 'runs' ? ''      : 'none';
   document.getElementById('pbs-chart').style.display      = name === 'pbs'  ? 'block' : 'none';
+  if (name === 'overview')   { renderOverview(); }
   if (name === 'activities') { initActivitiesControls(); buildYearJumps(); renderActivities(); }
   closeNav();
 }
