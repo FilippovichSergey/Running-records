@@ -1,0 +1,23 @@
+{
+  "date": "2026-08-09",
+  "race_name": "MESTIA ULTRA",
+  "location": "Mestia",
+  "location_be": "Месція",
+  "country": "Georgia",
+  "country_be": "Грузія",
+  "distance_km": 47.41,
+  "total_time": "8:51:38",
+  "hr_avg": 133,
+  "hr_max": 163,
+  "elevation": 2470,
+  "sneakers": "Nike Pegasus Trail GTX 4",
+  "video": "",
+  "medal": "data/photos/2026-08-09/medal.jpg",
+  "photos": [
+    "data/photos/2026-08-09/MestiaUltra2026-20260721102200-6faf83f11748.jpg",
+    "data/photos/2026-08-09/MestiaUltra2026-20260725004121-838f453c9cc9.jpg",
+    "data/photos/2026-08-09/MestiaUltra2026-20260725083842-d35982a3752b.jpg",
+    "data/photos/2026-08-09/MestiaUltra2026-20260725083845-c0802eb1b1f2.jpg",
+    "data/photos/2026-08-09/MestiaUltra2026-20260726105044-83b524690997.jpg"
+  ]
+}
