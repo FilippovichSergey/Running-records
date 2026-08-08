@@ -8,11 +8,16 @@ A personal running log with a visual HTML dashboard and a GUI script for adding 
 
 ```
 Running records/
-├── running-log.html       # Dashboard — open in a browser to view your log
+├── index.html             # Dashboard markup + styles — open in a browser to view your log
+├── app.js                 # Dashboard logic (external, so a strict CSP can forbid inline scripts)
+├── vercel.json            # Security headers (Content-Security-Policy, etc.) for the hosted site
 ├── add_new_event.py       # GUI script for managing runs and personal bests
 ├── run.bat                # Shortcut to launch the script on Windows
 ├── process_activities.py  # Processes Garmin CSV exports into data/activities.js
 ├── process_activities.bat # Shortcut to run the processor on Windows
+├── fetch_strava.py        # Optional: pull activities from the Strava API
+├── fetch_garmin.py        # Optional: pull activities from Garmin Connect
+├── resize_images.py       # Optional: batch-resize photos with ImageMagick
 └── data/
     ├── data.js            # Auto-generated — do not edit manually
     ├── activities.js      # Auto-generated — do not edit manually
@@ -27,7 +32,7 @@ Running records/
 
 ## Viewing the log
 
-Open `running-log.html` in any browser. No server required.
+Open `index.html` in any browser. No server required.
 
 - **All Runs** tab — competition runs sorted newest first. Each card shows pace, avg HR, and total time. Distance-type tags (⚡ Sprint · 🏃 Mid · 🏅 Long · 🎽 Marathon · 🏔 Ultra · 🌿 Trail) and a medal thumbnail appear at a glance. Filter by year, distance type, or location. Expand a card for full details and photos.
 - **Personal Bests** tab — best time per distance with pace, heart rate, sneakers, and previous records. An expandable trend chart shows pace or time history for a chosen distance.
@@ -203,3 +208,43 @@ Each event is stored as a standalone JSON file:
 - `video`, `medal` are optional — omit the key entirely if not set.
 - Pace is calculated from `distance_km` and `total_time` — it is not stored.
 - Elevation `0` is shown only in the expanded details panel, not in the stats row.
+
+---
+
+## Security
+
+The site is static (HTML + JS + JSON) with no backend, no database, and no third-party frontend libraries, so the attack surface is small. The following measures harden it further.
+
+### Content-Security-Policy and HTTP headers
+
+`vercel.json` sets a strict CSP and companion headers on every response:
+
+| Header | Value / effect |
+|---|---|
+| `Content-Security-Policy` | `default-src 'self'`; `script-src 'self'` (no `unsafe-inline` — inline scripts cannot execute); `style-src 'self' 'unsafe-inline'`; `img-src 'self' data:`; `connect-src 'self'`; `object-src 'none'`; `base-uri 'self'`; `frame-ancestors 'none'`; `upgrade-insecure-requests` |
+| `X-Content-Type-Options` | `nosniff` |
+| `X-Frame-Options` | `DENY` (anti-clickjacking, alongside `frame-ancestors 'none'`) |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | camera / microphone / geolocation disabled |
+
+Because `script-src` is `'self'` with no `'unsafe-inline'`, all JavaScript lives in `app.js` and there are **no inline event handlers** — the dashboard wires events with `addEventListener` and a delegated `data-action` click handler. This means an injected `<script>` or `onerror=` attribute cannot run.
+
+### Output escaping (XSS)
+
+All user-authored data (race name, location, sneakers, times, photo/medal paths, activity type) is HTML-escaped with an `esc()` helper before it is inserted into the DOM. Video links are passed through `safeUrl()`, which allows only `http(s)://` URLs — `javascript:` / `data:` links are neutralised.
+
+### Credentials and secrets
+
+- `fetch_strava.py` and `fetch_garmin.py` store credentials and OAuth tokens in local files only. These are git-ignored and must never be committed:
+  `garmin_credentials.json`, `strava_credentials.json`, `strava_token.json`, `.garmin_tokens/`.
+- No secrets are hardcoded in the code, and secret values are never printed to stdout (passwords are read with `getpass`).
+- TLS verification is left at the secure default (no `verify=False`); subprocess calls use argument lists (no `shell=True`).
+
+### Keeping dependencies current
+
+The optional sync scripts depend on `requests` and (for Garmin) `garminconnect`. There is no `requirements.txt`, so pin/update deliberately and run an audit periodically:
+
+```
+pip install pip-audit
+pip-audit
+```
