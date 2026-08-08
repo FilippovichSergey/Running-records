@@ -142,7 +142,7 @@ const RUNS_DATA = [
     "hr_avg": 158,
     "hr_max": 176,
     "elevation": 0,
-    "sneakers": "Nike Vaporfly 4",
+    "sneakers": "Nike Zoom Fly 4",
     "video": "",
     "medal": "",
     "photos": [
@@ -450,7 +450,7 @@ const PBS_DATA = [
     "country_be": "Грузія",
     "hr_avg": 158,
     "hr_max": 176,
-    "sneakers": "Nike Vaporfly 4",
+    "sneakers": "Nike Zoom Fly 4",
     "video": "",
     "medal": "",
     "photos": [
