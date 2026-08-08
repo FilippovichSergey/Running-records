@@ -1325,6 +1325,21 @@ const I18N = {
 let LANG = localStorage.getItem('lang') || 'be';
 const t = key => I18N[LANG][key];
 
+// ── Security: escape untrusted data before it enters innerHTML ──
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+// Only allow http(s) links; anything else (javascript:, data:, …) is neutralised.
+function safeUrl(u) {
+  var s = String(u || '').trim();
+  return /^https?:\/\//i.test(s) ? s : '';
+}
+
 function locStr(obj) {
   return (LANG === 'be' && obj.location_be) ? obj.location_be : obj.location;
 }
@@ -1382,7 +1397,7 @@ function photoGrid(photos) {
   return '<div class="photos-grid" data-pgid="' + id + '">' +
     photos.map(function(src, i) {
       return '<div class="photo-thumb" onclick="openLb(\'' + id + '\',' + i + ')">' +
-               '<img src="' + src + '" alt="" loading="lazy">' +
+               '<img src="' + esc(src) + '" alt="" loading="lazy">' +
              '</div>';
     }).join('') +
   '</div>';
@@ -1694,9 +1709,10 @@ function runTags(run) {
 }
 
 function hlText(text, query) {
-  if (!query) return text;
-  var re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-  return text.replace(re, '<mark>$1</mark>');
+  var safe = esc(text);                       // escape first — output is safe HTML
+  if (!query) return safe;
+  var re = new RegExp('(' + esc(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+  return safe.replace(re, '<mark>$1</mark>');
 }
 
 function renderRuns(runs, searchQuery, raceQuery) {
@@ -1723,13 +1739,13 @@ function renderRuns(runs, searchQuery, raceQuery) {
       stripHtml = '<div class="rc-strip">' +
         strip.map(function(src, n) {
           var idx = Math.min(n, lbSet.length - 1);
-          return '<img src="' + src + '" alt="" loading="lazy" onclick="openLb(\'' + setId + '\',' + idx + ')">';
+          return '<img src="' + esc(src) + '" alt="" loading="lazy" onclick="openLb(\'' + setId + '\',' + idx + ')">';
         }).join('') +
-        (run.medal ? '<img class="rc-medal" src="' + run.medal + '" alt="medal" loading="lazy" onclick="event.stopPropagation(); openLbSingle(this.src)">' : '') +
+        (run.medal ? '<img class="rc-medal" src="' + esc(run.medal) + '" alt="medal" loading="lazy" onclick="event.stopPropagation(); openLbSingle(this.src)">' : '') +
       '</div>';
     } else if (run.medal) {
       stripHtml = '<div class="rc-strip single">' +
-        '<img src="' + run.medal + '" alt="medal" loading="lazy" onclick="openLbSingle(this.src)">' +
+        '<img src="' + esc(run.medal) + '" alt="medal" loading="lazy" onclick="openLbSingle(this.src)">' +
       '</div>';
     }
 
@@ -1744,15 +1760,15 @@ function renderRuns(runs, searchQuery, raceQuery) {
         '<div class="rc-meta">' + fmtDate(run.date) + ' · ' + hlText(locStr(run), searchQuery) + '</div>' +
         '<div class="rc-titlerow">' +
           '<div class="rc-title">' + title + '</div>' +
-          '<div class="rc-dist">' + run.distance_km + '<small> ' + t('km') + '</small></div>' +
+          '<div class="rc-dist">' + esc(run.distance_km) + '<small> ' + t('km') + '</small></div>' +
         '</div>' +
         runTags(run) +
       '</div>' +
       '<div class="run-stats">' +
-        '<div class="stat"><div class="stat-label">' + t('pace') + '</div><div class="stat-value">' + calcPace(run.distance_km, run.total_time) + '</div><div class="stat-sub">' + t('min_km') + '</div></div>' +
-        '<div class="stat"><div class="stat-label">' + t('elevation') + '</div><div class="stat-value">' + (elev > 0 ? elev : '—') + '</div><div class="stat-sub">' + (elev > 0 ? t('m') : '') + '</div></div>' +
-        '<div class="stat"><div class="stat-label">' + t('avg_hr') + '</div><div class="stat-value">' + (run.hr_avg || '--') + '</div><div class="stat-sub">' + (run.hr_avg ? t('bpm') : '') + '</div></div>' +
-        '<div class="stat"><div class="stat-label">' + t('total_time') + '</div><div class="stat-value">' + run.total_time + '</div></div>' +
+        '<div class="stat"><div class="stat-label">' + t('pace') + '</div><div class="stat-value">' + esc(calcPace(run.distance_km, run.total_time)) + '</div><div class="stat-sub">' + t('min_km') + '</div></div>' +
+        '<div class="stat"><div class="stat-label">' + t('elevation') + '</div><div class="stat-value">' + (elev > 0 ? esc(elev) : '—') + '</div><div class="stat-sub">' + (elev > 0 ? t('m') : '') + '</div></div>' +
+        '<div class="stat"><div class="stat-label">' + t('avg_hr') + '</div><div class="stat-value">' + esc(run.hr_avg || '--') + '</div><div class="stat-sub">' + (run.hr_avg ? t('bpm') : '') + '</div></div>' +
+        '<div class="stat"><div class="stat-label">' + t('total_time') + '</div><div class="stat-value">' + esc(run.total_time) + '</div></div>' +
       '</div>' +
     '</article>';
   }).join('');
@@ -1790,10 +1806,10 @@ function renderOverview() {
   var cells = gridRuns.map(function(r, i) {
     var idx = allPhotos.indexOf(r.photos[0]);
     var cap = (i === 0 || i === 2)
-      ? '<div class="ov-cap">' + (r.race_name || locStr(r)) + ' · ' + r.distance_km + ' ' + t('km') + '</div>'
+      ? '<div class="ov-cap">' + esc(r.race_name || locStr(r)) + ' · ' + esc(r.distance_km) + ' ' + t('km') + '</div>'
       : '';
     return '<div class="ov-cell' + (i === 0 ? ' big' : '') + '" onclick="openLb(\'ov\',' + idx + ')">' +
-      '<img src="' + r.photos[0] + '" alt="" loading="lazy">' + cap + '</div>';
+      '<img src="' + esc(r.photos[0]) + '" alt="" loading="lazy">' + cap + '</div>';
   });
   var extra = Math.max(0, allPhotos.length - gridRuns.length);
   cells.push('<div class="ov-cell ov-more" onclick="openLb(\'ov\',' + Math.min(4, Math.max(allPhotos.length - 1, 0)) + ')">+ ' + extra + '<small>' + t('ov_more_photos') + '</small></div>');
@@ -1802,15 +1818,15 @@ function renderOverview() {
 
   el.innerHTML =
     '<div class="ov-hero">' +
-      (heroSrc ? '<img class="ov-hero-img" src="' + heroSrc + '" alt="">' : '') +
+      (heroSrc ? '<img class="ov-hero-img" src="' + esc(heroSrc) + '" alt="">' : '') +
       '<div class="ov-hero-grad"></div>' +
       '<div class="ov-hero-inner">' +
         '<div class="ov-eyebrow">' + t('ov_since')(firstYear) + '</div>' +
         '<div class="ov-headline">' + t('ov_headline')(Math.round(totalKm), RUNS.length) + '</div>' +
         '<div class="ov-statrow">' +
           '<div><div class="ov-stat-num">' + climbed.toLocaleString() + '<small> ' + t('m') + '</small></div><div class="ov-stat-lbl">' + t('ov_climbed') + '</div></div>' +
-          '<div><div class="ov-stat-num">' + longest + '<small> ' + t('km') + '</small></div><div class="ov-stat-lbl">' + t('ov_longest') + '</div></div>' +
-          (pb5 ? '<div><div class="ov-stat-num">' + pb5.total_time.replace(/^0:/, '') + '</div><div class="ov-stat-lbl">' + t('ov_fastest5k') + '</div></div>' : '') +
+          '<div><div class="ov-stat-num">' + esc(longest) + '<small> ' + t('km') + '</small></div><div class="ov-stat-lbl">' + t('ov_longest') + '</div></div>' +
+          (pb5 ? '<div><div class="ov-stat-num">' + esc(pb5.total_time.replace(/^0:/, '')) + '</div><div class="ov-stat-lbl">' + t('ov_fastest5k') + '</div></div>' : '') +
           '<button class="ov-explore" onclick="showPage(\'runs\', document.getElementById(\'nav-runs\'))">' + t('ov_explore') + '</button>' +
         '</div>' +
       '</div>' +
@@ -1825,15 +1841,15 @@ function renderOverview() {
     '<div class="ov-col ov-latest">' +
       '<div class="ov-latest-lbl">' + t('ov_latest') + '</div>' +
       '<div class="ov-latest-card">' +
-        (latest.medal ? '<img class="ov-latest-medal" src="' + latest.medal + '" alt="medal" onclick="openLbSingle(this.src)">' : '') +
+        (latest.medal ? '<img class="ov-latest-medal" src="' + esc(latest.medal) + '" alt="medal" onclick="openLbSingle(this.src)">' : '') +
         '<div>' +
-          '<div class="ov-latest-meta">' + fmtDate(latest.date) + ' · ' + locStr(latest) + '</div>' +
-          '<div class="ov-latest-name">' + (latest.race_name || locStr(latest)) + '</div>' +
+          '<div class="ov-latest-meta">' + fmtDate(latest.date) + ' · ' + esc(locStr(latest)) + '</div>' +
+          '<div class="ov-latest-name">' + esc(latest.race_name || locStr(latest)) + '</div>' +
         '</div>' +
-        (newPb ? '<div class="ov-pb-pill">' + t('ov_new_pb')(pbDistLabel(newPb)) + '</div>' : '') +
+        (newPb ? '<div class="ov-pb-pill">' + t('ov_new_pb')(esc(pbDistLabel(newPb))) + '</div>' : '') +
         '<div class="ov-latest-right">' +
-          '<div class="ov-latest-time">' + latest.total_time.replace(/^0:/, '') + '</div>' +
-          '<div class="ov-latest-sub">' + latest.distance_km + ' ' + t('km') + ' · ' + calcPace(latest.distance_km, latest.total_time) + ' ' + t('min_km') + '</div>' +
+          '<div class="ov-latest-time">' + esc(latest.total_time.replace(/^0:/, '')) + '</div>' +
+          '<div class="ov-latest-sub">' + esc(latest.distance_km) + ' ' + t('km') + ' · ' + esc(calcPace(latest.distance_km, latest.total_time)) + ' ' + t('min_km') + '</div>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -1852,9 +1868,9 @@ function renderPBs() {
       historyHtml = '<div class="pb-history"><div class="history-head">' + t('prev_records') + '</div>' +
         pb.previous_records.map(function(r) {
           return '<div class="history-row">' +
-            '<div class="history-time">' + r.time + '</div>' +
+            '<div class="history-time">' + esc(r.time) + '</div>' +
             '<div class="history-date">' + fmtDate(r.date) + '</div>' +
-            '<div class="history-loc">' + locStr(r) + '</div>' +
+            '<div class="history-loc">' + esc(locStr(r)) + '</div>' +
           '</div>';
         }).join('') +
       '</div>';
@@ -1902,12 +1918,14 @@ function renderPBs() {
         '</div></div>';
     }
 
+    var pbVideo = safeUrl(pb.video);
+
     return '<article class="pb-card">' +
       '<div class="pb-head">' +
-        '<div class="pb-dist-name">' + pbDistLabel(pb) + '</div>' +
-        (pb.race_name ? '<div class="pb-race">' + pb.race_name + '</div>' : '') +
+        '<div class="pb-dist-name">' + esc(pbDistLabel(pb)) + '</div>' +
+        (pb.race_name ? '<div class="pb-race">' + esc(pb.race_name) + '</div>' : '') +
         '<div style="display:flex;align-items:center;gap:10px;">' +
-          '<div class="pb-time">' + pb.total_time + '</div>' +
+          '<div class="pb-time">' + esc(pb.total_time) + '</div>' +
           progHtml +
         '</div>' +
       '</div>' +
@@ -1915,25 +1933,25 @@ function renderPBs() {
       '<div class="pb-stats">' +
         '<div class="pb-stat"><div class="stat-label">' + t('date_place') + '</div>' +
           '<div class="stat-value" style="font-size:14px;font-weight:700;">' + fmtDate(pb.date) + '</div>' +
-          '<div class="stat-sub">' + locStr(pb) + '</div></div>' +
+          '<div class="stat-sub">' + esc(locStr(pb)) + '</div></div>' +
         '<div class="pb-stat"><div class="stat-label">' + t('pace') + '</div>' +
-          '<div class="stat-value">' + calcPace(pb.distance_km, pb.total_time) + '</div>' +
+          '<div class="stat-value">' + esc(calcPace(pb.distance_km, pb.total_time)) + '</div>' +
           '<div class="stat-sub">' + t('min_km') + '</div></div>' +
         '<div class="pb-stat"><div class="stat-label">' + t('heart_rate') + '</div>' +
-          '<div class="stat-value">' + (pb.hr_avg || '--') + (pb.hr_avg ? ' <span style="font-size:11px;color:var(--muted);font-weight:600">' + t('avg') + '</span>' : '') + '</div>' +
-          '<div class="stat-sub">' + (pb.hr_max ? t('max') + ' ' + pb.hr_max + ' ' + t('bpm') : '--') + '</div></div>' +
+          '<div class="stat-value">' + esc(pb.hr_avg || '--') + (pb.hr_avg ? ' <span style="font-size:11px;color:var(--muted);font-weight:600">' + t('avg') + '</span>' : '') + '</div>' +
+          '<div class="stat-sub">' + (pb.hr_max ? t('max') + ' ' + esc(pb.hr_max) + ' ' + t('bpm') : '--') + '</div></div>' +
       '</div>' +
 
       chartHtml +
 
       '<div style="padding:12px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">' +
         '<span class="stat-label" style="margin:0">' + t('sneakers') + '</span>' +
-        '<span style="font-size:14px;font-weight:700;">' + pb.sneakers + '</span>' +
+        '<span style="font-size:14px;font-weight:700;">' + esc(pb.sneakers) + '</span>' +
       '</div>' +
 
-      (pb.video ? '<div style="padding:10px 24px;border-bottom:1px solid var(--border)">' +
+      (pbVideo ? '<div style="padding:10px 24px;border-bottom:1px solid var(--border)">' +
         '<span class="stat-label" style="margin:0">' + t('video') + '</span> ' +
-        '<a href="' + pb.video + '" target="_blank" rel="noopener" style="font-size:14px">' + pb.video + '</a>' +
+        '<a href="' + esc(pbVideo) + '" target="_blank" rel="noopener" style="font-size:14px">' + esc(pbVideo) + '</a>' +
       '</div>' : '') +
 
       photosHtml +
@@ -1964,7 +1982,7 @@ function initActivitiesControls() {
   var cur = sel.value || 'all';
   var types = [...new Set(ACTIVITIES.map(function(a) { return a.type; }))].sort();
   sel.innerHTML = '<option value="all">' + t('act_all_running') + '</option>' +
-    types.map(function(tp) { return '<option value="' + tp + '">' + tp + '</option>'; }).join('');
+    types.map(function(tp) { return '<option value="' + esc(tp) + '">' + esc(tp) + '</option>'; }).join('');
   if (cur !== 'all' && types.indexOf(cur) !== -1) sel.value = cur;
 
   initCmpControls();
@@ -2248,18 +2266,18 @@ function renderActList(acts, bounds) {
   var listHtml = sorted.map(function(a) {
     var pace       = a.distance_km > 0 ? calcPace(a.distance_km, a.time) : '--';
     var elevHtml   = a.elevation > 0
-      ? '<div class="act-stat"><span class="act-stat-val">' + a.elevation + '</span>' +
+      ? '<div class="act-stat"><span class="act-stat-val">' + esc(a.elevation) + '</span>' +
         '<span class="act-stat-lbl">' + t('elevation') + ', ' + t('m') + '</span></div>'
       : '';
     var typeClass  = a.type.toLowerCase().indexOf('trail') !== -1 ? ' trail' : '';
     return '<div class="act-row">' +
       '<div style="min-width:110px;font-size:13px;color:var(--muted);font-weight:600">' + fmtDate(a.date) + '</div>' +
-      '<span class="act-type' + typeClass + '">' + a.type + '</span>' +
-      '<div class="act-stat"><span class="act-stat-val">' + a.distance_km.toFixed(2) + '</span>' +
+      '<span class="act-type' + typeClass + '">' + esc(a.type) + '</span>' +
+      '<div class="act-stat"><span class="act-stat-val">' + esc(a.distance_km.toFixed(2)) + '</span>' +
         '<span class="act-stat-lbl">' + t('km') + '</span></div>' +
-      '<div class="act-stat"><span class="act-stat-val">' + a.time + '</span>' +
+      '<div class="act-stat"><span class="act-stat-val">' + esc(a.time) + '</span>' +
         '<span class="act-stat-lbl">' + t('total_time') + '</span></div>' +
-      '<div class="act-stat"><span class="act-stat-val">' + pace + '</span>' +
+      '<div class="act-stat"><span class="act-stat-val">' + esc(pace) + '</span>' +
         '<span class="act-stat-lbl">' + t('min_km') + '</span></div>' +
       elevHtml +
     '</div>';
