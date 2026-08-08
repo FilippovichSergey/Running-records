@@ -1,4 +1,5 @@
 run.bat
+.claude/
 data/photos_backup/
 .garmin_tokens/
 garmin_credentials.json
