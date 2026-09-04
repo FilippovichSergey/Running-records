@@ -64,8 +64,8 @@ def resize(img: Path, dest: Path, max_size: int, quality: int, no_enlarge: bool)
         str(img),
         "-resize", geometry,
         "-quality", str(quality),
+        "-auto-orient",    # must come BEFORE -strip, which deletes the EXIF tag
         "-strip",          # remove EXIF/ICC metadata to reduce file size
-        "-auto-orient",    # apply EXIF rotation before stripping
         str(dest),
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)

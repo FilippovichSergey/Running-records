@@ -73,6 +73,21 @@ def _strip_meta(records):
     return [{k: v for k, v in r.items() if not k.startswith("_")} for r in records]
 
 
+def refresh_previews():
+    """Regenerate the WebP previews the dashboard displays.
+
+    Best-effort: ImageMagick is an external dependency, so a failure here must
+    never take down the editor after the JSON has already been written.
+    """
+    try:
+        import make_previews
+        if make_previews.main([]) != 0:
+            print("Warning: some previews failed — run 'python make_previews.py' to see why.")
+    except Exception as exc:
+        print(f"Warning: previews not generated ({exc}). "
+              "Run 'python make_previews.py' before committing.")
+
+
 def rebuild_data_js():
     runs = load_all_runs()
     pbs  = load_all_pbs()
@@ -82,6 +97,7 @@ def rebuild_data_js():
         f"const PBS_DATA = {json.dumps(_strip_meta(pbs),  ensure_ascii=False, indent=2)};\n"
     )
     DATA_JS.write_text(js, "utf-8")
+    refresh_previews()   # data.js is the source of truth for which previews exist
 
 
 def copy_photos(src_folder: str, event_key: str) -> list[str]:

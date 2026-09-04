@@ -248,6 +248,30 @@ function safeUrl(u) {
   return /^https?:\/\//i.test(s) ? s : '';
 }
 
+// ── Preview images ────────────────────────────────────────────
+// Display slots get a small WebP preview; the lightbox keeps the original.
+// Tiers must match TIERS in make_previews.py.
+//   micro 256px — 64px medal badges
+//   thumb 640px — small Overview cells, strip cells 2-3, PB grid
+//   card 1280px — big Overview cell, first strip cell, hero
+var PREVIEW_TIERS = { micro: 1, thumb: 1, card: 1 };
+
+function previewSrc(src, tier) {
+  var s = String(src == null ? '' : src);
+  if (s.indexOf('data/photos/') !== 0) return s;   // foreign/absolute path: leave alone
+  // Keep the rest of the path verbatim (including any "resized/" segment) so the
+  // mapping is 1:1; only swap the extension. [^./] guards folders with a dot,
+  // e.g. "pb_21.1_км/IMG_2340.JPG".
+  var rel = s.slice(12).replace(/\.[^./]+$/, '') + '.webp';
+  return 'data/previews/' + (PREVIEW_TIERS[tier] ? tier : 'card') + '/' + rel;
+}
+
+// src= points at the preview, data-full= keeps the original for the lightbox
+// and for the error fallback in initEvents().
+function imgAttrs(full, tier) {
+  return 'src="' + esc(previewSrc(full, tier)) + '" data-full="' + esc(full) + '" decoding="async"';
+}
+
 function locStr(obj) {
   return (LANG === 'be' && obj.location_be) ? obj.location_be : obj.location;
 }
@@ -305,7 +329,7 @@ function photoGrid(photos) {
   return '<div class="photos-grid" data-pgid="' + id + '">' +
     photos.map(function(src, i) {
       return '<div class="photo-thumb" data-action="open-lb" data-set="' + id + '" data-idx="' + i + '">' +
-               '<img src="' + esc(src) + '" alt="" loading="lazy">' +
+               '<img ' + imgAttrs(src, 'thumb') + ' alt="" loading="lazy">' +
              '</div>';
     }).join('') +
   '</div>';
@@ -647,13 +671,14 @@ function renderRuns(runs, searchQuery, raceQuery) {
       stripHtml = '<div class="rc-strip">' +
         strip.map(function(src, n) {
           var idx = Math.min(n, lbSet.length - 1);
-          return '<img src="' + esc(src) + '" alt="" loading="lazy" data-action="open-lb" data-set="' + setId + '" data-idx="' + idx + '">';
+          // first cell is ~564px wide, the other two ~282px
+          return '<img ' + imgAttrs(src, n === 0 ? 'card' : 'thumb') + ' alt="" loading="lazy" data-action="open-lb" data-set="' + setId + '" data-idx="' + idx + '">';
         }).join('') +
-        (run.medal ? '<img class="rc-medal" src="' + esc(run.medal) + '" alt="medal" loading="lazy" data-action="open-lb-single">' : '') +
+        (run.medal ? '<img class="rc-medal" ' + imgAttrs(run.medal, 'micro') + ' alt="medal" loading="lazy" data-action="open-lb-single">' : '') +
       '</div>';
     } else if (run.medal) {
       stripHtml = '<div class="rc-strip single">' +
-        '<img src="' + esc(run.medal) + '" alt="medal" loading="lazy" data-action="open-lb-single">' +
+        '<img ' + imgAttrs(run.medal, 'card') + ' alt="medal" loading="lazy" data-action="open-lb-single">' +
       '</div>';
     }
 
@@ -716,8 +741,9 @@ function renderOverview() {
     var cap = (i === 0 || i === 2)
       ? '<div class="ov-cap">' + esc(r.race_name || locStr(r)) + ' · ' + esc(r.distance_km) + ' ' + t('km') + '</div>'
       : '';
+    // first cell spans two rows (~420px wide); the rest are ~210px
     return '<div class="ov-cell' + (i === 0 ? ' big' : '') + '" data-action="open-lb" data-set="ov" data-idx="' + idx + '">' +
-      '<img src="' + esc(r.photos[0]) + '" alt="" loading="lazy">' + cap + '</div>';
+      '<img ' + imgAttrs(r.photos[0], i === 0 ? 'card' : 'thumb') + ' alt="" loading="lazy">' + cap + '</div>';
   });
   var extra = Math.max(0, allPhotos.length - gridRuns.length);
   cells.push('<div class="ov-cell ov-more" data-action="open-lb" data-set="ov" data-idx="' + Math.min(4, Math.max(allPhotos.length - 1, 0)) + '">+ ' + extra + '<small>' + t('ov_more_photos') + '</small></div>');
@@ -726,7 +752,8 @@ function renderOverview() {
 
   el.innerHTML =
     '<div class="ov-hero">' +
-      (heroSrc ? '<img class="ov-hero-img" src="' + esc(heroSrc) + '" alt="">' : '') +
+      // LCP element: eager, high priority
+      (heroSrc ? '<img class="ov-hero-img" ' + imgAttrs(heroSrc, 'card') + ' alt="" fetchpriority="high">' : '') +
       '<div class="ov-hero-grad"></div>' +
       '<div class="ov-hero-inner">' +
         '<div class="ov-eyebrow">' + t('ov_since')(firstYear) + '</div>' +
@@ -749,7 +776,7 @@ function renderOverview() {
     '<div class="ov-col ov-latest">' +
       '<div class="ov-latest-lbl">' + t('ov_latest') + '</div>' +
       '<div class="ov-latest-card">' +
-        (latest.medal ? '<img class="ov-latest-medal" src="' + esc(latest.medal) + '" alt="medal" data-action="open-lb-single">' : '') +
+        (latest.medal ? '<img class="ov-latest-medal" ' + imgAttrs(latest.medal, 'micro') + ' alt="medal" loading="lazy" data-action="open-lb-single">' : '') +
         '<div>' +
           '<div class="ov-latest-meta">' + fmtDate(latest.date) + ' · ' + esc(locStr(latest)) + '</div>' +
           '<div class="ov-latest-name">' + esc(latest.race_name || locStr(latest)) + '</div>' +
@@ -1551,6 +1578,18 @@ function initEvents() {
   byId('cmp-p2-from').addEventListener('change', renderCmpChart);
   byId('cmp-p2-to').addEventListener('change', renderCmpChart);
 
+  // If a preview is missing (e.g. make_previews.py not re-run after adding a
+  // run), fall back to the original instead of showing a broken image.
+  // Capture phase: the error event does not bubble.
+  document.addEventListener('error', function(e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG' || img.getAttribute('data-fellback')) return;
+    var full = img.getAttribute('data-full');
+    if (!full || img.getAttribute('src') === full) return;
+    img.setAttribute('data-fellback', '1');
+    img.setAttribute('src', full);
+  }, true);
+
   // Delegated handlers for dynamically-rendered content
   document.addEventListener('click', function(e) {
     var el = e.target.closest('[data-action]');
@@ -1560,7 +1599,8 @@ function initEvents() {
       openLb(el.getAttribute('data-set'), parseInt(el.getAttribute('data-idx'), 10) || 0);
     } else if (act === 'open-lb-single') {
       e.stopPropagation();
-      openLbSingle(el.getAttribute('src'));
+      // data-full is the original; src is only the small preview.
+      openLbSingle(el.getAttribute('data-full') || el.getAttribute('src'));
     } else if (act === 'show-runs') {
       showPage('runs', document.getElementById('nav-runs'));
     } else if (act === 'jump-year') {

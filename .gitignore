@@ -1,5 +1,6 @@
 run.bat
 .claude/
+__pycache__/
 data/photos_backup/
 .garmin_tokens/
 garmin_credentials.json
