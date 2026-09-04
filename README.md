@@ -20,6 +20,9 @@ Running records/
 ├── resize_images.py       # Optional: batch-resize photos with ImageMagick
 ├── make_previews.py       # Generates the small WebP previews the dashboard displays
 ├── make_previews.bat      # Shortcut to run the preview generator on Windows
+├── make_feed.py           # Generates atom.xml from data/data.js
+├── make_feed.bat          # Shortcut to run the feed generator on Windows
+├── atom.xml               # Auto-generated Atom feed of races — served at /atom.xml
 └── data/
     ├── data.js            # Auto-generated — do not edit manually
     ├── activities.js      # Auto-generated — do not edit manually
@@ -135,7 +138,7 @@ The Sneakers field is a dropdown backed by `data/sneakers.json`. Typing a new na
 
 ### After saving
 
-The script writes a JSON file to `data/runs/` or `data/pbs/`, regenerates `data/data.js`, and then regenerates the photo previews (see below). Refresh the browser to see the updated log.
+The script writes a JSON file to `data/runs/` or `data/pbs/`, regenerates `data/data.js`, and then regenerates the photo previews and `atom.xml` (see below). Refresh the browser to see the updated log.
 
 If ImageMagick is missing the save still succeeds — you will just see a warning, and can run `make_previews.bat` later.
 
@@ -317,6 +320,45 @@ overflow. The rounded corners come from `overflow: hidden` on `.run-card` instea
 
 Both `data/photos/` and `data/previews/` are committed, because the deployed site serves
 the previews and the lightbox serves the originals.
+
+---
+
+## Atom feed
+
+The site publishes an Atom 1.0 feed of races at **`/atom.xml`**, so the log can be
+followed in any feed reader. `index.html` advertises it with a
+`<link rel="alternate" type="application/atom+xml">`, so most readers find it from the
+site URL alone.
+
+One entry per run, newest first, with the race name and distance as the title and a
+short summary (distance, time, pace, elevation, avg HR, location, shoes).
+
+### Regenerating
+
+```
+make_feed.bat
+```
+
+or directly:
+
+```
+python make_feed.py            # write atom.xml
+python make_feed.py --check    # report only, write nothing
+```
+
+It runs automatically after every save in the event editor, so you normally never call
+it by hand.
+
+### Notes
+
+- Entry IDs are `tag:` URIs (RFC 4151) built from the run date, e.g.
+  `tag:running-records-lac.vercel.app,2022:run/2026-08-09`. **Do not change `TAG_HOST` or
+  `TAG_DATE` in `make_feed.py` once published** — every entry would look new to everyone
+  already subscribed.
+- The feed's `<updated>` comes from the newest run date, not the clock, so regenerating
+  an unchanged log produces a byte-identical file instead of git churn.
+- Entries link to the site root, because runs have no individual permalinks.
+- `vercel.json` serves the file as `application/atom+xml; charset=utf-8`.
 
 ---
 

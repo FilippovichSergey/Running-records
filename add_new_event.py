@@ -88,6 +88,15 @@ def refresh_previews():
               "Run 'python make_previews.py' before committing.")
 
 
+def refresh_feed():
+    """Regenerate atom.xml. Best-effort, like refresh_previews()."""
+    try:
+        import make_feed
+        make_feed.main([])
+    except Exception as exc:
+        print(f"Warning: atom.xml not regenerated ({exc}). Run 'python make_feed.py'.")
+
+
 def rebuild_data_js():
     runs = load_all_runs()
     pbs  = load_all_pbs()
@@ -98,6 +107,7 @@ def rebuild_data_js():
     )
     DATA_JS.write_text(js, "utf-8")
     refresh_previews()   # data.js is the source of truth for which previews exist
+    refresh_feed()
 
 
 def copy_photos(src_folder: str, event_key: str) -> list[str]:

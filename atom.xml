@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+  <title>Sergey's Running Log</title>
+  <subtitle>Race results, personal bests and training stats</subtitle>
+  <id>https://running-records-lac.vercel.app/</id>
+  <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+  <link rel="self" type="application/atom+xml" href="https://running-records-lac.vercel.app/atom.xml"/>
+  <updated>2026-08-09T00:00:00Z</updated>
+  <author><name>Sergey Filippovich</name></author>
+  <generator uri="https://running-records-lac.vercel.app/">make_feed.py</generator>
+  <entry>
+    <title>MESTIA ULTRA — 47.41 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2026-08-09</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2026-08-09T00:00:00Z</updated>
+    <published>2026-08-09T00:00:00Z</published>
+    <summary type="text">47.41 km in 8:51:38 at Mestia, Georgia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 47.41 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 8:51:38&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Pace:&lt;/strong&gt; 11:13 min/km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Elevation:&lt;/strong&gt; 2470 m&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Avg HR:&lt;/strong&gt; 133 bpm&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Mestia, Georgia&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Shoes:&lt;/strong&gt; Nike Pegasus Trail GTX 4&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>Poti Marathon 2026 — 5.0 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2026-05-31</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2026-05-31T00:00:00Z</updated>
+    <published>2026-05-31T00:00:00Z</published>
+    <summary type="text">5.0 km in 0:19:14 at Poti, Georgia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 5.0 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 0:19:14&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Pace:&lt;/strong&gt; 3:51 min/km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Avg HR:&lt;/strong&gt; 171 bpm&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Poti, Georgia&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Shoes:&lt;/strong&gt; Nike Vaporfly 4&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>April Run 2026 — 10.0 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2026-04-18</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2026-04-18T00:00:00Z</updated>
+    <published>2026-04-18T00:00:00Z</published>
+    <summary type="text">10.0 km in 0:40:05 at Batumi, Georgia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 10.0 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 0:40:05&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Pace:&lt;/strong&gt; 4:00 min/km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Avg HR:&lt;/strong&gt; 164 bpm&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Batumi, Georgia&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Shoes:&lt;/strong&gt; Nike Vaporfly 4&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>ARGO SUMMIT CUP — 3.45 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2026-03-28</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2026-03-28T00:00:00Z</updated>
+    <published>2026-03-28T00:00:00Z</published>
+    <summary type="text">3.45 km in 0:19:12 at Batumi, Georgia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 3.45 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 0:19:12&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Pace:&lt;/strong&gt; 5:34 min/km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Elevation:&lt;/strong&gt; 218 m&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Avg HR:&lt;/strong&gt; 156 bpm&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Batumi, Georgia&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Shoes:&lt;/strong&gt; Asics Gel Nimbus 27&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>Backyard Batumi 2025 — 100.5 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2025-12-20</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2025-12-20T00:00:00Z</updated>
+    <published>2025-12-20T00:00:00Z</published>
+    <summary type="text">100.5 km in 15:00:00 at Batumi, Georgia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 100.5 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 15:00:00&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Pace:&lt;/strong&gt; 8:57 min/km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Batumi, Georgia&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Shoes:&lt;/strong&gt; Asics Gel Nimbus 27&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>Golden Fall Race 2025 — 3.0 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2025-11-22</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2025-11-22T00:00:00Z</updated>
+    <published>2025-11-22T00:00:00Z</published>
+    <summary type="text">3.0 km in 0:11:43.18 at Tbilisi, Georgia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 3.0 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 0:11:43.18&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Avg HR:&lt;/strong&gt; 162 bpm&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Tbilisi, Georgia&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Shoes:&lt;/strong&gt; Nike Zoom Fly 4&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>Ekiden Batumi 2025 — 10.0 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2025-11-16</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2025-11-16T00:00:00Z</updated>
+    <published>2025-11-16T00:00:00Z</published>
+    <summary type="text">10.0 km in 0:42:25 at Batumi, Georgia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 10.0 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 0:42:25&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Pace:&lt;/strong&gt; 4:14 min/km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Avg HR:&lt;/strong&gt; 163 bpm&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Batumi, Georgia&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Shoes:&lt;/strong&gt; Nike Zoom Fly 4&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>Test run — 10.0 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2025-09-13</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2025-09-13T00:00:00Z</updated>
+    <published>2025-09-13T00:00:00Z</published>
+    <summary type="text">10.0 km in 0:43:06 at Batumi, Georgia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 10.0 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 0:43:06&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Pace:&lt;/strong&gt; 4:19 min/km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Avg HR:&lt;/strong&gt; 160 bpm&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Batumi, Georgia&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Shoes:&lt;/strong&gt; Nike Zoom Fly 4&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>Night Race Sakartvelo Stadium Series 2025 — 0.2 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2025-08-09</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2025-08-09T00:00:00Z</updated>
+    <published>2025-08-09T00:00:00Z</published>
+    <summary type="text">0.2 km in 0:00:27.4 at Tbilisi, Georgia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 0.2 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 0:00:27.4&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Tbilisi, Georgia&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Shoes:&lt;/strong&gt; Nike Pegasus 38&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>Test Run — 10.0 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2025-01-25</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2025-01-25T00:00:00Z</updated>
+    <published>2025-01-25T00:00:00Z</published>
+    <summary type="text">10.0 km in 0:42:54 at Batumi, Gergia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 10.0 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 0:42:54&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Pace:&lt;/strong&gt; 4:17 min/km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Avg HR:&lt;/strong&gt; 167 bpm&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Batumi, Gergia&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Shoes:&lt;/strong&gt; Nike Vaporfly 4&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>Backyard Batumi 2024 — 67.0 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2024-12-21</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2024-12-21T00:00:00Z</updated>
+    <published>2024-12-21T00:00:00Z</published>
+    <summary type="text">67.0 km in 10:00:00 at Batumi, Georgia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 67.0 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 10:00:00&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Pace:&lt;/strong&gt; 8:57 min/km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Batumi, Georgia&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Shoes:&lt;/strong&gt; Nike Pegasus 38&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>Tbilisi Halfmarathon 2024 — 21.1 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2024-09-22</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2024-09-22T00:00:00Z</updated>
+    <published>2024-09-22T00:00:00Z</published>
+    <summary type="text">21.1 km in 1:40:08 at Tbilisi, Georgia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 21.1 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 1:40:08&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Pace:&lt;/strong&gt; 4:45 min/km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Avg HR:&lt;/strong&gt; 158 bpm&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Tbilisi, Georgia&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Shoes:&lt;/strong&gt; Nike Zoom Fly 4&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>Kazbegi Marathon 2024 — 9.67 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2024-08-11</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2024-08-11T00:00:00Z</updated>
+    <published>2024-08-11T00:00:00Z</published>
+    <summary type="text">9.67 km in 1:36:36 at Kazbegi, Georgia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 9.67 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 1:36:36&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Pace:&lt;/strong&gt; 9:59 min/km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Elevation:&lt;/strong&gt; 874 m&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Avg HR:&lt;/strong&gt; 157 bpm&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Kazbegi, Georgia&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Shoes:&lt;/strong&gt; Nike Pegasus Trail GTX 4&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>Lisi Trail Race 2024 — 44.27 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2024-06-16</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2024-06-16T00:00:00Z</updated>
+    <published>2024-06-16T00:00:00Z</published>
+    <summary type="text">44.27 km in 6:56:29 at Tbilisi (Lisi), Georgia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 44.27 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 6:56:29&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Pace:&lt;/strong&gt; 9:24 min/km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Elevation:&lt;/strong&gt; 2543 m&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Avg HR:&lt;/strong&gt; 141 bpm&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Tbilisi (Lisi), Georgia&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Shoes:&lt;/strong&gt; Nike Pegasus Trail GTX 4&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>Multirace Batumi 2024 — 4.36 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2024-06-08</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2024-06-08T00:00:00Z</updated>
+    <published>2024-06-08T00:00:00Z</published>
+    <summary type="text">4.36 km in 0:22:15 at Batumi, Georgia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 4.36 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 0:22:15&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Pace:&lt;/strong&gt; 5:06 min/km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Avg HR:&lt;/strong&gt; 167 bpm&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Batumi, Georgia&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Shoes:&lt;/strong&gt; Nike Pegasus Trail GTX 4&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>Mtirala 2024 — 10.15 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2024-05-26</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2024-05-26T00:00:00Z</updated>
+    <published>2024-05-26T00:00:00Z</published>
+    <summary type="text">10.15 km in 1:12:26 at Khelvachauri, Georgia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 10.15 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 1:12:26&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Pace:&lt;/strong&gt; 7:08 min/km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Elevation:&lt;/strong&gt; 900 m&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Avg HR:&lt;/strong&gt; 164 bpm&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Khelvachauri, Georgia&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Shoes:&lt;/strong&gt; Nike Pegasus Trail GTX 4&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>Kazbegi Marathon 2023 — 29.9 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2023-09-04</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2023-09-04T00:00:00Z</updated>
+    <published>2023-09-04T00:00:00Z</published>
+    <summary type="text">29.9 km in 6:30:14 at Kazbegi, Georgia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 29.9 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 6:30:14&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Pace:&lt;/strong&gt; 13:03 min/km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Elevation:&lt;/strong&gt; 2105 m&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Avg HR:&lt;/strong&gt; 133 bpm&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Kazbegi, Georgia&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Shoes:&lt;/strong&gt; Nike Pegasus Trail GTX 4&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>Kazbegi Marathon 2022 — 14.43 km</title>
+    <id>tag:running-records-lac.vercel.app,2022:run/2022-09-04</id>
+    <link rel="alternate" type="text/html" href="https://running-records-lac.vercel.app/"/>
+    <updated>2022-09-04T00:00:00Z</updated>
+    <published>2022-09-04T00:00:00Z</published>
+    <summary type="text">14.43 km in 2:40:49 at Kazbegi, Georgia</summary>
+    <content type="html">&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Distance:&lt;/strong&gt; 14.43 km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Time:&lt;/strong&gt; 2:40:49&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Pace:&lt;/strong&gt; 11:09 min/km&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Elevation:&lt;/strong&gt; 1181 m&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Avg HR:&lt;/strong&gt; 153 bpm&lt;/li&gt;&lt;li&gt;&lt;strong&gt;Where:&lt;/strong&gt; Kazbegi, Georgia&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+</feed>
