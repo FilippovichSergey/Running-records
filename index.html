@@ -26,6 +26,9 @@
   --border: #e5e1da;
   --shadow: 0 2px 16px rgba(0,0,0,0.07);
   --subtle: #f5f3ef;
+  /* focus is deliberately NOT --accent: orange/red reads as a validation error */
+  --focus: #2563eb;
+  --focus-ring: rgba(37,99,235,0.18);
 }
 :root.dark {
   --bg: #141414;
@@ -35,6 +38,8 @@
   --border: #2e2e2e;
   --shadow: 0 2px 16px rgba(0,0,0,0.4);
   --subtle: #252525;
+  --focus: #6ea8ff;
+  --focus-ring: rgba(110,168,255,0.22);
 }
 
 body {
@@ -507,7 +512,10 @@ nav button.active { background: var(--accent); color: #fff; }
   transition: border-color 0.15s;
 }
 .filter-bar select:focus,
-.filter-bar input[type="text"]:focus { border-color: var(--accent); }
+.filter-bar input[type="text"]:focus {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px var(--focus-ring);   /* outline is suppressed, so this is the focus indicator */
+}
 
 .filter-bar input[type="text"] { width: 190px; }
 
@@ -676,7 +684,8 @@ nav button.active { background: var(--accent); color: #fff; }
   outline: none;
 }
 .act-search-bar input[type="search"]:focus {
-  border-color: var(--accent);
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 .act-year-jumps {
   display: flex;
