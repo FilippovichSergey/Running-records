@@ -149,18 +149,21 @@ nav button.active { background: var(--accent); color: #fff; }
 /* Photo strip header */
 .rc-strip {
   position: relative;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: 210px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   gap: 2px;
-}
-.rc-strip.single { grid-template-columns: 1fr; }
-.rc-strip img {
-  width: 100%;
   height: 210px;
-  /* contain: never crop or stretch — the photo keeps its real proportions */
-  object-fit: contain;
   background: var(--subtle);
+  overflow: hidden;
+}
+.rc-strip img {
+  /* fixed height + auto width = each photo keeps its own aspect ratio */
+  height: 210px;
+  width: auto;
+  flex: 0 1 auto;
+  min-width: 0;
+  object-fit: contain;   /* safety net if a very wide photo has to shrink */
   display: block;
   cursor: pointer;
 }
@@ -788,14 +791,16 @@ nav button.active { background: var(--accent); color: #fff; }
 .ov-mem-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
 .ov-mem-title { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
 .ov-mem-meta { font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); }
-.ov-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 160px 160px; gap: 10px; }
-.ov-cell { border-radius: 14px; overflow: hidden; position: relative; cursor: pointer; }
-.ov-cell.big { grid-row: span 2; }
-.ov-cell img { width: 100%; height: 100%; object-fit: contain; background: var(--subtle); display: block; }
+.ov-grid { column-count: 3; column-gap: 10px; }
+.ov-cell { border-radius: 14px; overflow: hidden; position: relative; cursor: pointer;
+  display: block; break-inside: avoid; margin-bottom: 10px; }
+
+.ov-cell img { width: 100%; height: auto; display: block; }
 .ov-cap { position: absolute; left: 10px; right: 10px; bottom: 10px; color: #fff; font-size: 13px; font-weight: 800;
   letter-spacing: -.2px; background: rgba(0,0,0,.6); padding: 4px 9px; border-radius: 8px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ov-more { background: #1a1a1a; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 15px; font-weight: 800; }
+.ov-more { background: #1a1a1a; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; color: #fff; font-size: 15px; font-weight: 800; aspect-ratio: 4 / 3; }
 .ov-more small { font-size: 10px; font-weight: 600; color: rgba(255,255,255,.6); letter-spacing: .5px; margin-top: 2px; }
 
 .ov-latest { padding: 14px 40px 0; }
@@ -882,7 +887,7 @@ nav button.active { background: var(--accent); color: #fff; }
   .page { padding: 16px 12px 48px; }
 
   /* Run card */
-  .rc-strip { grid-template-rows: 150px; }
+  .rc-strip { height: 150px; }
   .rc-strip img { height: 150px; }
   .rc-strip img.rc-medal { width: 52px; height: 52px; bottom: -20px; right: 14px; }
   .rc-body { padding: 14px 16px 12px; }
@@ -900,8 +905,7 @@ nav button.active { background: var(--accent); color: #fff; }
   .ov-stat-num { font-size: 24px; }
   .ov-mem { padding: 24px 12px 12px; }
   .ov-latest { padding: 8px 12px 0; }
-  .ov-grid { grid-template-columns: 1fr 1fr; grid-template-rows: 150px 110px 110px; }
-  .ov-cell.big { grid-column: span 2; grid-row: auto; }
+  .ov-grid { column-count: 2; column-gap: 8px; }
   .ov-latest-card { flex-wrap: wrap; gap: 12px; padding: 14px 16px; }
   .ov-latest-right { margin-left: 0; text-align: left; width: 100%; }
 
@@ -1114,6 +1118,7 @@ nav button.active { background: var(--accent); color: #fff; }
 
 <script src="data/data.js"></script>
 <script src="data/activities.js"></script>
+<script src="data/photo-dims.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

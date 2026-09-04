@@ -268,8 +268,15 @@ function previewSrc(src, tier) {
 
 // src= points at the preview, data-full= keeps the original for the lightbox
 // and for the error fallback in initEvents().
+// Natural size of the source, so the cell reserves the right box before load.
+function dimsAttr(full) {
+  var d = (typeof PHOTO_DIMS !== 'undefined') && PHOTO_DIMS[full];
+  return d ? ' width="' + d[0] + '" height="' + d[1] + '"' : '';
+}
+
 function imgAttrs(full, tier) {
-  return 'src="' + esc(previewSrc(full, tier)) + '" data-full="' + esc(full) + '" decoding="async"';
+  return 'src="' + esc(previewSrc(full, tier)) + '" data-full="' + esc(full) + '"' +
+         dimsAttr(full) + ' decoding="async"';
 }
 
 function locStr(obj) {
