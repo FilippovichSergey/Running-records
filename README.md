@@ -39,7 +39,7 @@ Running records/
 Open `index.html` in any browser. No server required.
 
 - **Overview** tab — the landing page. A full-bleed hero photo with your lifetime totals (distance raced, elevation climbed, longest race, fastest 5K), a *Race memories* masonry of photos, and a *Latest race* card. All figures are computed from your data, not hardcoded.
-- **All Runs** tab — competition runs sorted newest first. Each card opens with a photo strip and an overlapping medal, then the race name, distance, distance-type tags (⚡ Sprint · 🏃 Mid · 🏅 Long · 🎽 Marathon · 🏔 Ultra · 🌿 Trail) and a four-column stat rail (pace / climb / avg HR / time). Filter by year, distance range, location, race name, or trail. Clicking any photo opens it full size.
+- **All Runs** tab — competition runs sorted newest first. Each card opens with a photo strip and an overlapping medal, then the race name, distance, distance-type tags (⚡ Sprint · 🏃 Mid · 🏅 Long · 🎽 Marathon · 🏔 Ultra · 🌿 Trail) and a four-column stat rail (pace / climb / avg HR / time). Filter by year, distance (`< 5 km`, `5 – 9.99 km`, `10 – 42 km`, `> 42 km`, or `Custom` for an exact figure), location, race name, or trail. Choosing a year narrows the other dropdowns to the values that actually occur in it. Clicking any photo opens it full size.
 - **Personal Bests** tab — best time per distance with pace, heart rate, sneakers, and previous records. A progression bar chart shows how the time came down over the years, and an expandable trend chart plots pace or time for a chosen distance.
 - **Activities** tab — all training activities imported from Garmin. Bar chart with selectable activity type, metric (distance / runs / time), and period. Summary strip shows totals and averages. Text search and year quick-jump buttons filter the list without leaving the tab.
 - **EN / BE** toggle in the top-right corner switches the interface between English and Belarusian, including dates, labels, and location names. Belarusian is the default.
@@ -287,6 +287,12 @@ Photo cells take their own photo's aspect ratio — nothing is cropped or stretc
 Overview memories grid is a masonry, and the All Runs strip is a fixed-height row where
 each photo keeps its natural width. Medals are the deliberate exception: they use
 `object-fit: cover` so the circular badge is filled.
+
+The medal badge on a run card is positioned at `bottom: -26px`, so it deliberately
+overhangs the photo strip into the card body. **`.rc-strip` must therefore not set
+`overflow: hidden`** — that clips the badge into a half circle. It is not needed anyway:
+strip photos are `flex: 0 1 auto` with `min-width: 0`, so they shrink to fit rather than
+overflow. The rounded corners come from `overflow: hidden` on `.run-card` instead.
 
 Both `data/photos/` and `data/previews/` are committed, because the deployed site serves
 the previews and the lightbox serves the originals.
