@@ -150,15 +150,17 @@ nav button.active { background: var(--accent); color: #fff; }
 .rc-strip {
   position: relative;
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
-  grid-template-rows: 170px;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: 210px;
   gap: 2px;
 }
 .rc-strip.single { grid-template-columns: 1fr; }
 .rc-strip img {
   width: 100%;
-  height: 170px;
-  object-fit: cover;
+  height: 210px;
+  /* contain: never crop or stretch — the photo keeps its real proportions */
+  object-fit: contain;
+  background: var(--subtle);
   display: block;
   cursor: pointer;
 }
@@ -786,11 +788,13 @@ nav button.active { background: var(--accent); color: #fff; }
 .ov-mem-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
 .ov-mem-title { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
 .ov-mem-meta { font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); }
-.ov-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 140px 140px; gap: 10px; }
+.ov-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 160px 160px; gap: 10px; }
 .ov-cell { border-radius: 14px; overflow: hidden; position: relative; cursor: pointer; }
 .ov-cell.big { grid-row: span 2; }
-.ov-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.ov-cap { position: absolute; left: 14px; bottom: 12px; color: #fff; font-size: 14px; font-weight: 800; letter-spacing: -.2px; text-shadow: 0 1px 5px rgba(0,0,0,.6); }
+.ov-cell img { width: 100%; height: 100%; object-fit: contain; background: var(--subtle); display: block; }
+.ov-cap { position: absolute; left: 10px; right: 10px; bottom: 10px; color: #fff; font-size: 13px; font-weight: 800;
+  letter-spacing: -.2px; background: rgba(0,0,0,.6); padding: 4px 9px; border-radius: 8px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ov-more { background: #1a1a1a; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 15px; font-weight: 800; }
 .ov-more small { font-size: 10px; font-weight: 600; color: rgba(255,255,255,.6); letter-spacing: .5px; margin-top: 2px; }
 
@@ -878,8 +882,8 @@ nav button.active { background: var(--accent); color: #fff; }
   .page { padding: 16px 12px 48px; }
 
   /* Run card */
-  .rc-strip { grid-template-rows: 120px; }
-  .rc-strip img { height: 120px; }
+  .rc-strip { grid-template-rows: 150px; }
+  .rc-strip img { height: 150px; }
   .rc-strip img.rc-medal { width: 52px; height: 52px; bottom: -20px; right: 14px; }
   .rc-body { padding: 14px 16px 12px; }
   .rc-title { font-size: 18px; }
