@@ -155,7 +155,8 @@ nav button.active { background: var(--accent); color: #fff; }
   gap: 2px;
   height: 210px;
   background: var(--subtle);
-  overflow: hidden;
+  /* no overflow:hidden — the medal badge deliberately overhangs the bottom.
+     Photos cannot overflow anyway: they shrink to fit (flex 0 1 auto + min-width 0). */
 }
 .rc-strip img {
   /* fixed height + auto width = each photo keeps its own aspect ratio */
