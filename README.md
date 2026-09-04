@@ -18,14 +18,18 @@ Running records/
 ├── fetch_strava.py        # Optional: pull activities from the Strava API
 ├── fetch_garmin.py        # Optional: pull activities from Garmin Connect
 ├── resize_images.py       # Optional: batch-resize photos with ImageMagick
+├── make_previews.py       # Generates the small WebP previews the dashboard displays
+├── make_previews.bat      # Shortcut to run the preview generator on Windows
 └── data/
     ├── data.js            # Auto-generated — do not edit manually
     ├── activities.js      # Auto-generated — do not edit manually
+    ├── photo-dims.js      # Auto-generated — image sizes, so cells reserve the right box
     ├── sneakers.json      # Persistent list of sneaker names for the dropdown
     ├── runs/              # One JSON file per run
     ├── pbs/               # One JSON file per personal best distance
     ├── activities/        # Garmin CSV exports (drop files here, then run processor)
-    └── photos/            # Photos copied from source folders, organised by event
+    ├── photos/            # Original photos, organised by event — the lightbox opens these
+    └── previews/          # Auto-generated WebP previews (micro / thumb / card)
 ```
 
 ---
@@ -34,10 +38,12 @@ Running records/
 
 Open `index.html` in any browser. No server required.
 
-- **All Runs** tab — competition runs sorted newest first. Each card shows pace, avg HR, and total time. Distance-type tags (⚡ Sprint · 🏃 Mid · 🏅 Long · 🎽 Marathon · 🏔 Ultra · 🌿 Trail) and a medal thumbnail appear at a glance. Filter by year, distance type, or location. Expand a card for full details and photos.
-- **Personal Bests** tab — best time per distance with pace, heart rate, sneakers, and previous records. An expandable trend chart shows pace or time history for a chosen distance.
+- **Overview** tab — the landing page. A full-bleed hero photo with your lifetime totals (distance raced, elevation climbed, longest race, fastest 5K), a *Race memories* masonry of photos, and a *Latest race* card. All figures are computed from your data, not hardcoded.
+- **All Runs** tab — competition runs sorted newest first. Each card opens with a photo strip and an overlapping medal, then the race name, distance, distance-type tags (⚡ Sprint · 🏃 Mid · 🏅 Long · 🎽 Marathon · 🏔 Ultra · 🌿 Trail) and a four-column stat rail (pace / climb / avg HR / time). Filter by year, distance range, location, race name, or trail. Clicking any photo opens it full size.
+- **Personal Bests** tab — best time per distance with pace, heart rate, sneakers, and previous records. A progression bar chart shows how the time came down over the years, and an expandable trend chart plots pace or time for a chosen distance.
 - **Activities** tab — all training activities imported from Garmin. Bar chart with selectable activity type, metric (distance / runs / time), and period. Summary strip shows totals and averages. Text search and year quick-jump buttons filter the list without leaving the tab.
-- **EN / BE** toggle in the top-right corner switches the interface between English and Belarusian, including dates, labels, and location names.
+- **EN / BE** toggle in the top-right corner switches the interface between English and Belarusian, including dates, labels, and location names. Belarusian is the default.
+- **☀ / ☽** toggle switches between light and dark mode. Both choices are remembered in the browser.
 
 ---
 
@@ -62,8 +68,11 @@ The script has five tabs: **Add Run**, **Add Personal Best**, **Edit Run**, **Ed
 | Field | Format |
 |---|---|
 | Date | YYYY-MM-DD |
+| Race name | Name of the race, e.g. `Mestia Ultra` — shown as the card title |
 | Location (EN) | English name, e.g. `Batumi` |
 | Location (BE) | Belarusian name, e.g. `Батумі` |
+| Country (EN) | English name, e.g. `Georgia` |
+| Country (BE) | Belarusian name, e.g. `Грузія` |
 | Distance | Kilometres, e.g. `12.4` |
 | Total time | H:MM:SS, e.g. `1:05:30` |
 | Avg HR | Beats per minute |
@@ -82,8 +91,11 @@ The script has five tabs: **Add Run**, **Add Personal Best**, **Edit Run**, **Ed
 | Distance (km) | Numeric, e.g. `5` or `21.0975` — used to calculate pace |
 | Total time | H:MM:SS, e.g. `19:14` |
 | Date | YYYY-MM-DD |
+| Race name | Name of the race |
 | Location (EN) | English name |
 | Location (BE) | Belarusian name |
+| Country (EN) | English name |
+| Country (BE) | Belarusian name |
 | Avg HR | Beats per minute |
 | Max HR | Beats per minute |
 | Sneakers | Choose from dropdown or type a new name |
@@ -102,7 +114,9 @@ The Sneakers field is a dropdown backed by `data/sneakers.json`. Typing a new na
 
 ### After saving
 
-The script writes a JSON file to `data/runs/` or `data/pbs/` and regenerates `data/data.js`. Refresh the browser to see the updated log.
+The script writes a JSON file to `data/runs/` or `data/pbs/`, regenerates `data/data.js`, and then regenerates the photo previews (see below). Refresh the browser to see the updated log.
+
+If ImageMagick is missing the save still succeeds — you will just see a warning, and can run `make_previews.bat` later.
 
 ---
 
@@ -168,8 +182,11 @@ Each event is stored as a standalone JSON file:
 ```json
 {
   "date": "2026-05-31",
+  "race_name": "Gorky Park Half",
   "location": "Gorky Park",
   "location_be": "Парк Горкага",
+  "country": "Georgia",
+  "country_be": "Грузія",
   "distance_km": 10.0,
   "total_time": "51:30",
   "hr_avg": 145,
@@ -189,8 +206,11 @@ Each event is stored as a standalone JSON file:
   "distance_km": 5.0,
   "total_time": "19:14",
   "date": "2026-05-31",
+  "race_name": "Poti Marathon 2026",
   "location": "Poti",
   "location_be": "Поці",
+  "country": "Georgia",
+  "country_be": "Грузія",
   "hr_avg": 171,
   "hr_max": 182,
   "sneakers": "Nike Vaporfly 4",
@@ -205,9 +225,71 @@ Each event is stored as a standalone JSON file:
 
 **Notes:**
 - `location_be` is optional — if absent, the English `location` is shown in both language modes.
-- `video`, `medal` are optional — omit the key entirely if not set.
+- `race_name`, `country`, `country_be`, `video` and `medal` are optional — omit the key entirely if not set.
+- Photo and medal paths point at the ORIGINAL image. The dashboard derives the preview path from it automatically (see Photos and previews).
 - Pace is calculated from `distance_km` and `total_time` — it is not stored.
 - Elevation `0` is shown only in the expanded details panel, not in the stats row.
+
+---
+
+## Photos and previews
+
+Photos are stored full-size in `data/photos/`, but the dashboard never displays them
+directly — a 2500px photo rendered into a 200px cell wastes several hundred KB each.
+Instead `make_previews.py` renders small WebP previews and the page loads those. The
+lightbox still opens the untouched original.
+
+### Generating previews
+
+```
+make_previews.bat
+```
+
+or directly:
+
+```
+python make_previews.py
+```
+
+It runs automatically after every save in the event editor, so you normally never need
+to call it by hand. Run it manually after a fresh clone, or if you hand-edit the JSON
+files. It requires ImageMagick 7 (`magick` on PATH).
+
+| Flag | Effect |
+|---|---|
+| `--force` | Re-encode everything, even if up to date |
+| `--dry-run` | Print the plan without writing anything |
+| `--prune` | Delete previews whose source is no longer referenced |
+| `--jobs N` | Limit parallelism (default: 8) |
+
+### How it works
+
+It reads the image paths out of `data/data.js`, so coverage is exactly 1:1 with what the
+site requests and no preview can be missing. Each image is rendered at three widths:
+
+| Tier | Width | Used for |
+|---|---|---|
+| `micro` | 256 px | 64px medal badges |
+| `thumb` | 640 px | Overview grid, strip cells, Personal Bests grid |
+| `card` | 1280 px | Large Overview cells, first strip cell, the hero |
+
+Previews are shrink-only, so an image smaller than the tier passes through untouched, and
+EXIF rotation is applied before metadata is stripped. Output lands in
+`data/previews/<tier>/….webp`, mirroring the source path.
+
+It also writes `data/photo-dims.js` with each image's natural size. The dashboard puts
+those on the `<img>` as `width`/`height`, so every cell reserves the correct box before
+the image loads and the layout does not jump.
+
+### Layout
+
+Photo cells take their own photo's aspect ratio — nothing is cropped or stretched. The
+Overview memories grid is a masonry, and the All Runs strip is a fixed-height row where
+each photo keeps its natural width. Medals are the deliberate exception: they use
+`object-fit: cover` so the circular badge is filled.
+
+Both `data/photos/` and `data/previews/` are committed, because the deployed site serves
+the previews and the lightbox serves the originals.
 
 ---
 
