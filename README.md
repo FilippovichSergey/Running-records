@@ -47,6 +47,27 @@ Open `index.html` in any browser. No server required.
 
 ---
 
+## Theming
+
+All colours come from CSS custom properties on `:root` in `index.html`, with a
+`:root.dark` block overriding them. Dark mode is a `dark` class on `<html>`, remembered
+in `localStorage` under `theme`. Adding a colour means adding a token, not a literal.
+
+| Token | Light | Dark | Used for |
+|---|---|---|---|
+| `--accent` | `#e8521b` | *(same)* | Brand orange: distances, active nav, links |
+| `--bg` / `--card` | `#f0ede8` / `#ffffff` | `#141414` / `#1e1e1e` | Page and card surfaces |
+| `--text` / `--muted` | `#1a1a1a` / `#6b6b6b` | `#e8e4de` / `#999` | Body and secondary text |
+| `--border` / `--subtle` | `#e5e1da` / `#f5f3ef` | `#2e2e2e` / `#252525` | Dividers and inset areas |
+| `--focus` / `--focus-ring` | `#2563eb` | `#6ea8ff` | Focused form controls |
+
+**Focus deliberately does not use `--accent`.** An orange-red edge on a text field reads
+as a validation error rather than "this field is active", so focused controls use the
+blue `--focus` plus a 3px `--focus-ring`. The inputs set `outline: none`, so that ring is
+the focus indicator — do not remove it without providing another one.
+
+---
+
 ## Managing events
 
 Run the GUI script:
