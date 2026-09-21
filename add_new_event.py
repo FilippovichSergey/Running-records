@@ -3,17 +3,30 @@ Running Log – Event Editor
 Adds/edits runs and personal bests.
 Saves individual JSON files → data/runs/ or data/pbs/
 Regenerates data/data.js for running-log.html.
+
+Every save runs in the same order, so a failure part-way can never lose a record:
+  1. validate every field (all problems are reported together);
+  2. check for clashes with other records, and ask before touching them;
+  3. copy the medal/photos (never overwriting a different file);
+  4. write the JSON atomically (temp file + os.replace);
+  5. only then remove the old file, if the record was renamed.
 """
 
+import filecmp
 import json
+import math
 import os
+import re
 import shutil
+import tempfile
+import threading
+import time
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 
-BASE_DIR      = Path(__file__).parent
+BASE_DIR      = Path(__file__).resolve().parent
 DATA_DIR      = BASE_DIR / "data"
 RUNS_DIR      = DATA_DIR / "runs"
 PBS_DIR       = DATA_DIR / "pbs"
@@ -26,14 +39,234 @@ for d in (RUNS_DIR, PBS_DIR, PHOTOS_DIR):
 
 IMG_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif"}
 
+
+class ValidationError(ValueError):
+    """A problem with what was typed into the form. Raised before anything is written."""
+
+
+class Checker:
+    """Runs field parsers, collecting every error so one dialog can list them all."""
+
+    def __init__(self):
+        self.errors = []
+
+    def __call__(self, parse, *args):
+        try:
+            return parse(*args)
+        except ValidationError as e:
+            self.errors.append(str(e))
+            return None
+
+    def raise_if_any(self):
+        if self.errors:
+            raise ValidationError("\n".join(self.errors))
+
+
+# ── Field parsing ─────────────────────────────────────────────────────────────
+# re.ASCII everywhere: a bare \d also matches Arabic-Indic and other Unicode digits.
+
+_DATE_RE  = re.compile(r"\d{4}-\d{2}-\d{2}", re.ASCII)
+_TIME_RE  = re.compile(r"(?:(\d+):)?(\d+):(\d\d(?:\.\d{1,3})?)", re.ASCII)
+_DIST_RE  = re.compile(r"\d+(?:\.\d+)?", re.ASCII)
+_COUNT_RE = re.compile(r"\d+", re.ASCII)
+
+
+def parse_date(text: str, field: str = "Date") -> str:
+    """A real calendar date as canonical YYYY-MM-DD (it also names the run's file)."""
+    s = text.strip()
+    if not s:
+        raise ValidationError(f"{field} is required.")
+    if _DATE_RE.fullmatch(s):
+        try:
+            date.fromisoformat(s)
+            return s
+        except ValueError:
+            pass
+    raise ValidationError(f'{field}: "{s}" is not a real date — use YYYY-MM-DD, e.g. 2026-05-31.')
+
+
+def time_to_sec(s: str) -> float:
+    """Same arithmetic as timeToSec() in app.js."""
+    p = [float(x) for x in s.split(":")]
+    return p[0] * 3600 + p[1] * 60 + p[2] if len(p) == 3 else p[0] * 60 + p[1]
+
+
+def parse_time(text: str, field: str = "Total time") -> str:
+    """H:MM:SS or M:SS, kept as typed. Track results may carry a fraction: 0:00:27.4."""
+    s = text.strip()
+    if not s:
+        raise ValidationError(f"{field} is required.")
+    m = _TIME_RE.fullmatch(s)
+    if m:
+        hours, minutes, seconds = m.groups()
+        if (float(seconds) < 60
+                and (hours is None or (len(minutes) == 2 and int(minutes) < 60))
+                and time_to_sec(s) > 0):
+            return s
+    raise ValidationError(f'{field}: "{s}" is not a time — use H:MM:SS or M:SS, e.g. 1:05:30 or 19:14.')
+
+
+def parse_distance(text: str, field: str = "Distance (km)") -> float:
+    s = text.strip().replace(",", ".")
+    if not s:
+        raise ValidationError(f"{field} is required.")
+    if _DIST_RE.fullmatch(s):
+        km = float(s)
+        if math.isfinite(km) and km > 0:
+            return km
+    raise ValidationError(f'{field}: "{text.strip()}" must be a positive number, e.g. 10 or 21.1.')
+
+
+def parse_count(text: str, field: str) -> int:
+    """Heart rate / elevation: a whole number ≥ 0. Empty means 0 (not recorded)."""
+    s = text.strip()
+    if not s:
+        return 0
+    if _COUNT_RE.fullmatch(s):
+        return int(s)
+    raise ValidationError(f'{field}: "{s}" must be a whole number (or left empty).')
+
+
+_WIN_RESERVED = {"con", "prn", "aux", "nul",
+                 *(f"com{i}" for i in range(1, 10)), *(f"lpt{i}" for i in range(1, 10))}
+
+
+def pb_slug(label: str) -> str:
+    """File id of a personal best: "5 km" -> "5_km" (data/pbs/5_km.json, photos in pb_5_km/).
+
+    The transform is unchanged, so existing files keep their names. A label that would
+    not give one safe file name (path separators, "..", reserved names) is refused.
+    """
+    if not label.strip():
+        raise ValidationError("Distance label is required.")
+    slug = label.strip().lower().replace(" ", "_").replace("/", "")
+    if (not slug.strip(".") or slug.endswith(".")
+            or any(c in '\\:*?"<>|' or ord(c) < 32 for c in slug)
+            or slug.split(".")[0] in _WIN_RESERVED):
+        raise ValidationError(f'Distance label: "{label.strip()}" can\'t be used as a file name — '
+                              'avoid \\ : * ? " < > | and a trailing dot.')
+    return slug
+
+
+def child_path(folder: Path, name: str) -> Path:
+    """folder/name, refusing anything that would land outside folder."""
+    path = folder / name
+    if Path(name).name != name or path.resolve().parent != folder.resolve():
+        raise ValidationError(f'"{name}" is not a plain file name.')
+    return path
+
+
+def parse_previous_records(text: str) -> list[dict]:
+    """PB history, one "time|date|location" per line.
+
+    Every non-empty line must parse: a bad line is reported with its number instead of
+    being silently dropped on save. Only the first two "|" split, so a location may
+    itself contain "|".
+    """
+    records, errors = [], []
+    for n, line in enumerate(text.splitlines(), 1):
+        if not line.strip():
+            continue
+        parts = [p.strip() for p in line.split("|", 2)]
+        if len(parts) != 3:
+            errors.append(f'line {n}: "{line.strip()}" — expected time|date|location')
+            continue
+        chk = Checker()
+        t = chk(parse_time, parts[0], "time")
+        d = chk(parse_date, parts[1], "date")
+        if chk.errors:
+            errors.append(f"line {n}: " + "; ".join(chk.errors))
+            continue
+        records.append({"time": t, "date": d, "location": parts[2]})
+    if errors:
+        raise ValidationError("Previous records:\n  " + "\n  ".join(errors))
+    return records
+
+
+def run_form(t) -> dict:
+    """Raw strings from a run form — Add Run and Edit Run use the same widget names."""
+    return {
+        "date": t.v_date.get(), "race_name": t.v_race.get(),
+        "location": t.v_location.get(), "location_be": t.v_location_be.get(),
+        "country": t.v_country.get(), "country_be": t.v_country_be.get(),
+        "distance_km": t.v_dist.get(), "total_time": t.v_total_time.get(),
+        "hr_avg": t.v_hr_avg.get(), "hr_max": t.v_hr_max.get(),
+        "elevation": t.v_elevation.get(),
+        "sneakers": t.v_sneakers.get(), "video": t.v_video.get(),
+    }
+
+
+def pb_form(t) -> dict:
+    """Raw strings from a PB form — Add and Edit Personal Best use the same widget names."""
+    return {
+        "distance": t.v_distance.get(), "distance_km": t.v_distance_km.get(),
+        "total_time": t.v_total_time.get(), "date": t.v_date.get(),
+        "race_name": t.v_race.get(),
+        "location": t.v_location.get(), "location_be": t.v_location_be.get(),
+        "country": t.v_country.get(), "country_be": t.v_country_be.get(),
+        "hr_avg": t.v_hr_avg.get(), "hr_max": t.v_hr_max.get(),
+        "sneakers": t.v_sneakers.get(), "video": t.v_video.get(),
+        "previous_records": t.prev_text.get("1.0", "end"),
+    }
+
+
+def validate_run(raw: dict, chk: Checker) -> dict:
+    """A run record from raw form strings; medal/photos are filled in by the caller."""
+    return {
+        "date":        chk(parse_date, raw["date"]),
+        "race_name":   raw["race_name"].strip(),
+        "location":    raw["location"].strip(),
+        "location_be": raw["location_be"].strip(),
+        "country":     raw["country"].strip(),
+        "country_be":  raw["country_be"].strip(),
+        "distance_km": chk(parse_distance, raw["distance_km"]),
+        "total_time":  chk(parse_time, raw["total_time"]),
+        "hr_avg":      chk(parse_count, raw["hr_avg"], "Avg HR"),
+        "hr_max":      chk(parse_count, raw["hr_max"], "Max HR"),
+        "elevation":   chk(parse_count, raw["elevation"], "Elevation"),
+        "sneakers":    raw["sneakers"].strip(),
+        "video":       raw["video"].strip(),
+        "medal":       "",
+        "photos":      [],
+    }
+
+
+def validate_pb(raw: dict, chk: Checker) -> dict:
+    """A PB record from raw form strings; medal/photos are filled in by the caller."""
+    label = raw["distance"].strip()
+    chk(pb_slug, label)
+    return {
+        "distance":         label,
+        "distance_km":      chk(parse_distance, raw["distance_km"]),
+        "total_time":       chk(parse_time, raw["total_time"]),
+        "date":             chk(parse_date, raw["date"]),
+        "race_name":        raw["race_name"].strip(),
+        "location":         raw["location"].strip(),
+        "location_be":      raw["location_be"].strip(),
+        "country":          raw["country"].strip(),
+        "country_be":       raw["country_be"].strip(),
+        "hr_avg":           chk(parse_count, raw["hr_avg"], "Avg HR"),
+        "hr_max":           chk(parse_count, raw["hr_max"], "Max HR"),
+        "sneakers":         raw["sneakers"].strip(),
+        "video":            raw["video"].strip(),
+        "medal":            "",
+        "photos":           [],
+        "previous_records": chk(parse_previous_records, raw["previous_records"]),
+    }
+
+
 # ── JSON helpers ──────────────────────────────────────────────────────────────
+
+def read_json(path: Path):
+    return json.loads(path.read_text("utf-8-sig"))   # utf-8-sig tolerates a BOM
+
 
 def load_all_runs():
     runs = []
     for f in sorted(RUNS_DIR.glob("*.json")):
         try:
-            data = json.loads(f.read_text("utf-8-sig"))   # utf-8-sig tolerates a BOM
-            data["_path"] = f          # keep source path for reliable deletion
+            data = read_json(f)
+            data["_path"] = f          # the real file: edits and deletes act on this one
             runs.append(data)
         except Exception as e:
             print(f"Warning: could not read {f.name}: {e}")
@@ -44,33 +277,119 @@ def load_all_pbs():
     pbs = []
     for f in sorted(PBS_DIR.glob("*.json")):
         try:
-            pbs.append(json.loads(f.read_text("utf-8-sig")))
+            data = read_json(f)
+            data["_path"] = f
+            pbs.append(data)
         except Exception as e:
             print(f"Warning: could not read {f.name}: {e}")
     return pbs
 
 
-def run_filename(run: dict) -> Path:
-    return RUNS_DIR / f"{run['date']}.json"
+def run_target(run_date: str, old: dict | None = None) -> tuple[Path, list[dict]]:
+    """The file a run on run_date is written to, and the other runs already on that day.
+
+    An edited run that keeps its date keeps its own file, whatever its name. Otherwise
+    the first free name is taken — 2026-06-01.json, then 2026-06-01_2.json — so a
+    second run on the same day never replaces the first.
+    """
+    if old is not None and old.get("date") == run_date:
+        return old["_path"], []
+    own = old["_path"] if old is not None else None
+    others = [r for r in load_all_runs() if r.get("date") == run_date and r["_path"] != own]
+    path, n = child_path(RUNS_DIR, f"{run_date}.json"), 1
+    while path.exists() and path != own:
+        n += 1
+        path = child_path(RUNS_DIR, f"{run_date}_{n}.json")
+    return path, others
 
 
-def pb_filename(pb: dict) -> Path:
-    slug = pb["distance"].lower().replace(" ", "_").replace("/", "")
-    return PBS_DIR / f"{slug}.json"
+def pb_target(label: str) -> Path:
+    return child_path(PBS_DIR, pb_slug(label) + ".json")
 
 
-def save_run(run: dict):
-    path = run_filename(run)
-    path.write_text(json.dumps(run, ensure_ascii=False, indent=2), "utf-8")
+def superseded_history(current: dict, typed: list[dict]) -> list[dict]:
+    """History for a PB that replaces `current`: current's history, current's own result
+    and any lines typed in the form — without duplicates, newest first."""
+    rows = list(current.get("previous_records", [])) + [{
+        "time": current.get("total_time", ""),
+        "date": current.get("date", ""),
+        "location": current.get("location", ""),
+    }] + typed
+    seen, out = set(), []
+    for r in rows:
+        key = (r.get("time"), r.get("date"), r.get("location"))
+        if key not in seen:
+            seen.add(key)
+            out.append(r)
+    return sorted(out, key=lambda r: r.get("date", ""), reverse=True)
 
 
-def save_pb(pb: dict):
-    path = pb_filename(pb)
-    path.write_text(json.dumps(pb, ensure_ascii=False, indent=2), "utf-8")
+def atomic_write_text(path: Path, text: str):
+    """Write via a temp file in the same folder + os.replace: a crash or a full disk
+    leaves the old file intact, never a truncated one. The temp name ends in .tmp, so
+    load_all_*() can never mistake it for a record."""
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        for attempt in range(10):
+            try:
+                os.replace(tmp, path)
+                break
+            except PermissionError:
+                # Windows refuses to replace a file that is open for reading, and the
+                # background refresh reads data.js — retry through that short window.
+                if attempt == 9:
+                    raise
+                time.sleep(0.05)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def write_json(path: Path, record: dict):
+    # allow_nan=False: NaN/Infinity are not JSON. The validators make this unreachable.
+    atomic_write_text(path, json.dumps(record, ensure_ascii=False, indent=2, allow_nan=False))
+
+
+def remove_replaced(old_path: Path, new_path: Path) -> str:
+    """Delete a renamed record's old file — call only after the new one is written.
+    Returns a warning for the user if that fails (the record then exists twice)."""
+    if old_path == new_path:
+        return ""
+    try:
+        old_path.unlink(missing_ok=True)
+        return ""
+    except OSError as e:
+        return (f"\n\nWarning: the old file {old_path.name} could not be removed ({e}). "
+                "Delete it by hand, or the event will appear twice.")
+
+
+def delete_record(path: Path, folder: Path):
+    """Delete one record file — only ever a .json directly inside folder."""
+    if path.suffix != ".json" or path.resolve().parent != folder.resolve():
+        raise OSError(f"refusing to delete {path}: not a record in {folder}")
+    path.unlink()
 
 
 def _strip_meta(records):
     return [{k: v for k, v in r.items() if not k.startswith("_")} for r in records]
+
+
+def write_data_js():
+    runs = load_all_runs()
+    pbs  = load_all_pbs()
+    js   = (
+        "// Auto-generated by add_new_event.py — do not edit manually\n"
+        f"const RUNS_DATA = {json.dumps(_strip_meta(runs), ensure_ascii=False, indent=2)};\n\n"
+        f"const PBS_DATA = {json.dumps(_strip_meta(pbs),  ensure_ascii=False, indent=2)};\n"
+    )
+    atomic_write_text(DATA_JS, js)
 
 
 def refresh_previews():
@@ -97,50 +416,136 @@ def refresh_feed():
         print(f"Warning: atom.xml not regenerated ({exc}). Run 'python make_feed.py'.")
 
 
-def rebuild_data_js():
-    runs = load_all_runs()
-    pbs  = load_all_pbs()
-    js   = (
-        "// Auto-generated by add_new_event.py — do not edit manually\n"
-        f"const RUNS_DATA = {json.dumps(_strip_meta(runs), ensure_ascii=False, indent=2)};\n\n"
-        f"const PBS_DATA = {json.dumps(_strip_meta(pbs),  ensure_ascii=False, indent=2)};\n"
-    )
-    DATA_JS.write_text(js, "utf-8")
+def refresh_generated():
+    """Previews and atom.xml — both derived from data.js."""
     refresh_previews()   # data.js is the source of truth for which previews exist
     refresh_feed()
 
 
-def copy_photos(src_folder: str, event_key: str) -> list[str]:
-    """Copy images from src_folder to data/photos/<event_key>/; return relative paths."""
-    if not src_folder:
-        return []
-    src = Path(src_folder)
+class BackgroundRefresh:
+    """Runs refresh_generated() off the Tk thread: encoding freshly added photos can take
+    a while, and the window has to stay responsive meanwhile.
+
+    One pass at a time; saves made while a pass runs are folded into one more pass,
+    which reads the newest data.js.
+    """
+
+    def __init__(self, work=refresh_generated):
+        self._work = work
+        self._lock = threading.Lock()
+        self._pending = False
+        self._thread = None
+
+    def request(self):
+        with self._lock:
+            self._pending = True
+            if self._thread is None:
+                # Not a daemon: closing the window lets a pass in progress finish.
+                self._thread = threading.Thread(target=self._loop, name="refresh-generated")
+                self._thread.start()
+
+    @property
+    def busy(self) -> bool:
+        with self._lock:
+            return self._thread is not None
+
+    def _loop(self):
+        while True:
+            with self._lock:
+                if not self._pending:
+                    self._thread = None
+                    return
+                self._pending = False
+            try:
+                self._work()
+            except Exception as exc:          # never leave a request unserved
+                print(f"Warning: background refresh failed ({exc})")
+
+
+# ── Medal and photos ─────────────────────────────────────────────────────────
+
+def project_path(text: str) -> Path:
+    """A path from the form. Stored paths (data/photos/...) are relative to the project,
+    not to whatever directory the script happened to be started from."""
+    p = Path(text.strip())
+    return p if p.is_absolute() else BASE_DIR / p
+
+
+def medal_source(text: str, current: str = "") -> Path | None:
+    """The image to copy as the medal, or None to keep `current` (field empty or unchanged)."""
+    s = text.strip()
+    if not s or s == current:
+        return None
+    src = project_path(s)
+    if not src.is_file():
+        raise ValidationError(f"Medal photo: file not found — {s}")
+    if src.suffix.lower() not in IMG_EXTS:
+        raise ValidationError(f"Medal photo: {src.name} is not a supported image "
+                              f"({', '.join(sorted(IMG_EXTS))}).")
+    if current:
+        cur = project_path(current)
+        if cur.exists() and os.path.samefile(src, cur):
+            return None                # the stored medal picked again via Browse…
+    return src
+
+
+def photos_source(text: str) -> Path | None:
+    s = text.strip()
+    if not s:
+        return None
+    src = project_path(s)
     if not src.is_dir():
-        return []
-    dest = PHOTOS_DIR / event_key
-    dest.mkdir(parents=True, exist_ok=True)
-    paths = []
-    for f in sorted(src.iterdir()):
-        if f.suffix.lower() in IMG_EXTS:
-            target = dest / f.name
-            shutil.copy2(f, target)
-            rel = target.relative_to(BASE_DIR).as_posix()
-            paths.append(rel)
-    return paths
+        raise ValidationError(f"Photos folder: folder not found — {s}")
+    return src
 
 
-def copy_medal(src_file: str, event_key: str) -> str:
-    """Copy a single medal image to data/photos/<event_key>/; return relative path or ''."""
-    if not src_file:
-        return ""
-    src = Path(src_file)
-    if not src.is_file() or src.suffix.lower() not in IMG_EXTS:
-        return ""
-    dest = PHOTOS_DIR / event_key
-    dest.mkdir(parents=True, exist_ok=True)
-    target = dest / ("medal" + src.suffix.lower())
-    shutil.copy2(src, target)
+def _as_on_disk(path: Path) -> Path:
+    """path spelled the way the file system stores it. Windows matches names without
+    regard to case, but the site is served from a case-sensitive file system."""
+    want = os.path.normcase(path.name)
+    for entry in path.parent.iterdir():
+        if os.path.normcase(entry.name) == want:
+            return entry
+    return path
+
+
+def place_file(src: Path, folder: Path, name: str) -> str:
+    """Copy src into folder as name; return its data/... path.
+
+    Never overwrites: if the name is taken by an identical file, that file is reused;
+    otherwise the copy takes the next free name (IMG_1.jpg -> IMG_1_2.jpg).
+    """
+    folder.mkdir(parents=True, exist_ok=True)
+    stem, ext = os.path.splitext(name)
+    target, n = folder / name, 1
+    while target.exists():
+        if target.is_file() and (os.path.samefile(src, target)
+                                 or filecmp.cmp(src, target, shallow=False)):
+            target = _as_on_disk(target)
+            break
+        n += 1
+        target = folder / f"{stem}_{n}{ext}"
+    else:
+        shutil.copy2(src, target)
     return target.relative_to(BASE_DIR).as_posix()
+
+
+def copy_photos(src_folder: Path | None, event_key: str) -> list[str]:
+    """Copy the images in src_folder to data/photos/<event_key>/; return their paths."""
+    if src_folder is None:
+        return []
+    dest = child_path(PHOTOS_DIR, event_key)
+    paths = [place_file(f, dest, f.name) for f in sorted(src_folder.iterdir())
+             if f.is_file() and f.suffix.lower() in IMG_EXTS]
+    return list(dict.fromkeys(paths))
+
+
+def copy_medal(src: Path | None, event_key: str) -> str:
+    """Copy the medal image to data/photos/<event_key>/medal.<ext>; return its path or ''."""
+    if src is None:
+        return ""
+    return place_file(src, child_path(PHOTOS_DIR, event_key), "medal" + src.suffix.lower())
+
 
 # ── Sneakers list ────────────────────────────────────────────────────────────
 
@@ -151,7 +556,7 @@ def load_sneakers() -> list:
 
 
 def save_sneakers(names: list):
-    SNEAKERS_FILE.write_text(json.dumps(names, ensure_ascii=False, indent=2), "utf-8")
+    atomic_write_text(SNEAKERS_FILE, json.dumps(names, ensure_ascii=False, indent=2))
 
 
 def ensure_sneaker(name: str):
@@ -161,6 +566,14 @@ def ensure_sneaker(name: str):
     if name not in names:
         names.append(name)
         save_sneakers(names)
+
+
+def remember_sneaker(name: str):
+    """ensure_sneaker() after a save — the record is already written, so only warn."""
+    try:
+        ensure_sneaker(name)
+    except (OSError, ValueError) as e:
+        print(f"Warning: sneakers.json not updated ({e})")
 
 
 def init_sneakers_file():
@@ -187,6 +600,37 @@ def labeled_entry(parent, label, row, default=""):
     return var
 
 
+def show_invalid(e):
+    messagebox.showerror("Please check the form", str(e))
+
+
+def show_failed(e):
+    messagebox.showerror("Save failed", f"{e}\n\nNo existing record was changed.")
+
+
+def confirm_same_day(run_date: str, others: list[dict]) -> bool:
+    names = "\n".join(
+        f"  • {r.get('race_name') or r.get('location') or '?'} — "
+        f"{r.get('distance_km', '?')} km  ({r['_path'].name})" for r in others)
+    return messagebox.askyesno(
+        "Another run on this day",
+        f"{run_date} already has:\n{names}\n\n"
+        "Save this as an additional run on the same day? The existing run is not changed.")
+
+
+def confirm_replace_pb(current: dict, new: dict) -> bool:
+    msg = (f"There is already a personal best for \"{current.get('distance', '?')}\": "
+           f"{current.get('total_time', '?')} on {current.get('date', '?')}.\n\n"
+           f"Replace it with {new['total_time']} on {new['date']}? The old result moves into "
+           "Previous records; its photos and medal are no longer shown (the files stay on disk).")
+    try:
+        if time_to_sec(new["total_time"]) >= time_to_sec(current.get("total_time", "")):
+            msg += "\n\nNote: the new time is not faster than the current one."
+    except (ValueError, IndexError):
+        pass
+    return messagebox.askyesno("Personal best already exists", msg)
+
+
 class RunTab(tk.Frame):
     def __init__(self, master, app):
         super().__init__(master)
@@ -209,9 +653,9 @@ class RunTab(tk.Frame):
 
         tk.Label(self, text="Sneakers", anchor="e", width=16).grid(row=11, column=0, sticky="e", **PAD)
         self.v_sneakers = tk.StringVar()
-        self.cb_sneakers_run = ttk.Combobox(self, textvariable=self.v_sneakers, width=ENTRY_W - 2)
-        self.cb_sneakers_run['values'] = load_sneakers()
-        self.cb_sneakers_run.grid(row=11, column=1, sticky="ew", **PAD)
+        self.cb_sneakers = ttk.Combobox(self, textvariable=self.v_sneakers, width=ENTRY_W - 2)
+        self.cb_sneakers['values'] = load_sneakers()
+        self.cb_sneakers.grid(row=11, column=1, sticky="ew", **PAD)
 
         self.v_video = labeled_entry(self, "Video link", 12)
 
@@ -249,39 +693,26 @@ class RunTab(tk.Frame):
 
     def _save(self):
         try:
-            dist = float(self.v_dist.get().replace(",", "."))
-        except ValueError:
-            messagebox.showerror("Error", "Distance must be a number.")
-            return
+            chk = Checker()
+            run = validate_run(run_form(self), chk)
+            medal = chk(medal_source, self.v_medal.get())
+            photos = chk(photos_source, self.v_photos.get())
+            chk.raise_if_any()
 
-        run = {
-            "date":        self.v_date.get().strip(),
-            "race_name":   self.v_race.get().strip(),
-            "location":    self.v_location.get().strip(),
-            "location_be": self.v_location_be.get().strip(),
-            "country":     self.v_country.get().strip(),
-            "country_be":  self.v_country_be.get().strip(),
-            "distance_km": dist,
-            "total_time":  self.v_total_time.get().strip(),
-            "hr_avg":      int(self.v_hr_avg.get() or 0),
-            "hr_max":      int(self.v_hr_max.get() or 0),
-            "elevation":   int(self.v_elevation.get() or 0),
-            "sneakers":    self.v_sneakers.get().strip(),
-            "video":       self.v_video.get().strip(),
-            "medal":       "",
-            "photos":      [],
-        }
+            path, others = run_target(run["date"])
+            if others and not confirm_same_day(run["date"], others):
+                return
+            run["medal"]  = copy_medal(medal, path.stem)
+            run["photos"] = copy_photos(photos, path.stem)
+            write_json(path, run)
+        except ValidationError as e:
+            return show_invalid(e)
+        except (OSError, ValueError) as e:
+            return show_failed(e)
 
-        event_key = run["date"]
-        run["medal"]  = copy_medal(self.v_medal.get(), event_key)
-        run["photos"] = copy_photos(self.v_photos.get(), event_key)
-
-        ensure_sneaker(run["sneakers"])
-        save_run(run)
-        rebuild_data_js()
-        self.cb_sneakers_run['values'] = load_sneakers()
-        messagebox.showinfo("Saved", f"Run on {run['date']} saved!\n{len(run['photos'])} photo(s) copied.")
-        self.app.refresh_lists()
+        remember_sneaker(run["sneakers"])
+        self.app.saved("Saved", f"Run on {run['date']} saved as {path.name}.\n"
+                                f"{len(run['photos'])} photo(s) copied.")
 
 
 class PBTab(tk.Frame):
@@ -306,9 +737,9 @@ class PBTab(tk.Frame):
 
         tk.Label(self, text="Sneakers", anchor="e", width=16).grid(row=11, column=0, sticky="e", **PAD)
         self.v_sneakers = tk.StringVar()
-        self.cb_sneakers_pb = ttk.Combobox(self, textvariable=self.v_sneakers, width=ENTRY_W - 2)
-        self.cb_sneakers_pb['values'] = load_sneakers()
-        self.cb_sneakers_pb.grid(row=11, column=1, sticky="ew", **PAD)
+        self.cb_sneakers = ttk.Combobox(self, textvariable=self.v_sneakers, width=ENTRY_W - 2)
+        self.cb_sneakers['values'] = load_sneakers()
+        self.cb_sneakers.grid(row=11, column=1, sticky="ew", **PAD)
 
         self.v_video = labeled_entry(self, "Video link", 12)
 
@@ -349,50 +780,34 @@ class PBTab(tk.Frame):
         if path:
             self.v_medal.set(path)
 
-    def _parse_previous(self):
-        records = []
-        for line in self.prev_text.get("1.0", "end").strip().splitlines():
-            parts = [p.strip() for p in line.split("|")]
-            if len(parts) == 3:
-                records.append({"time": parts[0], "date": parts[1], "location": parts[2]})
-        return records
-
     def _save(self):
         try:
-            dist_km = float(self.v_distance_km.get().replace(",", "."))
-        except ValueError:
-            messagebox.showerror("Error", "Distance (km) must be a number.")
-            return
+            chk = Checker()
+            pb = validate_pb(pb_form(self), chk)
+            medal = chk(medal_source, self.v_medal.get())
+            photos = chk(photos_source, self.v_photos.get())
+            chk.raise_if_any()
 
-        pb = {
-            "distance":         self.v_distance.get().strip(),
-            "distance_km":      dist_km,
-            "total_time":       self.v_total_time.get().strip(),
-            "date":             self.v_date.get().strip(),
-            "race_name":        self.v_race.get().strip(),
-            "location":         self.v_location.get().strip(),
-            "location_be":      self.v_location_be.get().strip(),
-            "country":          self.v_country.get().strip(),
-            "country_be":       self.v_country_be.get().strip(),
-            "hr_avg":           int(self.v_hr_avg.get() or 0),
-            "hr_max":           int(self.v_hr_max.get() or 0),
-            "sneakers":         self.v_sneakers.get().strip(),
-            "video":            self.v_video.get().strip(),
-            "medal":            "",
-            "photos":           [],
-            "previous_records": self._parse_previous(),
-        }
+            path = pb_target(pb["distance"])
+            if path.exists():
+                # A new best for a distance that already has one: an explicit update
+                # that keeps the old result in the history, never a silent overwrite.
+                current = read_json(path)
+                if not confirm_replace_pb(current, pb):
+                    return
+                pb["previous_records"] = superseded_history(current, pb["previous_records"])
+            key = "pb_" + path.stem
+            pb["medal"]  = copy_medal(medal, key)
+            pb["photos"] = copy_photos(photos, key)
+            write_json(path, pb)
+        except ValidationError as e:
+            return show_invalid(e)
+        except (OSError, ValueError) as e:
+            return show_failed(e)
 
-        event_key = "pb_" + pb["distance"].lower().replace(" ", "_").replace("/", "")
-        pb["medal"]  = copy_medal(self.v_medal.get(), event_key)
-        pb["photos"] = copy_photos(self.v_photos.get(), event_key)
-
-        ensure_sneaker(pb["sneakers"])
-        save_pb(pb)
-        rebuild_data_js()
-        self.cb_sneakers_pb['values'] = load_sneakers()
-        messagebox.showinfo("Saved", f"Personal Best '{pb['distance']}' saved!\n{len(pb['photos'])} photo(s) copied.")
-        self.app.refresh_lists()
+        remember_sneaker(pb["sneakers"])
+        self.app.saved("Saved", f"Personal Best '{pb['distance']}' saved.\n"
+                                f"{len(pb['photos'])} photo(s) copied.")
 
 
 class EditRunTab(tk.Frame):
@@ -523,56 +938,30 @@ class EditRunTab(tk.Frame):
         if self.selected_index is None:
             messagebox.showwarning("No selection", "Select a run from the list first.")
             return
-        old_run = self.runs[self.selected_index]
+        old = self.runs[self.selected_index]
         try:
-            dist = float(self.v_dist.get().replace(",", "."))
-        except ValueError:
-            messagebox.showerror("Error", "Distance must be a number.")
-            return
+            chk = Checker()
+            fields = validate_run(run_form(self), chk)
+            medal = chk(medal_source, self.v_medal.get(), old.get("medal", ""))
+            photos = chk(photos_source, self.v_photos.get())
+            chk.raise_if_any()
 
-        run = {
-            "date":        self.v_date.get().strip(),
-            "race_name":   self.v_race.get().strip(),
-            "location":    self.v_location.get().strip(),
-            "location_be": self.v_location_be.get().strip(),
-            "country":     self.v_country.get().strip(),
-            "country_be":  self.v_country_be.get().strip(),
-            "distance_km": dist,
-            "total_time":  self.v_total_time.get().strip(),
-            "hr_avg":      int(self.v_hr_avg.get() or 0),
-            "hr_max":      int(self.v_hr_max.get() or 0),
-            "elevation":   int(self.v_elevation.get() or 0),
-            "sneakers":    self.v_sneakers.get().strip(),
-            "video":       self.v_video.get().strip(),
-            "medal":       old_run.get("medal", ""),
-            "photos":      old_run.get("photos", []),
-        }
+            path, others = run_target(fields["date"], old)
+            if others and not confirm_same_day(fields["date"], others):
+                return
+            run = {k: v for k, v in old.items() if not k.startswith("_")}   # keeps unknown keys
+            run.update(fields)
+            run["medal"]  = copy_medal(medal, path.stem) if medal else old.get("medal", "")
+            run["photos"] = list(dict.fromkeys(old.get("photos", []) + copy_photos(photos, path.stem)))
+            write_json(path, run)
+        except ValidationError as e:
+            return show_invalid(e)
+        except (OSError, ValueError) as e:
+            return show_failed(e)
 
-        # Always delete the original file (path may differ from run_filename if old naming format)
-        old_path = old_run.get("_path") or run_filename(old_run)
-        new_path = run_filename(run)
-        if old_path.exists() and old_path != new_path:
-            old_path.unlink()
-        elif old_path.exists() and old_path == new_path:
-            old_path.unlink()  # will be rewritten by save_run below
-
-        # Update medal if a new file was specified
-        new_medal = self.v_medal.get().strip()
-        if new_medal:
-            run["medal"] = copy_medal(new_medal, run["date"])
-
-        # Add new photos if a folder was specified
-        new_folder = self.v_photos.get().strip()
-        if new_folder:
-            new_photos = copy_photos(new_folder, run["date"])
-            run["photos"] = run["photos"] + new_photos
-
-        ensure_sneaker(run["sneakers"])
-        save_run(run)
-        rebuild_data_js()
-        self.cb_sneakers['values'] = load_sneakers()
-        messagebox.showinfo("Saved", f"Run on {run['date']} updated.")
-        self.app.refresh_lists()
+        warning = remove_replaced(old["_path"], path)
+        remember_sneaker(run["sneakers"])
+        self.app.saved("Saved", f"Run on {run['date']} updated." + warning)
 
     def _delete(self):
         if self.selected_index is None:
@@ -583,12 +972,16 @@ class EditRunTab(tk.Frame):
                                    f"Delete run {run['date']} – {run['location']}?\n"
                                    "This cannot be undone."):
             return
-        path = run_filename(run)
-        if path.exists():
-            path.unlink()
-        rebuild_data_js()
-        messagebox.showinfo("Deleted", f"Run {run['date']} deleted.")
-        self.app.refresh_lists()
+        path = run["_path"]
+        try:
+            delete_record(path, RUNS_DIR)
+            message = f"Run {run['date']} deleted ({path.name})."
+        except FileNotFoundError:
+            message = f"{path.name} had already been removed."
+        except OSError as e:
+            messagebox.showerror("Delete failed", f"{path.name} could not be deleted:\n{e}")
+            return
+        self.app.saved("Deleted", message)
 
 
 class EditPBTab(tk.Frame):
@@ -707,7 +1100,8 @@ class EditPBTab(tk.Frame):
         self.v_photos.set("")
         self.prev_text.delete("1.0", "end")
         for r in pb.get("previous_records", []):
-            self.prev_text.insert("end", f"{r['time']}|{r['date']}|{r['location']}\n")
+            self.prev_text.insert(
+                "end", f"{r.get('time', '')}|{r.get('date', '')}|{r.get('location', '')}\n")
 
     def _browse(self):
         folder = filedialog.askdirectory(title="Select photos folder")
@@ -720,66 +1114,42 @@ class EditPBTab(tk.Frame):
         if path:
             self.v_medal.set(path)
 
-    def _parse_previous(self):
-        records = []
-        for line in self.prev_text.get("1.0", "end").strip().splitlines():
-            parts = [p.strip() for p in line.split("|")]
-            if len(parts) == 3:
-                records.append({"time": parts[0], "date": parts[1], "location": parts[2]})
-        return records
-
     def _save(self):
         if self.selected_index is None:
             messagebox.showwarning("No selection", "Select a personal best from the list first.")
             return
-        old_pb = self.pbs[self.selected_index]
+        old = self.pbs[self.selected_index]
         try:
-            dist_km = float(self.v_distance_km.get().replace(",", "."))
-        except ValueError:
-            messagebox.showerror("Error", "Distance (km) must be a number.")
-            return
+            chk = Checker()
+            fields = validate_pb(pb_form(self), chk)
+            medal = chk(medal_source, self.v_medal.get(), old.get("medal", ""))
+            photos = chk(photos_source, self.v_photos.get())
+            chk.raise_if_any()
 
-        pb = {
-            "distance":         self.v_distance.get().strip(),
-            "distance_km":      dist_km,
-            "total_time":       self.v_total_time.get().strip(),
-            "date":             self.v_date.get().strip(),
-            "race_name":        self.v_race.get().strip(),
-            "location":         self.v_location.get().strip(),
-            "location_be":      self.v_location_be.get().strip(),
-            "country":          self.v_country.get().strip(),
-            "country_be":       self.v_country_be.get().strip(),
-            "hr_avg":           int(self.v_hr_avg.get() or 0),
-            "hr_max":           int(self.v_hr_max.get() or 0),
-            "sneakers":         self.v_sneakers.get().strip(),
-            "video":            self.v_video.get().strip(),
-            "medal":            old_pb.get("medal", ""),
-            "photos":           old_pb.get("photos", []),
-            "previous_records": self._parse_previous(),
-        }
+            # Same label -> same file, whatever its name. A new label must not land on
+            # another PB's file: that would silently replace a different distance.
+            if fields["distance"] == old.get("distance"):
+                path = old["_path"]
+            else:
+                path = pb_target(fields["distance"])
+                if path != old["_path"] and path.exists():
+                    raise ValidationError(
+                        f"Distance label: a personal best is already stored as {path.name}. "
+                        "Edit or delete that one instead of renaming this one onto it.")
+            key = "pb_" + path.stem
+            pb = {k: v for k, v in old.items() if not k.startswith("_")}    # keeps unknown keys
+            pb.update(fields)
+            pb["medal"]  = copy_medal(medal, key) if medal else old.get("medal", "")
+            pb["photos"] = list(dict.fromkeys(old.get("photos", []) + copy_photos(photos, key)))
+            write_json(path, pb)
+        except ValidationError as e:
+            return show_invalid(e)
+        except (OSError, ValueError) as e:
+            return show_failed(e)
 
-        old_path = pb_filename(old_pb)
-        new_path = pb_filename(pb)
-        if old_path != new_path and old_path.exists():
-            old_path.unlink()
-
-        event_key = "pb_" + pb["distance"].lower().replace(" ", "_").replace("/", "")
-
-        new_medal = self.v_medal.get().strip()
-        if new_medal and new_medal != old_pb.get("medal", ""):
-            pb["medal"] = copy_medal(new_medal, event_key)
-
-        new_folder = self.v_photos.get().strip()
-        if new_folder:
-            new_photos = copy_photos(new_folder, event_key)
-            pb["photos"] = pb["photos"] + new_photos
-
-        ensure_sneaker(pb["sneakers"])
-        save_pb(pb)
-        rebuild_data_js()
-        self.cb_sneakers['values'] = load_sneakers()
-        messagebox.showinfo("Saved", f"Personal Best '{pb['distance']}' updated.")
-        self.app.refresh_lists()
+        warning = remove_replaced(old["_path"], path)
+        remember_sneaker(pb["sneakers"])
+        self.app.saved("Saved", f"Personal Best '{pb['distance']}' updated." + warning)
 
     def _delete(self):
         if self.selected_index is None:
@@ -790,12 +1160,16 @@ class EditPBTab(tk.Frame):
                                    f"Delete PB '{pb['distance']}' ({pb['total_time']})?\n"
                                    "This cannot be undone."):
             return
-        path = pb_filename(pb)
-        if path.exists():
-            path.unlink()
-        rebuild_data_js()
-        messagebox.showinfo("Deleted", f"Personal Best '{pb['distance']}' deleted.")
-        self.app.refresh_lists()
+        path = pb["_path"]
+        try:
+            delete_record(path, PBS_DIR)
+            message = f"Personal Best '{pb['distance']}' deleted ({path.name})."
+        except FileNotFoundError:
+            message = f"{path.name} had already been removed."
+        except OSError as e:
+            messagebox.showerror("Delete failed", f"{path.name} could not be deleted:\n{e}")
+            return
+        self.app.saved("Deleted", message)
 
 
 class ViewTab(tk.Frame):
@@ -843,8 +1217,15 @@ class App(tk.Tk):
         self.resizable(True, True)
         self.minsize(520, 520)
 
+        self.refresher = BackgroundRefresh()
+        self._polling = False
+
         nb = ttk.Notebook(self)
-        nb.pack(fill="both", expand=True, padx=10, pady=10)
+        nb.pack(fill="both", expand=True, padx=10, pady=(10, 0))
+
+        self.status = tk.StringVar()
+        tk.Label(self, textvariable=self.status, fg="grey", anchor="w").pack(
+            fill="x", padx=12, pady=(2, 6))
 
         self.run_tab      = RunTab(nb, self)
         self.pb_tab       = PBTab(nb, self)
@@ -858,7 +1239,44 @@ class App(tk.Tk):
         nb.add(self.edit_pb_tab,  text="  Edit Personal Best  ")
         nb.add(self.view_tab,     text="  View All  ")
 
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def saved(self, title, message):
+        """Common tail of every save and delete: data.js, then report, then refresh."""
+        try:
+            write_data_js()
+        except (OSError, ValueError) as e:
+            messagebox.showerror(
+                "data.js not updated",
+                f"{message}\n\nBut data/data.js could not be rebuilt ({e}), so the site "
+                "does not show the change yet. Save again once the problem is fixed.")
+        else:
+            self.refresher.request()
+            if not self._polling:
+                self._poll_refresh()
+            messagebox.showinfo(title, message)
+        self.refresh_lists()
+
+    def _poll_refresh(self):
+        busy = self.refresher.busy
+        self.status.set("Updating photo previews and atom.xml…" if busy else "")
+        self._polling = busy
+        if busy:
+            self.after(300, self._poll_refresh)
+
+    def _on_close(self):
+        if self.refresher.busy:
+            print("Finishing photo previews and atom.xml before exiting…")
+        self.destroy()
+
     def refresh_lists(self):
+        try:
+            names = load_sneakers()
+        except (OSError, ValueError):
+            names = None
+        if names is not None:
+            for tab in (self.run_tab, self.pb_tab, self.edit_run_tab, self.edit_pb_tab):
+                tab.cb_sneakers['values'] = names
         self.edit_run_tab.refresh()
         self.edit_pb_tab.refresh()
         self.view_tab.refresh()

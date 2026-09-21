@@ -54,7 +54,7 @@ def pace(distance_km, total_time):
         return ""
 
 
-def entry_xml(run):
+def entry_xml(run, key):
     date = run.get("date", "")
     stamp = f"{date}T00:00:00Z"                       # Atom needs RFC 3339
     name  = run.get("race_name") or run.get("location") or "Run"
@@ -75,7 +75,7 @@ def entry_xml(run):
 
     return f"""  <entry>
     <title>{escape(title)}</title>
-    <id>tag:{TAG_HOST},{TAG_DATE}:run/{escape(date)}</id>
+    <id>tag:{TAG_HOST},{TAG_DATE}:run/{escape(key)}</id>
     <link rel="alternate" type="text/html" href="{escape(SITE)}"/>
     <updated>{stamp}</updated>
     <published>{stamp}</published>
@@ -89,7 +89,13 @@ def build(runs):
     # Feed <updated> comes from the data, not the clock, so regenerating an unchanged
     # log produces a byte-identical file instead of git churn.
     updated = f"{runs[0]['date']}T00:00:00Z" if runs else "1970-01-01T00:00:00Z"
-    entries = "\n".join(entry_xml(r) for r in runs)
+    # The date is the entry id. A second run on the same day (data/runs/<date>_2.json,
+    # listed after <date>.json) gets <date>-2, so the first run's id never changes.
+    seen, parts = {}, []
+    for r in runs:
+        n = seen[r["date"]] = seen.get(r["date"], 0) + 1
+        parts.append(entry_xml(r, r["date"] if n == 1 else f"{r['date']}-{n}"))
+    entries = "\n".join(parts)
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
   <title>{escape(TITLE)}</title>

@@ -91,29 +91,33 @@ The script has five tabs: **Add Run**, **Add Personal Best**, **Edit Run**, **Ed
 
 | Field | Format |
 |---|---|
-| Date | YYYY-MM-DD |
+| Date | YYYY-MM-DD — must be a real calendar date |
 | Race name | Name of the race, e.g. `Mestia Ultra` — shown as the card title |
 | Location (EN) | English name, e.g. `Batumi` |
 | Location (BE) | Belarusian name, e.g. `Батумі` |
 | Country (EN) | English name, e.g. `Georgia` |
 | Country (BE) | Belarusian name, e.g. `Грузія` |
-| Distance | Kilometres, e.g. `12.4` |
-| Total time | H:MM:SS, e.g. `1:05:30` |
-| Avg HR | Beats per minute |
-| Max HR | Beats per minute |
+| Distance | Kilometres, greater than 0, e.g. `12.4` (a comma works too: `12,4`) |
+| Total time | H:MM:SS or M:SS, e.g. `1:05:30` or `19:14`. Track times may have a fraction: `0:00:27.4` |
+| Avg HR | Beats per minute — a whole number, or empty if not recorded |
+| Max HR | Beats per minute — a whole number, or empty if not recorded |
 | Elevation | Metres of elevation gain, e.g. `320`. Use `0` if flat |
 | Sneakers | Choose from dropdown or type a new name |
 | Video link | Optional URL shown in the Photos section |
-| Photos folder | Optional — all images in the folder are copied into `data/photos/` |
+| Photos folder | Optional — all images in the folder are copied into `data/photos/<event>/` |
 | Medal photo | Optional — single image copied as `data/photos/<event>/medal.<ext>` and shown on the card |
+
+If there is already a run on that date, the script asks first; saying yes stores the new
+run as `YYYY-MM-DD_2.json` (photos in `data/photos/YYYY-MM-DD_2/`), and the existing run
+is not touched.
 
 ### Add Personal Best tab
 
 | Field | Format |
 |---|---|
-| Distance label | Display name, e.g. `5 km` or `Half Marathon` |
+| Distance label | Display name, e.g. `5 km` or `Half Marathon` — also names the file (`5_km.json`), so it cannot contain `\ : * ? " < > \|` |
 | Distance (km) | Numeric, e.g. `5` or `21.0975` — used to calculate pace |
-| Total time | H:MM:SS, e.g. `19:14` |
+| Total time | H:MM:SS or M:SS, e.g. `19:14` |
 | Date | YYYY-MM-DD |
 | Race name | Name of the race |
 | Location (EN) | English name |
@@ -126,11 +130,26 @@ The script has five tabs: **Add Run**, **Add Personal Best**, **Edit Run**, **Ed
 | Video link | Optional URL shown in the Photos section |
 | Photos folder | Optional |
 | Medal photo | Optional — single image shown on the PB card |
-| Previous records | One record per line: `time\|date\|location` |
+| Previous records | One record per line: `time\|date\|location`. Every line must have a valid time and date — a bad line is reported with its number and blocks the save instead of being dropped. The location may itself contain `\|` |
+
+If a personal best for that distance already exists (`5 km`, `5_km` and `5 KM` all count as
+the same distance), the script asks whether to replace it. Yes makes the new result the PB
+and moves the old one into Previous records; it also warns you if the new time is not
+actually faster.
 
 ### Edit Run / Edit Personal Best tabs
 
-Select an event from the list — all fields populate automatically. Change any field and click **Save Changes**. If the date is changed, the old JSON file is renamed accordingly. To add more photos, specify a folder; existing photos are preserved. Click **Delete** to permanently remove the event (confirmation required).
+Select an event from the list — all fields populate automatically. Change any field and click **Save Changes**. If the date (or PB label) is changed, the record moves to the matching file name; moving a run onto a date that already has one asks first and stores it as `_2`, and renaming a PB onto a distance that already has a PB is refused. The medal is copied only when you pick a different image. To add more photos, specify a folder; existing photos are preserved and the same photo is never added twice. Click **Delete** to permanently remove the event (confirmation required).
+
+### Validation and safety
+
+Every save validates all fields first and lists every problem in one dialog — nothing is
+written until the form is valid. Then it copies the medal/photos, writes the JSON through
+a temporary file (so a crash or full disk can never leave a half-written record), and only
+after that removes the old file of a renamed record. If anything fails, the existing
+record is left as it was. Copied images never overwrite a different file with the same
+name: an identical file is reused, and a different one gets the next free name
+(`IMG_1_2.jpg`, `medal_2.jpg`).
 
 ### Sneakers
 
@@ -138,7 +157,7 @@ The Sneakers field is a dropdown backed by `data/sneakers.json`. Typing a new na
 
 ### After saving
 
-The script writes a JSON file to `data/runs/` or `data/pbs/`, regenerates `data/data.js`, and then regenerates the photo previews and `atom.xml` (see below). Refresh the browser to see the updated log.
+The script writes a JSON file to `data/runs/` or `data/pbs/`, regenerates `data/data.js`, and then regenerates the photo previews and `atom.xml` (see below) in the background, so the window stays responsive while new photos are encoded. The status line at the bottom of the window shows when that is running; closing the window lets it finish. Refresh the browser to see the updated log.
 
 If ImageMagick is missing the save still succeeds — you will just see a warning, and can run `make_previews.bat` later.
 
@@ -202,7 +221,7 @@ A text search box above the activity list filters by activity type (e.g. `trail`
 
 Each event is stored as a standalone JSON file:
 
-**Run** (`data/runs/YYYY-MM-DD.json`):
+**Run** (`data/runs/YYYY-MM-DD.json`; a second run on the same day is `YYYY-MM-DD_2.json`):
 ```json
 {
   "date": "2026-05-31",
@@ -303,7 +322,9 @@ EXIF rotation is applied before metadata is stripped. Output lands in
 
 It also writes `data/photo-dims.js` with each image's natural size. The dashboard puts
 those on the `<img>` as `width`/`height`, so every cell reserves the correct box before
-the image loads and the layout does not jump.
+the image loads and the layout does not jump. Sizes already in the file are reused: only
+new images, and images whose previews were just re-encoded, are measured again, so a run
+with nothing to encode takes a fraction of a second. `--force` re-measures everything.
 
 ### Layout
 
