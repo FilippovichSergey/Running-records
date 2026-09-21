@@ -149,7 +149,8 @@ a temporary file (so a crash or full disk can never leave a half-written record)
 after that removes the old file of a renamed record. If anything fails, the existing
 record is left as it was. Copied images never overwrite a different file with the same
 name: an identical file is reused, and a different one gets the next free name
-(`IMG_1_2.jpg`, `medal_2.jpg`).
+(`IMG_1_2.jpg`, `medal_2.jpg`). The same applies to a name that differs only in extension
+(`IMG_1.png` next to `IMG_1.jpg`), because both would map to the same preview.
 
 ### Sneakers
 
@@ -157,7 +158,9 @@ The Sneakers field is a dropdown backed by `data/sneakers.json`. Typing a new na
 
 ### After saving
 
-The script writes a JSON file to `data/runs/` or `data/pbs/`, regenerates `data/data.js`, and then regenerates the photo previews and `atom.xml` (see below) in the background, so the window stays responsive while new photos are encoded. The status line at the bottom of the window shows when that is running; closing the window lets it finish. Refresh the browser to see the updated log.
+The script writes a JSON file to `data/runs/` or `data/pbs/`, regenerates `data/data.js`, and then regenerates the photo previews and `atom.xml` (see below) in the background, so the window stays responsive while new photos are encoded. The status line at the bottom of the window shows when that is running; if you close the window meanwhile, it hides and the script exits once the work is done. Refresh the browser to see the updated log.
+
+If `data/data.js` cannot be written (say, another program has it locked), the record itself is still saved and the script offers to retry. Do not save the event again — that would add it twice. `data.js` is also rebuilt from the JSON files every time the script starts, so it catches up by itself.
 
 If ImageMagick is missing the save still succeeds — you will just see a warning, and can run `make_previews.bat` later.
 
@@ -269,6 +272,7 @@ Each event is stored as a standalone JSON file:
 **Notes:**
 - `location_be` is optional — if absent, the English `location` is shown in both language modes.
 - `race_name`, `country`, `country_be`, `video` and `medal` are optional — omit the key entirely if not set.
+- `id` appears only on some runs — a second run on the same day, or a run whose date was changed. It keeps the run's Atom feed entry id stable (otherwise the date is the id), so never edit or copy it.
 - Photo and medal paths point at the ORIGINAL image. The dashboard derives the preview path from it automatically (see Photos and previews).
 - Pace is calculated from `distance_km` and `total_time` — it is not stored.
 - Elevation `0` is shown only in the expanded details panel, not in the stats row.

@@ -15,6 +15,7 @@ import argparse
 import io
 import json
 import math
+import os
 import re
 import sys
 from pathlib import Path
@@ -94,12 +95,19 @@ def build(runs):
     # Feed <updated> comes from the data, not the clock, so regenerating an unchanged
     # log produces a byte-identical file instead of git churn.
     updated = f"{runs[0]['date']}T00:00:00Z" if runs else "1970-01-01T00:00:00Z"
-    # The date is the entry id. A second run on the same day (data/runs/<date>_2.json,
-    # listed after <date>.json) gets <date>-2, so the first run's id never changes.
-    seen, parts = {}, []
+    # Entry id: the run's stored "id", else its date. add_new_event.py stores an id when
+    # the date alone isn't unique (a second run that day gets <date>-2) or when a run
+    # moves to another date (it keeps the id it was published under), so ids never shift
+    # between runs. A clash can only come from hand-edited data; suffix it to stay valid.
+    seen, parts = set(), []
     for r in runs:
-        n = seen[r["date"]] = seen.get(r["date"], 0) + 1
-        parts.append(entry_xml(r, r["date"] if n == 1 else f"{r['date']}-{n}"))
+        key = base = r.get("id") or r["date"]
+        n = 1
+        while key in seen:
+            n += 1
+            key = f"{base}-{n}"
+        seen.add(key)
+        parts.append(entry_xml(r, key))
     entries = "\n".join(parts)
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
@@ -129,9 +137,12 @@ def main(argv=None) -> int:
     if args.check:
         print(f"Would write {OUT.name}: {len(runs)} entries, {len(xml)} bytes")
         return 0
-    # newline="" keeps the exact bytes we built (no CRLF translation on Windows)
-    with io.open(OUT, "w", encoding="utf-8", newline="") as f:
+    # newline="" keeps the exact bytes we built (no CRLF translation on Windows).
+    # Temp file + os.replace: an interrupted write never leaves a truncated feed.
+    tmp = OUT.with_name(OUT.name + ".tmp")
+    with io.open(tmp, "w", encoding="utf-8", newline="") as f:
         f.write(xml)
+    os.replace(tmp, OUT)
     print(f"Wrote {OUT.name}: {len(runs)} entries, {len(xml)} bytes")
     return 0
 

@@ -303,6 +303,22 @@ def run_target(run_date: str, old: dict | None = None) -> tuple[Path, list[dict]
     return path, others
 
 
+def feed_id(run: dict) -> str:
+    """The run's Atom entry id (make_feed.py): a stored "id", else its date."""
+    return run.get("id") or run.get("date", "")
+
+
+def new_run_id(run_date: str) -> str:
+    """Feed id for a new run: its date, or <date>-2, -3… when that is taken — also by a
+    run that has since moved to another date and kept the id it was published under."""
+    taken = {feed_id(r) for r in load_all_runs()}
+    rid, n = run_date, 1
+    while rid in taken:
+        n += 1
+        rid = f"{run_date}-{n}"
+    return rid
+
+
 def pb_target(label: str) -> Path:
     return child_path(PBS_DIR, pb_slug(label) + ".json")
 
@@ -381,7 +397,8 @@ def _strip_meta(records):
     return [{k: v for k, v in r.items() if not k.startswith("_")} for r in records]
 
 
-def write_data_js():
+def write_data_js() -> bool:
+    """Rebuild data.js from the JSON files. Returns whether its content changed."""
     runs = load_all_runs()
     pbs  = load_all_pbs()
     js   = (
@@ -389,7 +406,13 @@ def write_data_js():
         f"const RUNS_DATA = {json.dumps(_strip_meta(runs), ensure_ascii=False, indent=2)};\n\n"
         f"const PBS_DATA = {json.dumps(_strip_meta(pbs),  ensure_ascii=False, indent=2)};\n"
     )
+    try:
+        if DATA_JS.read_text("utf-8-sig") == js:
+            return False
+    except OSError:
+        pass
     atomic_write_text(DATA_JS, js)
+    return True
 
 
 def refresh_previews():
@@ -509,16 +532,29 @@ def _as_on_disk(path: Path) -> Path:
     return path
 
 
+def _stem_clash(target: Path) -> bool:
+    """Another image in the folder with the same stem but a different extension
+    (IMG_1.jpg next to IMG_1.png). Both would map to one preview, IMG_1.webp, and
+    make_previews refuses to encode anything while such a pair exists."""
+    name = os.path.normcase(target.name)
+    stem = os.path.splitext(name)[0]
+    return any(os.path.normcase(p.name) != name
+               and os.path.splitext(os.path.normcase(p.name))[0] == stem
+               and p.suffix.lower() in IMG_EXTS
+               for p in target.parent.iterdir())
+
+
 def place_file(src: Path, folder: Path, name: str) -> str:
     """Copy src into folder as name; return its data/... path.
 
     Never overwrites: if the name is taken by an identical file, that file is reused;
-    otherwise the copy takes the next free name (IMG_1.jpg -> IMG_1_2.jpg).
+    otherwise the copy takes the next free name (IMG_1.jpg -> IMG_1_2.jpg). A name whose
+    stem another image already uses is skipped too — see _stem_clash().
     """
     folder.mkdir(parents=True, exist_ok=True)
     stem, ext = os.path.splitext(name)
     target, n = folder / name, 1
-    while target.exists():
+    while target.exists() or _stem_clash(target):
         if target.is_file() and (os.path.samefile(src, target)
                                  or filecmp.cmp(src, target, shallow=False)):
             target = _as_on_disk(target)
@@ -702,6 +738,9 @@ class RunTab(tk.Frame):
             path, others = run_target(run["date"])
             if others and not confirm_same_day(run["date"], others):
                 return
+            rid = new_run_id(run["date"])
+            if rid != run["date"]:            # only stored when the date alone isn't unique
+                run = {"id": rid, **run}
             run["medal"]  = copy_medal(medal, path.stem)
             run["photos"] = copy_photos(photos, path.stem)
             write_json(path, run)
@@ -950,6 +989,10 @@ class EditRunTab(tk.Frame):
             if others and not confirm_same_day(fields["date"], others):
                 return
             run = {k: v for k, v in old.items() if not k.startswith("_")}   # keeps unknown keys
+            if fields["date"] != old.get("date") and "id" not in run:
+                # The feed id was the old date; keep it, so feed readers see this entry
+                # as updated rather than as a new race.
+                run = {"id": feed_id(old), **run}
             run.update(fields)
             run["medal"]  = copy_medal(medal, path.stem) if medal else old.get("medal", "")
             run["photos"] = list(dict.fromkeys(old.get("photos", []) + copy_photos(photos, path.stem)))
@@ -1241,20 +1284,38 @@ class App(tk.Tk):
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
+        # Catch up on JSON changes data.js doesn't reflect yet — a save whose rebuild
+        # failed (see saved()), or files edited by hand.
+        try:
+            if write_data_js():
+                self.start_refresh()
+        except (OSError, ValueError) as e:
+            print(f"Warning: data/data.js not rebuilt ({e})")
+
+    def start_refresh(self):
+        self.refresher.request()
+        if not self._polling:
+            self._poll_refresh()
+
     def saved(self, title, message):
         """Common tail of every save and delete: data.js, then report, then refresh."""
-        try:
-            write_data_js()
-        except (OSError, ValueError) as e:
-            messagebox.showerror(
-                "data.js not updated",
-                f"{message}\n\nBut data/data.js could not be rebuilt ({e}), so the site "
-                "does not show the change yet. Save again once the problem is fixed.")
-        else:
-            self.refresher.request()
-            if not self._polling:
-                self._poll_refresh()
-            messagebox.showinfo(title, message)
+        while True:
+            try:
+                write_data_js()
+                break
+            except (OSError, ValueError) as e:
+                # Never suggest saving again: the record is written, and a second save
+                # would add a duplicate same-day run or fold a PB into its own history.
+                if not messagebox.askretrycancel(
+                        "data.js not updated",
+                        f"{message}\n\nThe record itself is saved, but data/data.js could not "
+                        f"be rebuilt ({e}), so the site does not show the change yet.\n\n"
+                        "Retry now? Otherwise it is rebuilt after the next save or delete, "
+                        "or when the editor is started again."):
+                    self.refresh_lists()
+                    return
+        self.start_refresh()
+        messagebox.showinfo(title, message)
         self.refresh_lists()
 
     def _poll_refresh(self):
@@ -1265,9 +1326,17 @@ class App(tk.Tk):
             self.after(300, self._poll_refresh)
 
     def _on_close(self):
+        """Leave mainloop only after the background pass is done. Exiting while it runs
+        shuts down the thread pool make_previews uses (a queued pass then skips its
+        previews), and lets Tk objects be garbage-collected on a worker thread, which
+        aborts the process. So hide the window and wait."""
         if self.refresher.busy:
-            print("Finishing photo previews and atom.xml before exiting…")
-        self.destroy()
+            if self.state() != "withdrawn":
+                self.withdraw()
+                print("Finishing photo previews and atom.xml before exiting…")
+            self.after(200, self._on_close)
+        else:
+            self.destroy()
 
     def refresh_lists(self):
         try:
@@ -1284,4 +1353,5 @@ class App(tk.Tk):
 
 if __name__ == "__main__":
     init_sneakers_file()
-    App().mainloop()
+    app = App()      # keep a reference: the widgets are then freed at exit, on this thread
+    app.mainloop()

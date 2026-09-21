@@ -155,7 +155,9 @@ def write_dims(paths, changed=()):
     except OSError:
         unchanged = False
     if not unchanged:                 # no rewrite, no mtime churn
-        DIMS_JS.write_text(text, encoding="utf-8")
+        tmp = DIMS_JS.with_name(DIMS_JS.name + ".tmp")
+        tmp.write_text(text, encoding="utf-8")
+        os.replace(tmp, DIMS_JS)      # an interrupted write never leaves a truncated file
     return len(dims)
 
 
