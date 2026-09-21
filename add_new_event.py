@@ -303,20 +303,36 @@ def run_target(run_date: str, old: dict | None = None) -> tuple[Path, list[dict]
     return path, others
 
 
-def feed_id(run: dict) -> str:
-    """The run's Atom entry id (make_feed.py): a stored "id", else its date."""
-    return run.get("id") or run.get("date", "")
+def published_ids(runs: list[dict] | None = None) -> dict[Path, str]:
+    """Each run file's Atom entry id, decided exactly as make_feed.py publishes it."""
+    import make_feed
+    return {r["_path"]: key for r, key in make_feed.assign_ids(load_all_runs() if runs is None else runs)}
 
 
 def new_run_id(run_date: str) -> str:
     """Feed id for a new run: its date, or <date>-2, -3… when that is taken — also by a
     run that has since moved to another date and kept the id it was published under."""
-    taken = {feed_id(r) for r in load_all_runs()}
+    taken = set(published_ids().values())
     rid, n = run_date, 1
     while rid in taken:
         n += 1
         rid = f"{run_date}-{n}"
     return rid
+
+
+def freeze_feed_ids() -> list[str]:
+    """Store "id" in every run whose published feed id is not simply its date — e.g. a
+    hand-made <date>_2.json. Otherwise deleting or moving another run that day would
+    shift its id. The editor's own saves never need this. Returns the files changed."""
+    runs = load_all_runs()
+    changed = []
+    for path, key in published_ids(runs).items():
+        run = next(r for r in runs if r["_path"] == path)
+        if key != run["date"] and str(run.get("id") or "") != key:
+            record = {k: v for k, v in run.items() if not k.startswith("_") and k != "id"}
+            write_json(path, {"id": key, **record})
+            changed.append(path.name)
+    return changed
 
 
 def pb_target(label: str) -> Path:
@@ -409,7 +425,7 @@ def write_data_js() -> bool:
     try:
         if DATA_JS.read_text("utf-8-sig") == js:
             return False
-    except OSError:
+    except (OSError, UnicodeError):   # missing, unreadable or not UTF-8: just rewrite it
         pass
     atomic_write_text(DATA_JS, js)
     return True
@@ -563,6 +579,10 @@ def place_file(src: Path, folder: Path, name: str) -> str:
         target = folder / f"{stem}_{n}{ext}"
     else:
         shutil.copy2(src, target)
+        # copy2 keeps the source's (often old) mtime, and make_previews trusts any
+        # preview newer than its source — a leftover preview of a deleted photo with
+        # this name would then be kept for the new one.
+        os.utime(target)
     return target.relative_to(BASE_DIR).as_posix()
 
 
@@ -992,7 +1012,7 @@ class EditRunTab(tk.Frame):
             if fields["date"] != old.get("date") and "id" not in run:
                 # The feed id was the old date; keep it, so feed readers see this entry
                 # as updated rather than as a new race.
-                run = {"id": feed_id(old), **run}
+                run = {"id": published_ids().get(old["_path"], old["date"]), **run}
             run.update(fields)
             run["medal"]  = copy_medal(medal, path.stem) if medal else old.get("medal", "")
             run["photos"] = list(dict.fromkeys(old.get("photos", []) + copy_photos(photos, path.stem)))
@@ -1284,13 +1304,20 @@ class App(tk.Tk):
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
-        # Catch up on JSON changes data.js doesn't reflect yet — a save whose rebuild
-        # failed (see saved()), or files edited by hand.
+        # Catch up on anything the last session left undone: JSON files data.js doesn't
+        # reflect yet (a save whose rebuild failed, files edited by hand) and a preview /
+        # feed pass that was cut short. A pass with nothing to do takes a few hundredths
+        # of a second, so it always runs.
         try:
-            if write_data_js():
-                self.start_refresh()
+            for name in freeze_feed_ids():
+                print(f"Stored the published feed id in {name}")
+        except (OSError, ValueError) as e:
+            print(f"Warning: feed ids not checked ({e})")
+        try:
+            write_data_js()
         except (OSError, ValueError) as e:
             print(f"Warning: data/data.js not rebuilt ({e})")
+        self.start_refresh()
 
     def start_refresh(self):
         self.refresher.request()

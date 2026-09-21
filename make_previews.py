@@ -152,7 +152,7 @@ def write_dims(paths, changed=()):
             "const PHOTO_DIMS = {" + nl + body + nl + "};" + nl)
     try:
         unchanged = DIMS_JS.read_text(encoding="utf-8") == text
-    except OSError:
+    except (OSError, UnicodeError):
         unchanged = False
     if not unchanged:                 # no rewrite, no mtime churn
         tmp = DIMS_JS.with_name(DIMS_JS.name + ".tmp")

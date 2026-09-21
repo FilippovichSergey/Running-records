@@ -90,25 +90,33 @@ def entry_xml(run, key):
   </entry>"""
 
 
-def build(runs):
+def assign_ids(runs):
+    """[(run, entry id)], newest first — the one place feed ids are decided.
+
+    The id is the run's stored "id", else its date. add_new_event.py stores an id
+    whenever that would not be unique or stable: a second run that day gets <date>-2,
+    a run moved to another date keeps the id it was published under, and at startup it
+    stores the id of any hand-made run whose id isn't its date. A clash is suffixed
+    -2, -3… in file order (runs are listed in file order within a date)."""
     runs = sorted((r for r in runs if r.get("date")), key=lambda r: r["date"], reverse=True)
-    # Feed <updated> comes from the data, not the clock, so regenerating an unchanged
-    # log produces a byte-identical file instead of git churn.
-    updated = f"{runs[0]['date']}T00:00:00Z" if runs else "1970-01-01T00:00:00Z"
-    # Entry id: the run's stored "id", else its date. add_new_event.py stores an id when
-    # the date alone isn't unique (a second run that day gets <date>-2) or when a run
-    # moves to another date (it keeps the id it was published under), so ids never shift
-    # between runs. A clash can only come from hand-edited data; suffix it to stay valid.
-    seen, parts = set(), []
+    seen, out = set(), []
     for r in runs:
-        key = base = r.get("id") or r["date"]
+        key = base = str(r.get("id") or "") or r["date"]
         n = 1
         while key in seen:
             n += 1
             key = f"{base}-{n}"
         seen.add(key)
-        parts.append(entry_xml(r, key))
-    entries = "\n".join(parts)
+        out.append((r, key))
+    return out
+
+
+def build(runs):
+    ids = assign_ids(runs)
+    # Feed <updated> comes from the data, not the clock, so regenerating an unchanged
+    # log produces a byte-identical file instead of git churn.
+    updated = f"{ids[0][0]['date']}T00:00:00Z" if ids else "1970-01-01T00:00:00Z"
+    entries = "\n".join(entry_xml(r, key) for r, key in ids)
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
   <title>{escape(TITLE)}</title>
