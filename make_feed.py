@@ -14,6 +14,7 @@ Run automatically by add_new_event.py after every save.
 import argparse
 import io
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -45,10 +46,14 @@ def load_runs():
 def pace(distance_km, total_time):
     """min/km as m:ss, matching calcPace() in app.js."""
     try:
-        p = [int(x) for x in total_time.split(":")]
+        # float, not int: track times carry a fraction of a second (0:00:27.4).
+        p = [float(x) for x in total_time.split(":")]
         sec = p[0] * 3600 + p[1] * 60 + p[2] if len(p) == 3 else p[0] * 60 + p[1]
         per = sec / float(distance_km)
-        m, s = divmod(int(round(per)), 60)
+        # Math.round() rounds halves up; Python's round() would round them to even.
+        m, s = int(per // 60), math.floor(per % 60 + 0.5)
+        if s == 60:
+            m, s = m + 1, 0
         return f"{m}:{s:02d}"
     except Exception:
         return ""
