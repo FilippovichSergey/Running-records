@@ -2,6 +2,7 @@
 Closing the editor while previews are still being generated (real ImageMagick).
 
     python tests/test_close.py
+    python tests/test_close.py --require-gui      # fail, rather than skip, without Tk / ImageMagick
 
 Each scenario runs the real editor in a child process on a throw-away copy of the
 scripts, with generated images, so the real data/ folder is never touched. Skipped
@@ -17,15 +18,17 @@ import textwrap
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
+# A skip exits 0; with --require-gui it exits 2, so a full check can't pass by skipping.
+SKIP_CODE = 2 if "--require-gui" in sys.argv else 0
 if shutil.which("magick") is None:
     print("skipped: ImageMagick not found")
-    sys.exit(0)
+    sys.exit(SKIP_CODE)
 try:
     import tkinter
     tkinter.Tk().destroy()
 except Exception as e:                  # tkinter.TclError: no usable Tcl/Tk here
     print(f"skipped: no usable Tk ({e})")
-    sys.exit(0)
+    sys.exit(SKIP_CODE)
 
 TMP = Path(tempfile.mkdtemp(prefix="running_log_close_"))
 IMAGES = ["a.jpg", "b.jpg", "c.jpg"]

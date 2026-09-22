@@ -8,6 +8,7 @@ also copies the real data/runs and data/pbs there and makes sure every record op
 saves back byte-for-byte unchanged.
 
     python tests/test_editor.py
+    python tests/test_editor.py --require-gui     # fail, rather than skip, without Tk
 
 The checks of validation, record loading, file naming, feed ids and the feed/preview
 files need no GUI and always run. The rest drive the real Tk forms; without a usable
@@ -32,6 +33,7 @@ import traceback
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
+REQUIRE_GUI = "--require-gui" in sys.argv
 SCRIPTS = ("add_new_event.py", "make_previews.py", "make_feed.py")
 HAS_MAGICK = shutil.which("magick") is not None
 TMP = Path(tempfile.mkdtemp(prefix="running_log_tests_"))
@@ -303,8 +305,9 @@ def _():
         check(f"PB label {good!r} -> {slug}", a.pb_slug(good) == slug)
     for same in ("5 km", "5km", "5 KM", "5  км", "5_км", "5,0 km", "5.0 км"):
         check(f"PB label {same!r} is the distance '5 km'", a.pb_key(same) == "5 km", a.pb_key(same))
-    for label, key in (("21.1 km", "21.1 km"), ("21,1 км", "21.1 km"), ("200 м", "200 m"),
-                       ("Half  Marathon", "half marathon"), ("5000 m", "5000 m")):
+    for label, key in (("21.1 km", "21.1 km"), ("21,1 км", "21.1 km"), ("200 м", "200 m"), ("0.20 km", "0.2 km"),
+                       ("21.0975 km", "21.0975 km"), ("42.19512 km", "42.19512 km"), ("50 km", "50 km"),
+                       ("Half  Marathon", "half marathon"), ("5000 m", "5000 m"), ("1.2.3 km", "1.2.3 km")):
         check(f"PB label {label!r} -> key {key!r}", a.pb_key(label) == key, a.pb_key(label))
     check("number_text shows whole floats as integers",
           [a.number_text(v) for v in (150.0, 150, 12.5, "", 0)] == ["150", "150", "12.5", "", "0"])
@@ -1326,6 +1329,7 @@ for x in APPS + [app] * (app is not None):
     except a.tk.TclError:
         pass                     # already destroyed by its test
 APPS.clear()
+gui_missing = app is None
 app = None
 gc.collect()
 os.chdir(REPO)
@@ -1337,4 +1341,7 @@ for name in SKIPPED:
     print("SKIP", name, "" if "ImageMagick" in name else f"(no usable Tk: {NO_TK})")
 print(f"\n{len(RESULTS) - len(fails)}/{len(RESULTS)} passed"
       + (f", {len(SKIPPED)} group(s) skipped" if SKIPPED else ""))
+if REQUIRE_GUI and gui_missing:
+    print("FAIL --require-gui: Tk is not available, so the GUI groups did not run")
+    sys.exit(2)
 sys.exit(1 if fails else 0)

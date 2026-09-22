@@ -185,6 +185,7 @@ If ImageMagick is missing the save still succeeds — you will just see the warn
 ```
 python tests/test_editor.py
 python tests/test_close.py
+python tests/test_launchers.py
 ```
 
 `test_editor.py` checks the editor on a throw-away copy of the scripts with its own small
@@ -194,8 +195,21 @@ files, and that every one of your real records opens and saves back byte-for-byt
 unchanged. The checks that need no window (validation, record loading, file naming, feed
 and preview files) always run; the ones that drive the Tk forms are reported as skipped
 where Tk can't start. `test_close.py` closes the editor while previews are still being
-generated, using real ImageMagick (skipped without it or without Tk). Neither touches the
-real `data/` folder.
+generated, using real ImageMagick (skipped without it or without Tk). `test_launchers.py`
+runs the `.bat` launchers from another drive and a folder with spaces. None of them
+touches the real `data/` folder.
+
+A skip exits with code 0, so a machine without Tk can still run the rest. For a full check
+(before relying on a change), add `--require-gui` to `test_editor.py` and `test_close.py`:
+they then fail with exit code 2 instead of skipping.
+
+### Launchers
+
+Every `.bat` file (`run.bat`, `make_previews.bat`, `make_feed.bat`, `process_activities.bat`,
+`fetch_strava.bat`, `fetch_garmin.bat`) first switches to its own folder and drive
+(`cd /d "%~dp0"`), so it works from a shortcut, a terminal on another drive, or after the
+project folder is moved or renamed. It keeps the window open at the end (`pause`) and then
+returns the script's exit code.
 
 ---
 

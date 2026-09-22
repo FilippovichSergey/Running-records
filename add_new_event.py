@@ -25,6 +25,7 @@ import tkinter as tk
 import unicodedata
 from tkinter import filedialog, messagebox, ttk
 from datetime import date
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 BASE_DIR      = Path(__file__).resolve().parent
@@ -451,8 +452,10 @@ def pb_key(label: str) -> str:
     if not m:
         return s
     try:
-        number = f"{float(m.group(1).replace(',', '.')):g}"
-    except ValueError:
+        # Decimal, not float: "5.0" and "5" are one number, but "42.19512" and
+        # "42.19513" stay two (a float with :g would round both to 42.1951).
+        number = format(Decimal(m.group(1).replace(",", ".")).normalize(), "f")
+    except InvalidOperation:
         number = m.group(1)
     return f"{number} {'m' if m.group(2) in ('m', 'м') else 'km'}"
 
