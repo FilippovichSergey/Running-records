@@ -177,9 +177,13 @@ def main(argv=None) -> int:
     ap.add_argument("--jobs",    type=int, default=min(8, os.cpu_count() or 4))
     args = ap.parse_args(argv)
 
+    if not DATA_JS.exists():
+        print(f"ERROR: {DATA_JS} not found — nothing to generate previews for.")
+        return 1
     paths = referenced_paths()
     if not paths:
-        print(f"No image paths found in {DATA_JS} — nothing to do.")
+        write_dims([])             # drop the sizes of photos no event references any more
+        print(f"No image paths found in {DATA_JS} — no previews needed.")
         return 0
 
     # Build the job list, refusing collisions rather than silently overwriting.

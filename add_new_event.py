@@ -261,28 +261,97 @@ def read_json(path: Path):
     return json.loads(path.read_text("utf-8-sig"))   # utf-8-sig tolerates a BOM
 
 
-def load_all_runs():
-    runs = []
-    for f in sorted(RUNS_DIR.glob("*.json")):
+_TEXT_FIELDS  = ("id", "race_name", "location", "location_be", "country", "country_be",
+                 "sneakers", "video", "medal")
+_COUNT_FIELDS = ("hr_avg", "hr_max", "elevation")
+
+
+def _is_number(v) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+
+
+def record_problem(rec, kind: str) -> str | None:
+    """Why a loaded run ("run") or personal best ("pb") can't be used, or None.
+
+    Checks what the editor and the site rely on: the required fields, their types,
+    real dates and times, and the shape of photos / previous_records. A file failing
+    this is skipped, instead of crashing the editor with a KeyError further on.
+    """
+    if not isinstance(rec, dict):
+        return "not a JSON object"
+    required = ("distance",) * (kind == "pb") + ("date", "distance_km", "total_time")
+    missing = [k for k in required if k not in rec]
+    if missing:
+        return "missing " + ", ".join(f'"{k}"' for k in missing)
+    for k in ("date", "total_time") + ("distance",) * (kind == "pb"):
+        if not isinstance(rec[k], str):
+            return f'"{k}" must be text'
+    try:
+        parse_date(rec["date"], '"date"')
+        parse_time(rec["total_time"], '"total_time"')
+    except ValidationError as e:
+        return str(e)
+    if kind == "pb" and not rec["distance"].strip():
+        return '"distance" is empty'
+    if not _is_number(rec["distance_km"]) or rec["distance_km"] <= 0:
+        return '"distance_km" must be a number above 0'
+    for k in _TEXT_FIELDS:
+        if k in rec and not isinstance(rec[k], str):
+            return f'"{k}" must be text'
+    for k in _COUNT_FIELDS:
+        if k in rec and not (_is_number(rec[k]) and rec[k] >= 0):
+            return f'"{k}" must be a number ≥ 0'
+    if "photos" in rec and not (isinstance(rec["photos"], list)
+                                and all(isinstance(p, str) for p in rec["photos"])):
+        return '"photos" must be a list of paths'
+    if "previous_records" in rec:
+        hist = rec["previous_records"]
+        if not isinstance(hist, list):
+            return '"previous_records" must be a list'
+        for i, r in enumerate(hist, 1):
+            if not (isinstance(r, dict) and isinstance(r.get("time"), str)
+                    and isinstance(r.get("date"), str) and isinstance(r.get("location", ""), str)):
+                return f"previous_records #{i} needs text time, date and location"
+            try:
+                parse_time(r["time"], f"previous_records #{i} time")
+                parse_date(r["date"], f"previous_records #{i} date")
+            except ValidationError as e:
+                return str(e)
+    return None
+
+
+def scan_records(folder: Path, kind: str) -> tuple[list[dict], list[str]]:
+    """(usable records, ["runs/x.json: why it was skipped", ...]) for one folder."""
+    records, problems = [], []
+    for f in sorted(folder.glob("*.json")):
         try:
             data = read_json(f)
-            data["_path"] = f          # the real file: edits and deletes act on this one
-            runs.append(data)
-        except Exception as e:
-            print(f"Warning: could not read {f.name}: {e}")
-    return runs
+        except (OSError, ValueError) as e:
+            problems.append(f"{folder.name}/{f.name}: not readable JSON ({e})")
+            continue
+        issue = record_problem(data, kind)
+        if issue:
+            problems.append(f"{folder.name}/{f.name}: {issue}")
+            continue
+        data["_path"] = f          # the real file: edits and deletes act on this one
+        records.append(data)
+    return records, problems
+
+
+def load_all_runs():
+    return scan_records(RUNS_DIR, "run")[0]
 
 
 def load_all_pbs():
-    pbs = []
-    for f in sorted(PBS_DIR.glob("*.json")):
-        try:
-            data = read_json(f)
-            data["_path"] = f
-            pbs.append(data)
-        except Exception as e:
-            print(f"Warning: could not read {f.name}: {e}")
-    return pbs
+    return scan_records(PBS_DIR, "pb")[0]
+
+
+def load_problems() -> list[str]:
+    return scan_records(RUNS_DIR, "run")[1] + scan_records(PBS_DIR, "pb")[1]
+
+
+class DataError(ValueError):
+    """Some record files can't be loaded, so data.js must not be rebuilt without them."""
 
 
 def run_target(run_date: str, old: dict | None = None) -> tuple[Path, list[dict]]:
@@ -335,8 +404,28 @@ def freeze_feed_ids() -> list[str]:
     return changed
 
 
-def pb_target(label: str) -> Path:
-    return child_path(PBS_DIR, pb_slug(label) + ".json")
+def _label_slug(pb: dict) -> str | None:
+    try:
+        return pb_slug(pb.get("distance", ""))
+    except ValidationError:
+        return None
+
+
+def pbs_with_label(label: str, exclude: Path | None = None) -> list[dict]:
+    """The personal bests for this distance. A PB is identified by its label ("5 km",
+    "5_km" and "5 KM" are one distance), not by its file name, which may be older."""
+    slug = pb_slug(label)
+    return [p for p in load_all_pbs() if _label_slug(p) == slug and p["_path"] != exclude]
+
+
+def free_pb_path(label: str, own: Path | None = None) -> Path:
+    """5_km.json, or 5_km_2.json… if that name is taken by another file."""
+    slug = pb_slug(label)
+    path, n = child_path(PBS_DIR, f"{slug}.json"), 1
+    while path.exists() and path != own:
+        n += 1
+        path = child_path(PBS_DIR, f"{slug}_{n}.json")
+    return path
 
 
 def superseded_history(current: dict, typed: list[dict]) -> list[dict]:
@@ -414,9 +503,15 @@ def _strip_meta(records):
 
 
 def write_data_js() -> bool:
-    """Rebuild data.js from the JSON files. Returns whether its content changed."""
-    runs = load_all_runs()
-    pbs  = load_all_pbs()
+    """Rebuild data.js from the JSON files. Returns whether its content changed.
+
+    Refuses (DataError) while any record file can't be loaded: rebuilding without it
+    would silently drop that event from the site."""
+    runs, run_problems = scan_records(RUNS_DIR, "run")
+    pbs,  pb_problems  = scan_records(PBS_DIR, "pb")
+    if run_problems or pb_problems:
+        raise DataError("these files can't be loaded — fix or remove them first:\n  "
+                        + "\n  ".join(run_problems + pb_problems))
     js   = (
         "// Auto-generated by add_new_event.py — do not edit manually\n"
         f"const RUNS_DATA = {json.dumps(_strip_meta(runs), ensure_ascii=False, indent=2)};\n\n"
@@ -431,8 +526,8 @@ def write_data_js() -> bool:
     return True
 
 
-def refresh_previews():
-    """Regenerate the WebP previews the dashboard displays.
+def refresh_previews() -> str | None:
+    """Regenerate the WebP previews the dashboard displays. Returns a problem, or None.
 
     Best-effort: ImageMagick is an external dependency, so a failure here must
     never take down the editor after the JSON has already been written.
@@ -440,25 +535,31 @@ def refresh_previews():
     try:
         import make_previews
         if make_previews.main([]) != 0:
-            print("Warning: some previews failed — run 'python make_previews.py' to see why.")
+            return "some photo previews failed — run make_previews.bat to see why"
     except Exception as exc:
-        print(f"Warning: previews not generated ({exc}). "
-              "Run 'python make_previews.py' before committing.")
+        return f"photo previews not generated ({exc})"
+    return None
 
 
-def refresh_feed():
-    """Regenerate atom.xml. Best-effort, like refresh_previews()."""
+def refresh_feed() -> str | None:
+    """Regenerate atom.xml. Returns a problem, or None — like refresh_previews()."""
     try:
         import make_feed
-        make_feed.main([])
+        if make_feed.main([]) != 0:
+            return "atom.xml not regenerated — run make_feed.bat to see why"
     except Exception as exc:
-        print(f"Warning: atom.xml not regenerated ({exc}). Run 'python make_feed.py'.")
+        return f"atom.xml not regenerated ({exc})"
+    return None
 
 
-def refresh_generated():
-    """Previews and atom.xml — both derived from data.js."""
-    refresh_previews()   # data.js is the source of truth for which previews exist
-    refresh_feed()
+def refresh_generated() -> list[str]:
+    """Previews and atom.xml — both derived from data.js. Returns the problems."""
+    problems = [refresh_previews(),   # data.js is the source of truth for which previews exist
+                refresh_feed()]
+    for p in problems:
+        if p:
+            print(f"Warning: {p}")
+    return [p for p in problems if p]
 
 
 class BackgroundRefresh:
@@ -466,7 +567,8 @@ class BackgroundRefresh:
     a while, and the window has to stay responsive meanwhile.
 
     One pass at a time; saves made while a pass runs are folded into one more pass,
-    which reads the newest data.js.
+    which reads the newest data.js. The problems the last finished pass reported are
+    kept for the Tk thread to show (see App._poll_refresh).
     """
 
     def __init__(self, work=refresh_generated):
@@ -474,6 +576,12 @@ class BackgroundRefresh:
         self._lock = threading.Lock()
         self._pending = False
         self._thread = None
+        self._problems = []
+
+    @property
+    def problems(self) -> list[str]:
+        with self._lock:
+            return list(self._problems)
 
     def request(self):
         with self._lock:
@@ -496,9 +604,12 @@ class BackgroundRefresh:
                     return
                 self._pending = False
             try:
-                self._work()
+                problems = [str(p) for p in (self._work() or [])]
             except Exception as exc:          # never leave a request unserved
                 print(f"Warning: background refresh failed ({exc})")
+                problems = [f"updating previews and atom.xml failed ({exc})"]
+            with self._lock:
+                self._problems = problems
 
 
 # ── Medal and photos ─────────────────────────────────────────────────────────
@@ -847,14 +958,22 @@ class PBTab(tk.Frame):
             photos = chk(photos_source, self.v_photos.get())
             chk.raise_if_any()
 
-            path = pb_target(pb["distance"])
-            if path.exists():
+            matches = pbs_with_label(pb["distance"])
+            if len(matches) > 1:
+                raise ValidationError(
+                    f'Distance label: several personal bests already use "{pb["distance"]}" ('
+                    + ", ".join(m["_path"].name for m in matches)
+                    + "). Delete the extra ones in Edit Personal Best first.")
+            if matches:
                 # A new best for a distance that already has one: an explicit update
                 # that keeps the old result in the history, never a silent overwrite.
-                current = read_json(path)
+                current = matches[0]
                 if not confirm_replace_pb(current, pb):
                     return
                 pb["previous_records"] = superseded_history(current, pb["previous_records"])
+                path = current["_path"]          # whatever that file happens to be called
+            else:
+                path = free_pb_path(pb["distance"])
             key = "pb_" + path.stem
             pb["medal"]  = copy_medal(medal, key)
             pb["photos"] = copy_photos(photos, key)
@@ -949,7 +1068,7 @@ class EditRunTab(tk.Frame):
         self.runs = sorted(load_all_runs(), key=lambda x: x["date"], reverse=True)
         self.listbox.delete(0, "end")
         for r in self.runs:
-            self.listbox.insert("end", f"{r['date']}  {r['location']}  {r['distance_km']} km")
+            self.listbox.insert("end", f"{r['date']}  {r.get('location', '')}  {r['distance_km']} km")
         self.selected_index = None
         self._clear_fields()
 
@@ -1189,16 +1308,19 @@ class EditPBTab(tk.Frame):
             photos = chk(photos_source, self.v_photos.get())
             chk.raise_if_any()
 
-            # Same label -> same file, whatever its name. A new label must not land on
-            # another PB's file: that would silently replace a different distance.
-            if fields["distance"] == old.get("distance"):
-                path = old["_path"]
+            # Same distance -> same file, whatever its name. Another distance must not
+            # be one that already has a PB: that would leave two for one distance.
+            own = old["_path"]
+            if pb_slug(fields["distance"]) == _label_slug(old):
+                path = own
             else:
-                path = pb_target(fields["distance"])
-                if path != old["_path"] and path.exists():
+                taken = pbs_with_label(fields["distance"], exclude=own)
+                if taken:
                     raise ValidationError(
-                        f"Distance label: a personal best is already stored as {path.name}. "
-                        "Edit or delete that one instead of renaming this one onto it.")
+                        f'Distance label: "{fields["distance"]}" already has a personal best '
+                        f"({taken[0]['_path'].name}). Edit or delete that one instead of "
+                        "renaming this one onto it.")
+                path = free_pb_path(fields["distance"], own)
             key = "pb_" + path.stem
             pb = {k: v for k, v in old.items() if not k.startswith("_")}    # keeps unknown keys
             pb.update(fields)
@@ -1261,10 +1383,13 @@ class ViewTab(tk.Frame):
     def refresh(self):
         lines = ["═══ RUNS ═══"]
         for r in sorted(load_all_runs(), key=lambda x: x["date"], reverse=True):
-            lines.append(f"  {r['date']}  {r['location']}  {r['distance_km']} km  {r['total_time']}")
+            lines.append(f"  {r['date']}  {r.get('location', '')}  {r['distance_km']} km  {r['total_time']}")
         lines += ["", "═══ PERSONAL BESTS ═══"]
         for pb in load_all_pbs():
-            lines.append(f"  {pb['distance']}  {pb['total_time']}  {pb['date']}  {pb['location']}")
+            lines.append(f"  {pb['distance']}  {pb['total_time']}  {pb['date']}  {pb.get('location', '')}")
+        problems = load_problems()
+        if problems:
+            lines += ["", "═══ SKIPPED FILES (not shown above) ═══"] + [f"  {p}" for p in problems]
         content = "\n".join(lines)
 
         self.text.configure(state="normal")
@@ -1286,9 +1411,14 @@ class App(tk.Tk):
         nb = ttk.Notebook(self)
         nb.pack(fill="both", expand=True, padx=10, pady=(10, 0))
 
+        # Status line: background progress, or what the last preview/feed pass failed at.
+        bar = tk.Frame(self)
+        bar.pack(fill="x", padx=12, pady=(2, 6))
         self.status = tk.StringVar()
-        tk.Label(self, textvariable=self.status, fg="grey", anchor="w").pack(
-            fill="x", padx=12, pady=(2, 6))
+        self.status_label = tk.Label(bar, textvariable=self.status, fg="grey", anchor="w",
+                                     justify="left", wraplength=460)
+        self.status_label.pack(side="left", fill="x", expand=True)
+        self.retry_button = tk.Button(bar, text="Retry", command=self.start_refresh)
 
         self.run_tab      = RunTab(nb, self)
         self.pb_tab       = PBTab(nb, self)
@@ -1304,15 +1434,27 @@ class App(tk.Tk):
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
+        # Files that can't be loaded are left out of the lists (instead of crashing a tab)
+        # and block data.js rebuilds until fixed — say which and why.
+        problems = load_problems()
+        if problems:
+            shown = problems[:12] + ([f"… and {len(problems) - 12} more"] if len(problems) > 12 else [])
+            messagebox.showwarning(
+                "Some files were skipped",
+                "These files can't be loaded, so they are not shown in the editor, and "
+                "data/data.js is not rebuilt until they are fixed or removed (rebuilding "
+                "without them would drop them from the site):\n\n" + "\n".join(shown))
+
         # Catch up on anything the last session left undone: JSON files data.js doesn't
         # reflect yet (a save whose rebuild failed, files edited by hand) and a preview /
         # feed pass that was cut short. A pass with nothing to do takes a few hundredths
         # of a second, so it always runs.
-        try:
-            for name in freeze_feed_ids():
-                print(f"Stored the published feed id in {name}")
-        except (OSError, ValueError) as e:
-            print(f"Warning: feed ids not checked ({e})")
+        if not problems:           # ids are only decidable with every run loaded
+            try:
+                for name in freeze_feed_ids():
+                    print(f"Stored the published feed id in {name}")
+            except (OSError, ValueError) as e:
+                print(f"Warning: feed ids not checked ({e})")
         try:
             write_data_js()
         except (OSError, ValueError) as e:
@@ -1347,10 +1489,21 @@ class App(tk.Tk):
 
     def _poll_refresh(self):
         busy = self.refresher.busy
-        self.status.set("Updating photo previews and atom.xml…" if busy else "")
         self._polling = busy
         if busy:
+            self._set_status("Updating photo previews and atom.xml…")
             self.after(300, self._poll_refresh)
+        else:
+            problems = self.refresher.problems      # read here, on the Tk thread
+            self._set_status("⚠ " + "; ".join(problems) if problems else "", warn=bool(problems))
+
+    def _set_status(self, text, warn=False):
+        self.status.set(text)
+        self.status_label.configure(fg="#b3261e" if warn else "grey")
+        if warn:
+            self.retry_button.pack(side="right", padx=(6, 0))
+        else:
+            self.retry_button.pack_forget()
 
     def _on_close(self):
         """Leave mainloop only after the background pass is done. Exiting while it runs

@@ -23,6 +23,7 @@ Running records/
 ├── make_feed.py           # Generates atom.xml from data/data.js
 ├── make_feed.bat          # Shortcut to run the feed generator on Windows
 ├── atom.xml               # Auto-generated Atom feed of races — served at /atom.xml
+├── tests/                 # Regression tests for the event editor (see Managing events → Tests)
 └── data/
     ├── data.js            # Auto-generated — do not edit manually
     ├── activities.js      # Auto-generated — do not edit manually
@@ -135,7 +136,9 @@ is not touched.
 If a personal best for that distance already exists (`5 km`, `5_km` and `5 KM` all count as
 the same distance), the script asks whether to replace it. Yes makes the new result the PB
 and moves the old one into Previous records; it also warns you if the new time is not
-actually faster.
+actually faster. A PB is recognised by its label, not its file name, so this also works for
+a PB stored under an older file name. If two files already hold a PB for the same
+distance, the script refuses and names them, so you can delete the extra one first.
 
 ### Edit Run / Edit Personal Best tabs
 
@@ -152,17 +155,38 @@ name: an identical file is reused, and a different one gets the next free name
 (`IMG_1_2.jpg`, `medal_2.jpg`). The same applies to a name that differs only in extension
 (`IMG_1.png` next to `IMG_1.jpg`), because both would map to the same preview.
 
+A JSON file in `data/runs/` or `data/pbs/` that can't be used — not valid JSON, missing
+`date`, `distance_km` or `total_time` (and `distance` for a PB), or a field of the wrong
+type such as `"photos": null` — is skipped rather than crashing the editor. At startup a
+dialog lists each such file and why, and **View All** lists them too. Until they are fixed
+or removed, `data.js` is not rebuilt, because rebuilding without them would silently drop
+those events from the site; saves still write their own JSON and say so.
+
 ### Sneakers
 
 The Sneakers field is a dropdown backed by `data/sneakers.json`. Typing a new name and saving adds it to the list automatically — it appears in the dropdown on the next use.
 
 ### After saving
 
-The script writes a JSON file to `data/runs/` or `data/pbs/`, regenerates `data/data.js`, and then regenerates the photo previews and `atom.xml` (see below) in the background, so the window stays responsive while new photos are encoded. The status line at the bottom of the window shows when that is running; if you close the window meanwhile, it hides and the script exits once the work is done. Refresh the browser to see the updated log.
+The script writes a JSON file to `data/runs/` or `data/pbs/`, regenerates `data/data.js`, and then regenerates the photo previews and `atom.xml` (see below) in the background, so the window stays responsive while new photos are encoded. The status line at the bottom of the window shows when that is running; if you close the window meanwhile, it hides and the script exits once the work is done. If the pass fails (ImageMagick missing, an image that can't be read, `atom.xml` not writable), the status line says what went wrong and shows a **Retry** button. Refresh the browser to see the updated log.
 
 If `data/data.js` cannot be written (say, another program has it locked), the record itself is still saved and the script offers to retry. Do not save the event again — that would add it twice. Every time the script starts it also rebuilds `data.js` from the JSON files and runs the preview/feed pass, so anything a previous session left unfinished (a failed rebuild, files edited by hand, a pass cut short) catches up by itself.
 
-If ImageMagick is missing the save still succeeds — you will just see a warning, and can run `make_previews.bat` later.
+If ImageMagick is missing the save still succeeds — you will just see the warning in the status line, and can run `make_previews.bat` later.
+
+### Tests
+
+```
+python tests/test_editor.py
+python tests/test_close.py
+```
+
+`test_editor.py` checks the editor on a throw-away copy of the scripts with its own small
+set of runs and personal bests: nothing is lost or overwritten when a save fails half-way,
+same-day runs and PB clashes, validation, deleting, photo naming, feed ids, broken JSON
+files, and that every one of your real records opens and saves back byte-for-byte
+unchanged. `test_close.py` closes the editor while previews are still being generated,
+using real ImageMagick (skipped without it). Neither touches the real `data/` folder.
 
 ---
 
@@ -377,12 +401,15 @@ it by hand.
 ### Notes
 
 - Entry IDs are `tag:` URIs (RFC 4151) built from the run date, e.g.
-  `tag:running-records-lac.vercel.app,2022:run/2026-08-09`. **Do not change `TAG_HOST` or
+  `tag:running-records-lac.vercel.app,2022:run/2026-08-09` — or from the run's stored
+  `id` (a second run that day, or a run whose date was changed; see Data files). **Do not change `TAG_HOST` or
   `TAG_DATE` in `make_feed.py` once published** — every entry would look new to everyone
   already subscribed.
 - The feed's `<updated>` comes from the newest run date, not the clock, so regenerating
   an unchanged log produces a byte-identical file instead of git churn.
 - Entries link to the site root, because runs have no individual permalinks.
+- Deleting the last run leaves a valid feed with no entries. If `data/data.js` is missing
+  or can't be read, `make_feed.py` reports an error and keeps the existing `atom.xml`.
 - `vercel.json` serves the file as `application/atom+xml; charset=utf-8`.
 
 ---

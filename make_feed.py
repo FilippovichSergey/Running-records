@@ -36,12 +36,25 @@ TAG_DATE = "2022"
 
 
 def load_runs():
-    """Pull RUNS_DATA out of data.js without executing it."""
-    if not DATA_JS.exists():
-        return []
-    text = DATA_JS.read_text(encoding="utf-8-sig")
-    m = re.search(r"const RUNS_DATA = (\[.*?\]);", text, re.S)
-    return json.loads(m.group(1)) if m else []
+    """Pull RUNS_DATA out of data.js without executing it.
+
+    Returns None when data.js is missing or unreadable — which is not the same as a log
+    with no runs ([]): that one must still produce an (empty) feed.
+    """
+    try:
+        text = DATA_JS.read_text(encoding="utf-8-sig")
+    except (OSError, UnicodeError):
+        return None
+    # "[]" or an indented array ending in "\n]" — JSON strings can't hold a raw newline,
+    # so a "];" inside a race name can't end the match early.
+    m = re.search(r"const RUNS_DATA = (\[\]|\[\n.*?\n\]);", text, re.S)
+    if not m:
+        return None
+    try:
+        runs = json.loads(m.group(1))
+    except ValueError:
+        return None
+    return runs if isinstance(runs, list) else None
 
 
 def pace(distance_km, total_time):
@@ -138,10 +151,10 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
 
     runs = load_runs()
-    if not runs:
-        print(f"No runs found in {DATA_JS} — atom.xml not written.")
-        return 0
-    xml = build(runs)
+    if runs is None:
+        print(f"ERROR: could not read RUNS_DATA from {DATA_JS} — atom.xml not written.")
+        return 1
+    xml = build(runs)       # no runs -> a feed with no entries, so a deleted last run goes
     if args.check:
         print(f"Would write {OUT.name}: {len(runs)} entries, {len(xml)} bytes")
         return 0
