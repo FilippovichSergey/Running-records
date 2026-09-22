@@ -33,6 +33,10 @@ import traceback
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
+# Child Pythons write UTF-8 and are read as UTF-8, whatever this machine's code page is
+# (GitHub's Windows runners pipe output as cp1252, where Cyrillic can't be encoded).
+CHILD_ENV = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
+sys.stdout.reconfigure(errors="backslashreplace")     # our own prints never crash on it
 REQUIRE_GUI = "--require-gui" in sys.argv
 SCRIPTS = ("add_new_event.py", "make_previews.py", "make_feed.py")
 HAS_MAGICK = shutil.which("magick") is not None
@@ -1314,7 +1318,8 @@ def _():
                     out["changed"].append(key)
         print(json.dumps(out))
     """)
-    r = subprocess.run([sys.executable, "-c", code], cwd=real, capture_output=True, text=True, timeout=300)
+    r = subprocess.run([sys.executable, "-c", code], cwd=real, capture_output=True, env=CHILD_ENV,
+                       encoding="utf-8", errors="replace", timeout=300)
     try:
         out = json.loads(r.stdout.strip().splitlines()[-1])
     except (ValueError, IndexError):

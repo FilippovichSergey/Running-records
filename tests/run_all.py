@@ -20,6 +20,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Child Pythons write UTF-8 and are read as UTF-8, whatever this machine's code page is
+# (GitHub's Windows runners pipe output as cp1252, where Cyrillic can't be encoded).
+CHILD_ENV = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
+sys.stdout.reconfigure(errors="backslashreplace")     # our own prints never crash on it
 TESTS = Path(__file__).resolve().parent
 REPO = TESTS.parent
 REQUIRE_GUI = "--require-gui" in sys.argv
@@ -30,8 +34,8 @@ SUITES = [("test_editor.py", True), ("test_close.py", True), ("test_launchers.py
 
 def git(*args):
     try:
-        return subprocess.run(["git", *args], cwd=REPO, capture_output=True, text=True,
-                              timeout=30).stdout.strip() or "?"
+        return subprocess.run(["git", *args], cwd=REPO, capture_output=True, encoding="utf-8",
+                              errors="replace", timeout=30).stdout.strip() or "?"
     except (OSError, subprocess.SubprocessError):
         return "?"
 
@@ -78,7 +82,8 @@ def main() -> int:
     for name, takes_flag in SUITES:
         cmd = [sys.executable, "-B", str(TESTS / name)] + (["--require-gui"] if REQUIRE_GUI and takes_flag else [])
         try:
-            r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True, timeout=1200)
+            r = subprocess.run(cmd, cwd=REPO, capture_output=True, encoding="utf-8", errors="replace",
+                               env=CHILD_ENV, timeout=1200)
             code, out = r.returncode, r.stdout + r.stderr
         except subprocess.TimeoutExpired as e:
             code, out = 124, f"timed out after {e.timeout}s"

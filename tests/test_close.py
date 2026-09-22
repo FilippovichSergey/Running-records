@@ -10,6 +10,7 @@ when ImageMagick ("magick") is not on PATH or Tk can't start.
 """
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -18,6 +19,10 @@ import textwrap
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
+# Child Pythons write UTF-8 and are read as UTF-8, whatever this machine's code page is
+# (GitHub's Windows runners pipe output as cp1252, where Cyrillic can't be encoded).
+CHILD_ENV = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
+sys.stdout.reconfigure(errors="backslashreplace")     # our own prints never crash on it
 # A skip exits 0; with --require-gui it exits 2, so a full check can't pass by skipping.
 SKIP_CODE = 2 if "--require-gui" in sys.argv else 0
 if shutil.which("magick") is None:
@@ -57,8 +62,8 @@ def run_json(date, images):
 
 
 def run_child(sb, code):
-    r = subprocess.run([sys.executable, "-c", textwrap.dedent(code)], cwd=sb,
-                       capture_output=True, text=True, timeout=300)
+    r = subprocess.run([sys.executable, "-c", textwrap.dedent(code)], cwd=sb, env=CHILD_ENV,
+                       capture_output=True, encoding="utf-8", errors="replace", timeout=300)
     return r.returncode, r.stdout + r.stderr
 
 

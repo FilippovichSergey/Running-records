@@ -95,7 +95,7 @@ def convert(src: Path, dest: Path, width: int, quality: int) -> tuple[bool, str]
         str(tmp),
     ]
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True,
+        r = subprocess.run(cmd, capture_output=True, text=True, errors="replace",
                            creationflags=_CREATE_NO_WINDOW)
     except FileNotFoundError:
         return False, "ImageMagick not found — install it and ensure 'magick' is on PATH"
@@ -254,4 +254,7 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
+    # Output redirected to a file or pipe uses the ANSI code page (cp1252 on many
+    # systems), which has no Cyrillic: escape what it can't show instead of crashing.
+    sys.stdout.reconfigure(errors="backslashreplace")
     sys.exit(main())

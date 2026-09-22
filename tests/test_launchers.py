@@ -24,6 +24,10 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
+# Child Pythons write UTF-8 and are read as UTF-8, whatever this machine's code page is
+# (GitHub's Windows runners pipe output as cp1252, where Cyrillic can't be encoded).
+CHILD_ENV = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
+sys.stdout.reconfigure(errors="backslashreplace")     # our own prints never crash on it
 if sys.platform != "win32":
     print("skipped: the .bat launchers only run on Windows")
     sys.exit(0)
@@ -72,7 +76,8 @@ where = f"from {start} (another drive)" if others else f"from {start} (no other 
 def launch(bat: Path, *args, env=None):
     # cmd /s /c "…": keep the quotes around a path with spaces; "\n" answers `pause`.
     line = f'cmd /s /c ""{bat}" {" ".join(args)}"'
-    r = subprocess.run(line, cwd=start, input="\n", capture_output=True, text=True, timeout=120, env=env)
+    r = subprocess.run(line, cwd=start, input="\n", capture_output=True, encoding="utf-8", errors="replace",
+                       timeout=120, env={**CHILD_ENV, **(env or {})})
     return r.returncode, r.stdout + r.stderr
 
 
@@ -121,7 +126,7 @@ for name, command in LAUNCHERS.items():
     expected = ["--flag", "two words"] if "%*" in command else []
     check(f"{name} passes {'its arguments on' if expected else 'no arguments (the script takes none)'}",
           got is not None and got["args"] == expected, got)
-    rc, out = launch(stubs / name, env={**os.environ, "STUB_EXIT": "3"})
+    rc, out = launch(stubs / name, env={"STUB_EXIT": "3"})
     check(f"{name} returns the script's exit code", rc == 3 and stub_report(out) is not None, (rc, out[-300:]))
 
 shutil.rmtree(TMP, ignore_errors=True)

@@ -17,6 +17,7 @@ import json
 import math
 import os
 import re
+import sys
 import shutil
 import tempfile
 import threading
@@ -1606,6 +1607,9 @@ class App(tk.Tk):
 
 
 if __name__ == "__main__":
+    # Output redirected to a file or pipe uses the ANSI code page (cp1252 on many
+    # systems), which has no Cyrillic: escape what it can't show instead of crashing.
+    sys.stdout.reconfigure(errors="backslashreplace")
     init_sneakers_file()
     app = App()      # keep a reference: the widgets are then freed at exit, on this thread
     app.mainloop()
