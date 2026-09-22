@@ -45,6 +45,17 @@ def tk_status():
         return f"no ({e})"
 
 
+def annotate(level: str, title: str, text: str):
+    """On GitHub Actions, attach text to the run as an annotation: annotations are shown
+    on the commit and readable without signing in, unlike the job log."""
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        return
+    def esc(s, prop=False):
+        s = s.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+        return s.replace(":", "%3A").replace(",", "%2C") if prop else s
+    print(f"::{level} title={esc(title, prop=True)}::{esc(text[-3500:])}", flush=True)
+
+
 def summary_of(out: str) -> tuple[str, str]:
     """(result line, skips) from a suite's output."""
     lines = [l.strip() for l in out.splitlines() if l.strip()]
@@ -75,13 +86,17 @@ def main() -> int:
         rows.append((name, code, result, skips))
         if code:
             first_failure = first_failure or code
+            tail = "\n".join(out.rstrip().splitlines()[-40:])
             print(f"── {name} failed (exit {code}); its last output:")
-            print("\n".join(out.rstrip().splitlines()[-40:]) + "\n")
+            print(tail + "\n")
+            annotate("error", f"{name} failed (exit {code})", tail)
 
     width = max(len(n) for n, *_ in rows)
     for name, code, result, skips in rows:
         print(f"{'OK  ' if code == 0 else 'FAIL'} {name:<{width}}  exit {code}  {result}  (skipped: {skips})")
     print(f"\n{'All suites passed' if not first_failure else 'Some suites failed'} — " + ", ".join(env))
+    annotate("notice", "Test suites", ", ".join(env) + "\n" + "\n".join(
+        f"{name}: exit {code}, {result}, skipped: {skips}" for name, code, result, skips in rows))
 
     step_summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if step_summary:
