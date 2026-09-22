@@ -24,6 +24,7 @@ Running records/
 ├── make_feed.bat          # Shortcut to run the feed generator on Windows
 ├── atom.xml               # Auto-generated Atom feed of races — served at /atom.xml
 ├── tests/                 # Regression tests for the event editor (see Managing events → Tests)
+├── .github/workflows/     # Runs the tests on GitHub Actions (Windows) on every push to main
 └── data/
     ├── data.js            # Auto-generated — do not edit manually
     ├── activities.js      # Auto-generated — do not edit manually
@@ -183,10 +184,14 @@ If ImageMagick is missing the save still succeeds — you will just see the warn
 ### Tests
 
 ```
-python tests/test_editor.py
-python tests/test_close.py
-python tests/test_launchers.py
+python tests/run_all.py
 ```
+
+runs every suite and ends with a summary: the commit tested, whether Tk and ImageMagick
+were available, and for each suite its exit code, its passed count and what it skipped
+(a bare "passed" count says little when the GUI checks could not run). The suites can
+also be run one at a time: `tests/test_editor.py`, `tests/test_close.py`,
+`tests/test_launchers.py`.
 
 `test_editor.py` checks the editor on a throw-away copy of the scripts with its own small
 set of runs and personal bests: nothing is lost or overwritten when a save fails half-way,
@@ -196,12 +201,18 @@ unchanged. The checks that need no window (validation, record loading, file nami
 and preview files) always run; the ones that drive the Tk forms are reported as skipped
 where Tk can't start. `test_close.py` closes the editor while previews are still being
 generated, using real ImageMagick (skipped without it or without Tk). `test_launchers.py`
-runs the `.bat` launchers from another drive and a folder with spaces. None of them
+runs the `.bat` launchers from another drive and a folder with spaces — `make_feed.bat`
+and `make_previews.bat` for real (writing nothing), and all six against stand-in scripts
+that report the folder, the arguments and the exit code, so nothing opens or goes online. None of them
 touches the real `data/` folder.
 
 A skip exits with code 0, so a machine without Tk can still run the rest. For a full check
-(before relying on a change), add `--require-gui` to `test_editor.py` and `test_close.py`:
-they then fail with exit code 2 instead of skipping.
+(before relying on a change), add `--require-gui` (to `run_all.py`, `test_editor.py` or
+`test_close.py`): a skipped GUI check then fails with exit code 2 instead.
+
+GitHub Actions (`.github/workflows/tests.yml`) runs `python tests/run_all.py --require-gui`
+on Windows, with Tk and ImageMagick, for every push to `main` and every pull request;
+the summary table is on each run's page in the repository's **Actions** tab.
 
 ### Launchers
 

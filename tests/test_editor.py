@@ -1288,7 +1288,11 @@ def _():
         import json, sys
         from pathlib import Path
         sys.path.insert(0, ".")
-        orig = {f"{d}/{p.name}": p.read_bytes() for d in ("runs", "pbs") for p in Path("data", d).glob("*.json")}
+        # Line endings aside: a checkout may hold the JSON with LF or CRLF, the editor
+        # writes the platform's, and git's text=auto makes those the same file.
+        def body(path):
+            return path.read_bytes().replace(b"\\r\\n", b"\\n")
+        orig = {f"{d}/{p.name}": body(p) for d in ("runs", "pbs") for p in Path("data", d).glob("*.json")}
         import add_new_event as a
         log = []
         for n in ("showinfo", "showerror", "showwarning", "askyesno"):
@@ -1297,7 +1301,7 @@ def _():
         a.BackgroundRefresh.__init__.__defaults__ = (lambda: None,)
         app = a.App(); app.withdraw()
         out = {"problems": a.load_problems(), "count": 0, "changed": [],
-               "startup_changed": [k for k, b in orig.items() if Path("data", k).read_bytes() != b]}
+               "startup_changed": [k for k, b in orig.items() if body(Path("data", k)) != b]}
         for tab, items in ((app.edit_run_tab, "runs"), (app.edit_pb_tab, "pbs")):
             tab.refresh()
             for i in range(len(getattr(tab, items))):
@@ -1306,7 +1310,7 @@ def _():
                 key = f"{items}/{rec['_path'].name}"
                 tab.listbox.selection_set(i); tab._on_select(None); tab._save()
                 out["count"] += 1
-                if rec["_path"].read_bytes() != orig.get(key) or log[-1] != "showinfo":
+                if body(rec["_path"]) != orig.get(key) or log[-1] != "showinfo":
                     out["changed"].append(key)
         print(json.dumps(out))
     """)
@@ -1316,7 +1320,7 @@ def _():
     except (ValueError, IndexError):
         check("real data round trip", False, r.stdout[-500:] + r.stderr[-1500:])
         return
-    check(f"all {out['count']} real records load, survive the editor starting, and save back byte-identical",
+    check(f"all {out['count']} real records load, survive the editor starting, and save back unchanged",
           not out["problems"] and not out["startup_changed"] and not out["changed"] and out["count"] > 0, out)
 
 

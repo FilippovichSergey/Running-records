@@ -7,11 +7,15 @@ pass the script's exit code on.
 
 make_feed.bat and make_previews.bat are really run, from a copy of the project in a temp
 folder named with spaces, with the current folder on another drive when the machine
-has one, and with options that write nothing (--check / --dry-run). The other launchers
-start a GUI, the network importers or rewrite data, so for them the same lines are
-checked instead. Windows only; the real project folder is never written to.
+has one, and with options that write nothing (--check / --dry-run). Then every launcher,
+including run.bat and the importers, is run against stand-in scripts that only report
+the folder they were started in, the arguments they got, and exit with a chosen code, so
+nothing opens a window, goes online or touches data. Windows only; the real project
+folder is never written to.
 """
 
+import json
+import os
 import shutil
 import string
 import subprocess
@@ -65,10 +69,10 @@ start = Path(others[0]) if others else Path(tempfile.gettempdir())
 where = f"from {start} (another drive)" if others else f"from {start} (no other drive on this machine)"
 
 
-def launch(bat: Path, *args):
+def launch(bat: Path, *args, env=None):
     # cmd /s /c "…": keep the quotes around a path with spaces; "\n" answers `pause`.
     line = f'cmd /s /c ""{bat}" {" ".join(args)}"'
-    r = subprocess.run(line, cwd=start, input="\n", capture_output=True, text=True, timeout=120)
+    r = subprocess.run(line, cwd=start, input="\n", capture_output=True, text=True, timeout=120, env=env)
     return r.returncode, r.stdout + r.stderr
 
 
@@ -91,6 +95,34 @@ if others:
     (copy / "data/data.js").write_text("const RUNS_DATA = [];\n\nconst PBS_DATA = [];\n", "utf-8")
     rc, out = launch(old, "--check")
     check("control: a launcher without /d fails from another drive", "Would write atom.xml" not in out, out[-400:])
+
+# ── Every launcher, against stand-in scripts ────────────────────────────────────
+STUB = """import json, os, sys
+print("STUB " + json.dumps({"cwd": os.getcwd(), "args": sys.argv[1:]}))
+sys.exit(int(os.environ.get("STUB_EXIT", "0")))
+"""
+stubs = TMP / "Stand-in copy with spaces"
+stubs.mkdir()
+for name, command in LAUNCHERS.items():
+    shutil.copy2(REPO / name, stubs / name)
+    (stubs / command.split()[1]).write_text(STUB, encoding="utf-8")
+
+
+def stub_report(out):
+    line = next((l for l in out.splitlines() if l.startswith("STUB ")), None)
+    return json.loads(line[5:]) if line else None
+
+
+for name, command in LAUNCHERS.items():
+    rc, out = launch(stubs / name, "--flag", '"two words"')
+    got = stub_report(out)
+    same_dir = got is not None and os.path.normcase(os.path.realpath(got["cwd"])) == os.path.normcase(os.path.realpath(stubs))
+    check(f"{name} runs its script in its own folder {where}", rc == 0 and same_dir, (rc, out[-400:]))
+    expected = ["--flag", "two words"] if "%*" in command else []
+    check(f"{name} passes {'its arguments on' if expected else 'no arguments (the script takes none)'}",
+          got is not None and got["args"] == expected, got)
+    rc, out = launch(stubs / name, env={**os.environ, "STUB_EXIT": "3"})
+    check(f"{name} returns the script's exit code", rc == 3 and stub_report(out) is not None, (rc, out[-300:]))
 
 shutil.rmtree(TMP, ignore_errors=True)
 fails = [r for r in RESULTS if not r[1]]
