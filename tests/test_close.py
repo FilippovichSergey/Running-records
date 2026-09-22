@@ -5,7 +5,7 @@ Closing the editor while previews are still being generated (real ImageMagick).
 
 Each scenario runs the real editor in a child process on a throw-away copy of the
 scripts, with generated images, so the real data/ folder is never touched. Skipped
-when ImageMagick ("magick") is not on PATH.
+when ImageMagick ("magick") is not on PATH or Tk can't start.
 """
 
 import json
@@ -19,6 +19,12 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 if shutil.which("magick") is None:
     print("skipped: ImageMagick not found")
+    sys.exit(0)
+try:
+    import tkinter
+    tkinter.Tk().destroy()
+except Exception as e:                  # tkinter.TclError: no usable Tcl/Tk here
+    print(f"skipped: no usable Tk ({e})")
     sys.exit(0)
 
 TMP = Path(tempfile.mkdtemp(prefix="running_log_close_"))

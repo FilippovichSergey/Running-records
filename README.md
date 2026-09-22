@@ -102,7 +102,7 @@ The script has five tabs: **Add Run**, **Add Personal Best**, **Edit Run**, **Ed
 | Total time | H:MM:SS or M:SS, e.g. `1:05:30` or `19:14`. Track times may have a fraction: `0:00:27.4` |
 | Avg HR | Beats per minute — a whole number, or empty if not recorded |
 | Max HR | Beats per minute — a whole number, or empty if not recorded |
-| Elevation | Metres of elevation gain, e.g. `320`. Use `0` if flat |
+| Elevation | Metres of elevation gain, e.g. `320` or `12.5`. Use `0` (or leave empty) if flat |
 | Sneakers | Choose from dropdown or type a new name |
 | Video link | Optional URL shown in the Photos section |
 | Photos folder | Optional — all images in the folder are copied into `data/photos/<event>/` |
@@ -185,8 +185,11 @@ python tests/test_close.py
 set of runs and personal bests: nothing is lost or overwritten when a save fails half-way,
 same-day runs and PB clashes, validation, deleting, photo naming, feed ids, broken JSON
 files, and that every one of your real records opens and saves back byte-for-byte
-unchanged. `test_close.py` closes the editor while previews are still being generated,
-using real ImageMagick (skipped without it). Neither touches the real `data/` folder.
+unchanged. The checks that need no window (validation, record loading, file naming, feed
+and preview files) always run; the ones that drive the Tk forms are reported as skipped
+where Tk can't start. `test_close.py` closes the editor while previews are still being
+generated, using real ImageMagick (skipped without it or without Tk). Neither touches the
+real `data/` folder.
 
 ---
 
@@ -295,6 +298,7 @@ Each event is stored as a standalone JSON file:
 
 **Notes:**
 - `location_be` is optional — if absent, the English `location` is shown in both language modes.
+- A record needs `date`, `distance_km` and `total_time` (a PB also `distance`); every other field is optional. `hr_avg` / `hr_max` are whole numbers (`150.0` is fine, `150.5` is not); `elevation` may have decimals.
 - `race_name`, `country`, `country_be`, `video` and `medal` are optional — omit the key entirely if not set.
 - `id` appears only on some runs — a second run on the same day, or a run whose date was changed. It keeps the run's Atom feed entry id stable (otherwise the date is the id), so never edit or copy it. The script stores it itself — for a hand-made `YYYY-MM-DD_2.json` too, the next time it starts.
 - Photo and medal paths point at the ORIGINAL image. The dashboard derives the preview path from it automatically (see Photos and previews).

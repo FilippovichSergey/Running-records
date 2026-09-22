@@ -118,13 +118,34 @@ def parse_distance(text: str, field: str = "Distance (km)") -> float:
 
 
 def parse_count(text: str, field: str) -> int:
-    """Heart rate / elevation: a whole number ≥ 0. Empty means 0 (not recorded)."""
+    """Heart rate: a whole number ≥ 0. Empty means 0 (not recorded)."""
     s = text.strip()
     if not s:
         return 0
     if _COUNT_RE.fullmatch(s):
         return int(s)
     raise ValidationError(f'{field}: "{s}" must be a whole number (or left empty).')
+
+
+def parse_elevation(text: str, field: str = "Elevation") -> int | float:
+    """Metres of climb ≥ 0. Empty means 0. A fraction is kept as it is (a GPS import
+    may give 12.5); a whole number is stored as an int, like the form always did."""
+    s = text.strip().replace(",", ".")
+    if not s:
+        return 0
+    if _DIST_RE.fullmatch(s):
+        m = float(s)
+        if math.isfinite(m):
+            return int(m) if m.is_integer() else m
+    raise ValidationError(f'{field}: "{text.strip()}" must be a number of metres ≥ 0 (or left empty).')
+
+
+def number_text(v) -> str:
+    """A stored number as a form field shows it. 150.0 becomes "150", so a whole value
+    saved as a float (by hand or by an import) still passes parse_count unchanged."""
+    if isinstance(v, float) and v.is_integer():
+        return str(int(v))
+    return str(v)
 
 
 _WIN_RESERVED = {"con", "prn", "aux", "nul",
@@ -223,7 +244,7 @@ def validate_run(raw: dict, chk: Checker) -> dict:
         "total_time":  chk(parse_time, raw["total_time"]),
         "hr_avg":      chk(parse_count, raw["hr_avg"], "Avg HR"),
         "hr_max":      chk(parse_count, raw["hr_max"], "Max HR"),
-        "elevation":   chk(parse_count, raw["elevation"], "Elevation"),
+        "elevation":   chk(parse_elevation, raw["elevation"]),
         "sneakers":    raw["sneakers"].strip(),
         "video":       raw["video"].strip(),
         "medal":       "",
@@ -263,7 +284,7 @@ def read_json(path: Path):
 
 _TEXT_FIELDS  = ("id", "race_name", "location", "location_be", "country", "country_be",
                  "sneakers", "video", "medal")
-_COUNT_FIELDS = ("hr_avg", "hr_max", "elevation")
+_HR_FIELDS    = ("hr_avg", "hr_max")
 
 
 def _is_number(v) -> bool:
@@ -298,9 +319,13 @@ def record_problem(rec, kind: str) -> str | None:
     for k in _TEXT_FIELDS:
         if k in rec and not isinstance(rec[k], str):
             return f'"{k}" must be text'
-    for k in _COUNT_FIELDS:
-        if k in rec and not (_is_number(rec[k]) and rec[k] >= 0):
-            return f'"{k}" must be a number ≥ 0'
+    # The same rules as the form (parse_count / parse_elevation), so every record that
+    # loads can also be saved again without touching these fields.
+    for k in _HR_FIELDS:
+        if k in rec and not (_is_number(rec[k]) and rec[k] >= 0 and float(rec[k]).is_integer()):
+            return f'"{k}" must be a whole number ≥ 0'
+    if "elevation" in rec and not (_is_number(rec["elevation"]) and rec["elevation"] >= 0):
+        return '"elevation" must be a number ≥ 0'
     if "photos" in rec and not (isinstance(rec["photos"], list)
                                 and all(isinstance(p, str) for p in rec["photos"])):
         return '"photos" must be a list of paths'
@@ -1093,9 +1118,9 @@ class EditRunTab(tk.Frame):
         self.v_country_be.set(r.get("country_be", ""))
         self.v_dist.set(str(r.get("distance_km", "")))
         self.v_total_time.set(r.get("total_time", ""))
-        self.v_hr_avg.set(str(r.get("hr_avg", "")))
-        self.v_hr_max.set(str(r.get("hr_max", "")))
-        self.v_elevation.set(str(r.get("elevation", 0)))
+        self.v_hr_avg.set(number_text(r.get("hr_avg", "")))
+        self.v_hr_max.set(number_text(r.get("hr_max", "")))
+        self.v_elevation.set(number_text(r.get("elevation", 0)))
         self.v_sneakers.set(r.get("sneakers", ""))
         self.v_video.set(r.get("video", ""))
         self.v_medal.set(r.get("medal", ""))
@@ -1151,7 +1176,8 @@ class EditRunTab(tk.Frame):
             return
         run = self.runs[self.selected_index]
         if not messagebox.askyesno("Confirm delete",
-                                   f"Delete run {run['date']} – {run['location']}?\n"
+                                   f"Delete run {run['date']} – "
+                                   f"{run.get('location') or run.get('race_name') or run['_path'].name}?\n"
                                    "This cannot be undone."):
             return
         path = run["_path"]
@@ -1274,8 +1300,8 @@ class EditPBTab(tk.Frame):
         self.v_location_be.set(pb.get("location_be", ""))
         self.v_country.set(pb.get("country", ""))
         self.v_country_be.set(pb.get("country_be", ""))
-        self.v_hr_avg.set(str(pb.get("hr_avg", "")))
-        self.v_hr_max.set(str(pb.get("hr_max", "")))
+        self.v_hr_avg.set(number_text(pb.get("hr_avg", "")))
+        self.v_hr_max.set(number_text(pb.get("hr_max", "")))
         self.v_sneakers.set(pb.get("sneakers", ""))
         self.v_video.set(pb.get("video", ""))
         self.v_medal.set(pb.get("medal", ""))

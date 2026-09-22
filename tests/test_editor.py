@@ -9,11 +9,14 @@ saves back byte-for-byte unchanged.
 
     python tests/test_editor.py
 
-Needs Tk (bundled with Python on Windows). ImageMagick ("magick" on PATH) is optional:
-without it the checks that encode real previews are skipped.
+The checks of validation, record loading, file naming, feed ids and the feed/preview
+files need no GUI and always run. The rest drive the real Tk forms; without a usable
+Tk/Tcl they are reported as skipped. ImageMagick ("magick" on PATH) is optional: without
+it the checks that encode real previews are skipped.
 """
 
 import contextlib
+import gc
 import importlib
 import io
 import json
@@ -125,10 +128,14 @@ mb.askretrycancel = lambda t, m, **k: (LOG.append(("retry", t, m)), RETRY["yes"]
 # exercised directly where it matters.
 REFRESHES = []
 a.BackgroundRefresh.__init__.__defaults__ = (lambda: REFRESHES.append(1),)
-app = a.App()
-app.withdraw()
+try:
+    app = a.App()
+    app.withdraw()
+    NO_TK = ""
+except a.tk.TclError as e:          # no usable Tcl/Tk: run everything that needs no GUI
+    app, NO_TK = None, str(e)
 
-RESULTS = []
+RESULTS, SKIPPED = [], []
 
 
 def check(name, cond, detail=""):
@@ -228,8 +235,12 @@ def rejects(fn, *args):
         return True
 
 
+APPS = []    # every App the tests create stays referenced until the end (see below)
+
+
 def new_app():
     x = a.App()
+    APPS.append(x)
     x.withdraw()
     deadline = time.time() + 5
     while x.refresher.busy and time.time() < deadline:
@@ -237,14 +248,219 @@ def new_app():
     return x
 
 
-def test(name):
+def test(name, gui=True):
     def deco(fn):
+        if gui and app is None:
+            SKIPPED.append(name)
+            return fn
         try:
             fn()
         except Exception:
             RESULTS.append((name, False, traceback.format_exc()))
         return fn
     return deco
+
+
+def write_record(rel, rec):
+    (SANDBOX / rel).write_text(json.dumps(rec, ensure_ascii=False, indent=2), "utf-8")
+
+
+def wait_idle(refresher):
+    deadline = time.time() + 5
+    while refresher.busy and time.time() < deadline:
+        time.sleep(0.02)
+
+
+# ══ No GUI needed ═════════════════════════════════════════════════════════════════
+
+@test("validators", gui=False)
+def _():
+    for bad in ("abc", "1 000", "1_50", "-5", "0", "0.0", "nan", "inf", "1e3", "", "١٢", "+5", "5.", ".5"):
+        check(f"distance {bad!r} rejected", rejects(a.parse_distance, bad))
+    for good, v in (("10", 10.0), (" 21,1 ", 21.1), ("0.2", 0.2), ("42.195", 42.195)):
+        check(f"distance {good!r} accepted", a.parse_distance(good) == v)
+    for bad in ("abc", "1 000", "1_50", "-5", "nan", "1.5", "١٢٣", "+5"):
+        check(f"HR {bad!r} rejected", rejects(a.parse_count, bad, "Avg HR"))
+    for good, v in ((" 150 ", 150), ("", 0), ("0", 0)):
+        check(f"HR {good!r} accepted", a.parse_count(good, "Avg HR") == v)
+    for bad in ("abc", "1 000", "-5", "nan", "inf", "1e3", "12.", "+3"):
+        check(f"elevation {bad!r} rejected", rejects(a.parse_elevation, bad))
+    for good, v in (("320", 320), ("12.5", 12.5), ("12,5", 12.5), ("120.0", 120), ("", 0), (" 0 ", 0)):
+        got = a.parse_elevation(good)
+        check(f"elevation {good!r} accepted as {v!r}", got == v and type(got) is type(v), got)
+    for bad in ("1:99:00", "19:60", "1:5:30", "0:00", "0:00:00", "abc", "", "19", "1:05:30:00", "-1:00",
+                "19:14.", "19:14.1234", "１９:１４"):
+        check(f"time {bad!r} rejected", rejects(a.parse_time, bad))
+    for good in ("19:14", "1:05:30", "0:00:27.4", "0:11:43.18", "0:00:27.40", "10:00:00", "105:00"):
+        check(f"time {good!r} accepted", a.parse_time(good) == good)
+    for bad in ("../outside", "..\\outside", "2026-02-30", "2026-1-5", "20260105", "２０２６-０１-０５", "C:\\x", ""):
+        check(f"date {bad!r} rejected", rejects(a.parse_date, bad))
+    check("date is stripped", a.parse_date(" 2026-05-31 ") == "2026-05-31")
+    for bad in ("..\\outside", "..", ".", "a:b", "x.", "con", "NUL.txt", "a*b", 'a"b', "", "   ", "tab\there"):
+        check(f"PB label {bad!r} rejected", rejects(a.pb_slug, bad))
+    for good, slug in (("5 km", "5_km"), ("21.1 км", "21.1_км"), ("1/2 Marathon", "12_marathon"),
+                       ("../outside", "..outside")):
+        check(f"PB label {good!r} -> {slug}", a.pb_slug(good) == slug)
+    check("number_text shows whole floats as integers",
+          [a.number_text(v) for v in (150.0, 150, 12.5, "", 0)] == ["150", "150", "12.5", "", "0"])
+    e = ""
+    try:
+        a.parse_previous_records("19:36|2024-04-27|X\n20:21;2023-05-16;Y\n||\n19:99|2024-13-01|Z")
+    except a.ValidationError as err:
+        e = str(err)
+    check("bad history lines are all reported by number", all(f"line {n}" in e for n in (2, 3, 4)), e)
+    r = a.parse_previous_records("19:36|2024-04-27|Park | North\n\n  \n20:00 | 2023-01-01 | A|B|C")
+    check("'|' in a history location is kept", [x["location"] for x in r] == ["Park | North", "A|B|C"], r)
+
+
+@test("record schema", gui=False)
+def _():
+    base = {"date": "2026-01-01", "distance_km": 5.0, "total_time": "25:00"}
+    ok_runs = [base, {**base, "hr_avg": 150.0, "elevation": 12.5}, {**base, "location": "", "photos": []},
+               {**base, "total_time": "0:00:27.4", "id": "2026-01-01-2"}]
+    for rec in ok_runs:
+        check(f"usable run {json.dumps(rec)[:60]}", a.record_problem(rec, "run") is None, a.record_problem(rec, "run"))
+    bad_runs = [({}, 'missing "date"'), ([1], "not a JSON object"), ({**base, "photos": None}, '"photos"'),
+                ({**base, "date": 20260101}, '"date" must be text'), ({**base, "distance_km": True}, '"distance_km"'),
+                ({**base, "distance_km": 0}, '"distance_km"'), ({**base, "total_time": "1:99:00"}, "total_time"),
+                ({**base, "location": None}, '"location"'), ({**base, "hr_avg": "150"}, '"hr_avg"'),
+                ({**base, "hr_avg": 150.5}, "whole number"), ({**base, "elevation": -1}, '"elevation"'),
+                ({**base, "id": 5}, '"id"')]
+    for rec, why in bad_runs:
+        got = a.record_problem(rec, "run") or ""
+        check(f"unusable run {json.dumps(rec)[:60]} -> {why}", why in got, got)
+    pb = {**base, "distance": "5 km", "previous_records": [{"time": "19:36", "date": "2024-04-27", "location": "X"}]}
+    check("usable PB", a.record_problem(pb, "pb") is None)
+    check("PB without a label is unusable", 'missing "distance"' in (a.record_problem(base, "pb") or ""))
+    check("PB with a bad history row is unusable", "previous_records #1" in
+          (a.record_problem({**pb, "previous_records": [{"time": "x", "date": "2024-01-01"}]}, "pb") or ""))
+    check("every fixture record is usable", not a.load_problems(), a.load_problems())
+
+
+@test("file names and paths", gui=False)
+def _():
+    check("child_path refuses ..", rejects(a.child_path, a.RUNS_DIR, "../x.json"))
+    try:
+        a.delete_record(SANDBOX / "make_feed.py", a.RUNS_DIR)
+        refused = False
+    except OSError:
+        refused = True
+    check("delete_record only deletes records", refused and (SANDBOX / "make_feed.py").exists())
+    path, others = a.run_target("2025-09-13")
+    check("run_target: a second run that day gets _2 and sees the first",
+          path.name == "2025-09-13_2.json" and [r["_path"].name for r in others] == ["2025-09-13.json"])
+    old = next(r for r in a.load_all_runs() if r["_path"].stem == "2025-09-13")
+    check("run_target: a run keeping its date keeps its file", a.run_target("2025-09-13", old) == (old["_path"], []))
+    write_record("data/pbs/old_name.json", _pb("8 km", 8.0, "33:00", "2020-01-01"))
+    write_record("data/pbs/8_km.json", _pb("8 km trail", 8.0, "40:00", "2020-01-01"))
+    try:
+        check("pbs_with_label finds a PB by its label, whatever the file",
+              [p["_path"].name for p in a.pbs_with_label("8 KM")] == ["old_name.json"])
+        check("free_pb_path skips a name taken by another PB", a.free_pb_path("8 km").name == "8_km_2.json")
+        check("free_pb_path keeps a record's own file",
+              a.free_pb_path("8 km", SANDBOX / "data/pbs/8_km.json").name == "8_km.json")
+    finally:
+        (SANDBOX / "data/pbs/old_name.json").unlink()
+        (SANDBOX / "data/pbs/8_km.json").unlink()
+
+
+@test("copying photos", gui=False)
+def _():
+    src = src_dir("direct")
+    fake_image(src / "P1.jpg", b"p1")
+    fake_image(src / "P1.png", b"p1png")
+    fake_image(src / "p2.JPG", b"p2")
+    (src / "notes.txt").write_text("x")
+    old = time.time() - 400 * 86400
+    os.utime(src / "p2.JPG", (old, old))
+    first = a.copy_photos(src, "direct")
+    again = a.copy_photos(src, "direct")
+    folder = SANDBOX / "data/photos/direct"
+    check("images copied, same stem with another extension renamed, non-images ignored",
+          first == ["data/photos/direct/P1.jpg", "data/photos/direct/P1_2.png", "data/photos/direct/p2.JPG"], first)
+    check("copying the same folder again reuses the files", again == first and len(os.listdir(folder)) == 3)
+    check("copies get the current mtime", abs((folder / "p2.JPG").stat().st_mtime - time.time()) < 120)
+    fake_image(src / "P1.jpg", b"changed")
+    check("a different file under a taken name gets the next free name",
+          a.copy_photos(src, "direct")[0] == "data/photos/direct/P1_3.jpg"
+          and (folder / "P1.jpg").read_bytes().endswith(b"p1"))
+    check("copying a folder onto itself adds nothing", len(a.copy_photos(folder, "direct")) == len(os.listdir(folder)))
+    medal = a.copy_medal(fake_image(src_dir("medal_direct") / "m.PNG", b"medal"), "direct")
+    check("a medal is copied as medal.<ext>", medal == "data/photos/direct/medal.png", medal)
+    shutil.rmtree(folder)
+
+
+@test("feed and preview files", gui=False)
+def _():
+    a.write_data_js()
+    ids = [k for _, k in mf.assign_ids(mf.load_runs())]
+    check("feed ids are unique and the fixture's are plain dates",
+          len(set(ids)) == len(ids) == len(RUNS) and set(ids) == set(RUNS), ids)
+    pair = [dict(_run("2026-05-05"), race_name="x"), dict(_run("2026-05-05"), race_name="y")]
+    check("an unmarked same-day pair is published as date, date-2 in file order",
+          [k for _, k in mf.assign_ids(pair)] == ["2026-05-05", "2026-05-05-2"])
+    scratch = TMP / "feed"
+    scratch.mkdir()
+    saved = mf.DATA_JS, mf.OUT, mp.DATA_JS, mp.DIMS_JS, mp.PREVIEW_ROOT
+    mf.DATA_JS = mp.DATA_JS = scratch / "data.js"
+    mf.OUT, mp.DIMS_JS, mp.PREVIEW_ROOT = scratch / "atom.xml", scratch / "photo-dims.js", scratch / "previews"
+    try:
+        tricky = [dict(_run("2026-01-01"), race_name='A "quoted" ]; race\\ with ] brackets', location="Мінск")]
+        mf.DATA_JS.write_text("const RUNS_DATA = " + json.dumps(tricky, ensure_ascii=False, indent=2)
+                              + ";\n\nconst PBS_DATA = [];\n", "utf-8")
+        check("load_runs copes with ']' and '];' inside strings", mf.load_runs() == tricky)
+        quiet(mf.main, [])
+        one = mf.OUT.read_text("utf-8")
+        mf.DATA_JS.write_text("const RUNS_DATA = [];\n\nconst PBS_DATA = [];\n", "utf-8")
+        rc = quiet(mf.main, [])
+        empty = mf.OUT.read_text("utf-8")
+        check("a log with no runs writes a feed with no entries",
+              one.count("<entry>") == 1 and rc == 0 and empty.count("<entry>") == 0 and "</feed>" in empty, rc)
+        quiet(mf.main, [])
+        check("regenerating the empty feed gives the same file", mf.OUT.read_text("utf-8") == empty)
+        mp.DIMS_JS.write_text('const PHOTO_DIMS = {\n  "data/photos/x/a.jpg": [1,2]\n};\n', "utf-8")
+        check("no referenced photos empties photo-dims.js",
+              quiet(mp.main, []) == 0 and "data/photos" not in mp.DIMS_JS.read_text("utf-8"))
+        mf.DATA_JS.unlink()
+        check("a missing data.js is an error and keeps the feed",
+              quiet(mf.main, []) == 1 and mf.OUT.read_text("utf-8") == empty)
+        check("the editor reports that as a problem", quiet(a.refresh_feed) is not None)
+        mf.DATA_JS.write_text("garbage", "utf-8")
+        check("an unreadable data.js is an error too", quiet(mf.main, []) == 1)
+    finally:
+        mf.DATA_JS, mf.OUT, mp.DATA_JS, mp.DIMS_JS, mp.PREVIEW_ROOT = saved
+    js = SANDBOX / "data/data.js"
+    good = js.read_bytes()
+    js.write_bytes(good.decode("utf-8").encode("utf-16"))
+    check("write_data_js rewrites a data.js that isn't UTF-8", a.write_data_js() is True and js.read_bytes() == good)
+    check("write_data_js leaves an up-to-date data.js alone", a.write_data_js() is False)
+
+
+@test("background pass (logic)", gui=False)
+def _():
+    calls = []
+    def slow():
+        calls.append(1)
+        time.sleep(0.3)
+    r = a.BackgroundRefresh(work=slow)
+    r.request()
+    time.sleep(0.05)
+    r.request()
+    r.request()
+    wait_idle(r)
+    check("requests during a pass fold into one more pass", not r.busy and len(calls) == 2, len(calls))
+    r = a.BackgroundRefresh(work=lambda: 1 / 0)
+    with contextlib.redirect_stdout(io.StringIO()):        # its console warning is expected
+        r.request()
+        wait_idle(r)
+    check("a crashing pass is reported, not lost", not r.busy and "failed" in " ".join(r.problems), r.problems)
+    real = a.refresh_feed
+    a.refresh_feed = lambda: "atom.xml not regenerated — stub"
+    try:
+        problems = quiet(a.refresh_generated)
+    finally:
+        a.refresh_feed = real
+    check("refresh_generated returns what went wrong", problems[-1] == "atom.xml not regenerated — stub", problems)
 
 
 # ══ Saving never loses a record ═════════════════════════════════════════════════
@@ -502,6 +718,55 @@ def _():
           json.loads(legacy.read_text("utf-8"))["race_name"] == "edited" and not (SANDBOX / "data/pbs/1_mile.json").exists())
 
 
+@test("records with optional fields missing, or numbers stored as floats")
+def _():
+    minimal = {"date": "2026-02-02", "distance_km": 5.0, "total_time": "25:00"}
+    write_record("data/runs/2026-02-02.json", minimal)
+    write_record("data/runs/2026-02-03.json", dict(minimal, date="2026-02-03"))
+    t = select_run("2026-02-02")
+    LOG.clear()
+    t._save()
+    check("a run with only date, distance and time opens and saves",
+          last()[0] == "info" and rjson("data/runs/2026-02-02.json")["total_time"] == "25:00", LOG)
+    t = select_run("2026-02-03")
+    ANSWER["yes"] = False
+    LOG.clear()
+    t._delete()
+    check("deleting a run without a location asks; No keeps it",
+          [e[0] for e in LOG] == ["ask"] and (SANDBOX / "data/runs/2026-02-03.json").exists(), LOG)
+    ANSWER["yes"] = True
+    t = select_run("2026-02-03")
+    LOG.clear()
+    t._delete()
+    check("Yes deletes exactly that file", not (SANDBOX / "data/runs/2026-02-03.json").exists()
+          and (SANDBOX / "data/runs/2026-02-02.json").exists() and "2026-02-03.json" in last()[2], LOG)
+
+    write_record("data/runs/2026-02-04.json", _run("2026-02-04", hr_avg=150.0, hr_max=170, elevation=12.5))
+    t = select_run("2026-02-04")
+    check("the form shows 150.0 as 150 and keeps 12.5", (t.v_hr_avg.get(), t.v_elevation.get()) == ("150", "12.5"))
+    t.v_race.set("renamed only")
+    LOG.clear()
+    t._save()
+    rec = rjson("data/runs/2026-02-04.json")
+    check("changing another field saves without a complaint about HR or elevation",
+          last()[0] == "info" and rec["hr_avg"] == 150 and type(rec["hr_avg"]) is int and rec["elevation"] == 12.5,
+          (LOG, rec))
+    write_record("data/pbs/9_km.json", dict(_pb("9 km", 9.0, "38:00", "2021-01-01"), hr_max=180.0))
+    t = select_pb("9_km")
+    LOG.clear()
+    t._save()
+    check("a PB with a float heart rate saves too",
+          last()[0] == "info" and rjson("data/pbs/9_km.json")["hr_max"] == 180, LOG)
+    write_record("data/runs/2026-02-05.json", _run("2026-02-05", hr_avg=150.5))
+    problems = a.load_problems()
+    check("a fractional heart rate is refused when loading, with the reason",
+          any("2026-02-05.json" in p and "whole number" in p for p in problems), problems)
+    for rel in ("data/runs/2026-02-02.json", "data/runs/2026-02-04.json", "data/runs/2026-02-05.json",
+                "data/pbs/9_km.json"):
+        (SANDBOX / rel).unlink()
+    a.write_data_js()
+
+
 # ══ Input ═════════════════════════════════════════════════════════════════════════
 
 @test("ids that could leave the data folder")
@@ -714,7 +979,7 @@ def _():
     H = "2026-06-11"
     (SANDBOX / f"data/runs/{H}.json").write_text(json.dumps(_run(H, race_name="HandX")), "utf-8")
     (SANDBOX / f"data/runs/{H}_2.json").write_text(json.dumps(_run(H, race_name="HandY")), "utf-8")
-    new_app().destroy()
+    quiet(new_app).destroy()
     check("a hand-made _2 file gets its published id stored at startup",
           rjson(f"data/runs/{H}_2.json").get("id") == H + "-2" and "id" not in rjson(f"data/runs/{H}.json"))
     select_run(H)._delete()
@@ -799,22 +1064,8 @@ def _():
 
 # ══ Background pass ═══════════════════════════════════════════════════════════════
 
-@test("background pass")
+@test("status line")
 def _():
-    calls = []
-    def slow():
-        calls.append(1)
-        time.sleep(0.3)
-    r = a.BackgroundRefresh(work=slow)
-    r.request()
-    time.sleep(0.05)
-    r.request()
-    r.request()
-    deadline = time.time() + 5
-    while r.busy and time.time() < deadline:
-        time.sleep(0.02)
-    check("requests during a pass fold into one more pass", not r.busy and len(calls) == 2, len(calls))
-
     outcome = {"problems": ["atom.xml not regenerated — test"]}
     x = new_app()
     x.refresher = a.BackgroundRefresh(work=lambda: outcome["problems"])
@@ -834,26 +1085,19 @@ def _():
     check("Retry runs the pass again and clears the warning",
           x.status.get() == "" and x.retry_button.winfo_manager() == "", x.status.get())
     x.destroy()
-    real = a.refresh_feed
-    a.refresh_feed = lambda: "atom.xml not regenerated — stub"
-    try:
-        problems = quiet(a.refresh_generated)
-    finally:
-        a.refresh_feed = real
-    check("refresh_generated returns what went wrong", problems[-1] == "atom.xml not regenerated — stub", problems)
 
 
 # ══ Previews (real ImageMagick) ═══════════════════════════════════════════════════
 
-@test("previews")
+@test("previews", gui=False)
 def _():
     if not HAS_MAGICK:
-        check("previews (skipped: ImageMagick not found)", True)
+        SKIPPED.append("previews (ImageMagick not found)")
         return
     src = src_dir("real")
     subprocess.run(["magick", "-size", "900x600", "gradient:red-blue", str(src / "real.jpg")], check=True)
-    fill_run(app.run_tab, date="2026-09-21", race="Real", photos=str(src))
-    app.run_tab._save()
+    write_record("data/runs/2026-09-21.json", _run("2026-09-21", photos=a.copy_photos(src, "2026-09-21")))
+    a.write_data_js()
     rel = "data/photos/2026-09-21/real.jpg"
     before = mp.read_dims()
     quiet(mp.main, [])
@@ -938,11 +1182,24 @@ def _():
           not out["problems"] and not out["changed"] and out["count"] > 0, out)
 
 
-app.destroy()
+# Tk objects must be freed on the main thread. An App that became garbage mid-run could
+# be collected by a background pass's thread instead, which aborts the process — the
+# editor itself only ever has the one App, referenced until it exits.
+for x in APPS + [app] * (app is not None):
+    try:
+        x.destroy()
+    except a.tk.TclError:
+        pass                     # already destroyed by its test
+APPS.clear()
+app = None
+gc.collect()
 os.chdir(REPO)
 shutil.rmtree(TMP, ignore_errors=True)
 fails = [r for r in RESULTS if not r[1]]
 for name, ok, detail in fails:
     print("FAIL", name, "\n     ", str(detail)[:1500])
-print(f"\n{len(RESULTS) - len(fails)}/{len(RESULTS)} passed")
+for name in SKIPPED:
+    print("SKIP", name, "" if "ImageMagick" in name else f"(no usable Tk: {NO_TK})")
+print(f"\n{len(RESULTS) - len(fails)}/{len(RESULTS)} passed"
+      + (f", {len(SKIPPED)} group(s) skipped" if SKIPPED else ""))
 sys.exit(1 if fails else 0)
