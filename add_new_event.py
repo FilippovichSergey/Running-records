@@ -1480,6 +1480,7 @@ class App(tk.Tk):
 
         self.refresher = BackgroundRefresh()
         self._polling = False
+        self._poll_job = None       # the pending after() of _poll_refresh, if any
 
         # Status line: background progress, or what the last preview/feed pass failed at.
         # Packed first, at the bottom, so on a short screen the notebook shrinks instead
@@ -1563,11 +1564,12 @@ class App(tk.Tk):
         self.refresh_lists()
 
     def _poll_refresh(self):
+        self._poll_job = None
         busy = self.refresher.busy
         self._polling = busy
         if busy:
             self._set_status("Updating photo previews and atom.xml…")
-            self.after(300, self._poll_refresh)
+            self._poll_job = self.after(300, self._poll_refresh)
         else:
             problems = self.refresher.problems      # read here, on the Tk thread
             self._set_status("⚠ " + "; ".join(problems) if problems else "", warn=bool(problems))
@@ -1579,6 +1581,14 @@ class App(tk.Tk):
             self.retry_button.pack(side="right", padx=(6, 0))
         else:
             self.retry_button.pack_forget()
+
+    def destroy(self):
+        # A poll still scheduled would otherwise fire into the destroyed window
+        # ("invalid command name …_poll_refresh").
+        if getattr(self, "_poll_job", None) is not None:
+            self.after_cancel(self._poll_job)
+            self._poll_job = None
+        super().destroy()
 
     def _on_close(self):
         """Leave mainloop only after the background pass is done. Exiting while it runs

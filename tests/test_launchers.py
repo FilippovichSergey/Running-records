@@ -59,7 +59,9 @@ for name, command in LAUNCHERS.items():
 
 
 # ── make_feed.bat / make_previews.bat for real ─────────────────────────────────
-TMP = Path(tempfile.mkdtemp(prefix="running_log_launchers_"))
+# resolve(): the temp folder may be given in 8.3 form (C:\Users\RUNNER~1\…), while
+# the scripts under test see their own folder by its long name.
+TMP = Path(tempfile.mkdtemp(prefix="running_log_launchers_")).resolve()
 copy = TMP / "Running records copy"          # a folder name with spaces
 (copy / "data").mkdir(parents=True)
 for f in ("make_feed.py", "make_previews.py", "make_feed.bat", "make_previews.bat"):

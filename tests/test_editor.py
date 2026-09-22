@@ -40,7 +40,9 @@ sys.stdout.reconfigure(errors="backslashreplace")     # our own prints never cra
 REQUIRE_GUI = "--require-gui" in sys.argv
 SCRIPTS = ("add_new_event.py", "make_previews.py", "make_feed.py")
 HAS_MAGICK = shutil.which("magick") is not None
-TMP = Path(tempfile.mkdtemp(prefix="running_log_tests_"))
+# resolve(): the temp folder may be given in 8.3 form (C:\Users\RUNNER~1\…), while
+# the scripts under test see their own folder by its long name.
+TMP = Path(tempfile.mkdtemp(prefix="running_log_tests_")).resolve()
 SANDBOX = TMP / "project"
 
 

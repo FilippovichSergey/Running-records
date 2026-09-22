@@ -35,7 +35,9 @@ except Exception as e:                  # tkinter.TclError: no usable Tcl/Tk her
     print(f"skipped: no usable Tk ({e})")
     sys.exit(SKIP_CODE)
 
-TMP = Path(tempfile.mkdtemp(prefix="running_log_close_"))
+# resolve(): the temp folder may be given in 8.3 form (C:\Users\RUNNER~1\…), while
+# the scripts under test see their own folder by its long name.
+TMP = Path(tempfile.mkdtemp(prefix="running_log_close_")).resolve()
 IMAGES = ["a.jpg", "b.jpg", "c.jpg"]
 RESULTS = []
 
@@ -137,7 +139,12 @@ OLD = """
 for label, setup in (("fixed", FIXED), ("old", OLD)):
     sb = sandbox("gc_" + label)
     code, out = run_child(sb, GC_CHILD.replace("{setup}", textwrap.indent(textwrap.dedent(setup), "    ").strip()))
-    clean = code == 0 and "worker survived gc" in out and "main done" in out and "Tcl_AsyncDelete" not in out
+    # Closing the old way goes wrong differently per Python version: older releases
+    # abort (Tcl_AsyncDelete), newer ones (gh-83274 fixed) leak the Tcl interpreter with
+    # a warning after "main thread is not in main loop" errors. Clean means none of it.
+    symptoms = ("Tcl_AsyncDelete", "main thread is not in main loop", "Tcl interpreter is leaked")
+    clean = (code == 0 and "worker survived gc" in out and "main done" in out
+             and not any(s in out for s in symptoms))
     if label == "fixed":
         RESULTS.append(("closing during a pass exits cleanly", clean, f"code={code}\n{out[-800:]}"))
     else:
