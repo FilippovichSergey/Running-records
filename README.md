@@ -133,12 +133,16 @@ is not touched.
 | Medal photo | Optional — single image shown on the PB card |
 | Previous records | One record per line: `time\|date\|location`. Every line must have a valid time and date — a bad line is reported with its number and blocks the save instead of being dropped. The location may itself contain `\|` |
 
-If a personal best for that distance already exists (`5 km`, `5_km` and `5 KM` all count as
-the same distance), the script asks whether to replace it. Yes makes the new result the PB
+If a personal best for that distance already exists, the script asks whether to replace it.
+Labels count as the same distance the way the site shows them: `5 km`, `5km`, `5 KM`,
+`5 км` and `5_км` are all "5 km", and `21.1 km` is the same as `21.1 км`. Yes makes the new result the PB
 and moves the old one into Previous records; it also warns you if the new time is not
 actually faster. A PB is recognised by its label, not its file name, so this also works for
 a PB stored under an older file name. If two files already hold a PB for the same
-distance, the script refuses and names them, so you can delete the extra one first.
+distance, the script refuses and names them, so you can delete the extra one first. The
+same happens while a PB file can't be loaded (see below): it might be this distance's PB,
+so adding or renaming a PB waits until that file is fixed. The Distance label field
+starts empty, so type it the way your existing PBs are labelled.
 
 ### Edit Run / Edit Personal Best tabs
 
@@ -160,7 +164,9 @@ A JSON file in `data/runs/` or `data/pbs/` that can't be used — not valid JSON
 type such as `"photos": null` — is skipped rather than crashing the editor. At startup a
 dialog lists each such file and why, and **View All** lists them too. Until they are fixed
 or removed, `data.js` is not rebuilt, because rebuilding without them would silently drop
-those events from the site; saves still write their own JSON and say so.
+those events from the site; saves still write their own JSON and say so. A broken
+`data/sneakers.json` only leaves the Sneakers dropdown empty (with a warning in the
+console) and is never overwritten.
 
 ### Sneakers
 

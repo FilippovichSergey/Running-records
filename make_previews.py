@@ -182,9 +182,9 @@ def main(argv=None) -> int:
         return 1
     paths = referenced_paths()
     if not paths:
-        write_dims([])             # drop the sizes of photos no event references any more
+        # Carry on with nothing to encode: --dry-run then writes nothing, --prune still
+        # removes the orphaned previews, and photo-dims.js is emptied as usual.
         print(f"No image paths found in {DATA_JS} — no previews needed.")
-        return 0
 
     # Build the job list, refusing collisions rather than silently overwriting.
     jobs, claimed, missing, changed = [], {}, [], set()

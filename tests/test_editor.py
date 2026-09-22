@@ -116,7 +116,7 @@ a.write_data_js()
 # ── Dialog stubs: record what would have been shown, answer from ANSWER/RETRY ──
 LOG = []
 ANSWER = {"yes": True}
-RETRY = {"yes": True}
+RETRY = {"yes": False}     # never True for long: App.saved() retries for as long as it is
 mb = a.messagebox
 mb.showinfo    = lambda t, m, **k: LOG.append(("info", t, m))
 mb.showerror   = lambda t, m, **k: LOG.append(("error", t, m))
@@ -301,6 +301,11 @@ def _():
     for good, slug in (("5 km", "5_km"), ("21.1 км", "21.1_км"), ("1/2 Marathon", "12_marathon"),
                        ("../outside", "..outside")):
         check(f"PB label {good!r} -> {slug}", a.pb_slug(good) == slug)
+    for same in ("5 km", "5km", "5 KM", "5  км", "5_км", "5,0 km", "5.0 км"):
+        check(f"PB label {same!r} is the distance '5 km'", a.pb_key(same) == "5 km", a.pb_key(same))
+    for label, key in (("21.1 km", "21.1 km"), ("21,1 км", "21.1 km"), ("200 м", "200 m"),
+                       ("Half  Marathon", "half marathon"), ("5000 m", "5000 m")):
+        check(f"PB label {label!r} -> key {key!r}", a.pb_key(label) == key, a.pb_key(label))
     check("number_text shows whole floats as integers",
           [a.number_text(v) for v in (150.0, 150, 12.5, "", 0)] == ["150", "150", "12.5", "", "0"])
     e = ""
@@ -335,6 +340,18 @@ def _():
     check("PB with a bad history row is unusable", "previous_records #1" in
           (a.record_problem({**pb, "previous_records": [{"time": "x", "date": "2024-01-01"}]}, "pb") or ""))
     check("every fixture record is usable", not a.load_problems(), a.load_problems())
+    huge = SANDBOX / "data/runs/huge.json"
+    deep = SANDBOX / "data/runs/deep.json"
+    huge.write_text('{"date": "2026-01-01", "distance_km": 5.0, "total_time": "25:00", "elevation": 1'
+                    + "0" * 400 + "}", "utf-8")
+    deep.write_text("[" * 100000 + "]" * 100000, "utf-8")
+    try:
+        problems = a.load_problems()
+        check("a huge number and absurd nesting are reported, not crashed on",
+              any("huge.json" in p for p in problems) and any("deep.json" in p for p in problems), problems)
+    finally:
+        huge.unlink()
+        deep.unlink()
 
 
 @test("file names and paths", gui=False)
@@ -401,7 +418,8 @@ def _():
           [k for _, k in mf.assign_ids(pair)] == ["2026-05-05", "2026-05-05-2"])
     scratch = TMP / "feed"
     scratch.mkdir()
-    saved = mf.DATA_JS, mf.OUT, mp.DATA_JS, mp.DIMS_JS, mp.PREVIEW_ROOT
+    saved = mf.DATA_JS, mf.OUT, mp.DATA_JS, mp.DIMS_JS, mp.PREVIEW_ROOT, mp.BASE_DIR
+    mp.BASE_DIR = scratch
     mf.DATA_JS = mp.DATA_JS = scratch / "data.js"
     mf.OUT, mp.DIMS_JS, mp.PREVIEW_ROOT = scratch / "atom.xml", scratch / "photo-dims.js", scratch / "previews"
     try:
@@ -419,8 +437,15 @@ def _():
         quiet(mf.main, [])
         check("regenerating the empty feed gives the same file", mf.OUT.read_text("utf-8") == empty)
         mp.DIMS_JS.write_text('const PHOTO_DIMS = {\n  "data/photos/x/a.jpg": [1,2]\n};\n', "utf-8")
-        check("no referenced photos empties photo-dims.js",
-              quiet(mp.main, []) == 0 and "data/photos" not in mp.DIMS_JS.read_text("utf-8"))
+        dims_before = mp.DIMS_JS.read_bytes()
+        orphan = mp.PREVIEW_ROOT / "thumb/x/a.webp"
+        orphan.parent.mkdir(parents=True)
+        orphan.write_bytes(b"old preview")
+        check("--dry-run with no referenced photos writes nothing",
+              quiet(mp.main, ["--dry-run"]) == 0 and mp.DIMS_JS.read_bytes() == dims_before and orphan.exists())
+        check("--prune with no referenced photos still removes orphaned previews",
+              quiet(mp.main, ["--prune"]) == 0 and not orphan.exists())
+        check("no referenced photos empties photo-dims.js", "data/photos" not in mp.DIMS_JS.read_text("utf-8"))
         mf.DATA_JS.unlink()
         check("a missing data.js is an error and keeps the feed",
               quiet(mf.main, []) == 1 and mf.OUT.read_text("utf-8") == empty)
@@ -428,7 +453,7 @@ def _():
         mf.DATA_JS.write_text("garbage", "utf-8")
         check("an unreadable data.js is an error too", quiet(mf.main, []) == 1)
     finally:
-        mf.DATA_JS, mf.OUT, mp.DATA_JS, mp.DIMS_JS, mp.PREVIEW_ROOT = saved
+        mf.DATA_JS, mf.OUT, mp.DATA_JS, mp.DIMS_JS, mp.PREVIEW_ROOT, mp.BASE_DIR = saved
     js = SANDBOX / "data/data.js"
     good = js.read_bytes()
     js.write_bytes(good.decode("utf-8").encode("utf-16"))
@@ -454,13 +479,22 @@ def _():
         r.request()
         wait_idle(r)
     check("a crashing pass is reported, not lost", not r.busy and "failed" in " ".join(r.problems), r.problems)
-    real = a.refresh_feed
-    a.refresh_feed = lambda: "atom.xml not regenerated — stub"
+    real_feed, real_main = a.refresh_feed, mp.main
     try:
-        problems = quiet(a.refresh_generated)
+        mp.main = lambda argv=None: 1                 # refresh_previews imports this module
+        msg = quiet(a.refresh_previews)
+        check("a preview run that fails is reported", bool(msg) and "previews" in msg, msg)
+        def crash(argv=None):
+            raise RuntimeError("magick exploded")
+        mp.main = crash
+        check("a preview run that crashes is reported with the reason",
+              "magick exploded" in (quiet(a.refresh_previews) or ""))
+        a.refresh_feed = lambda: "atom.xml not regenerated — stub"
+        both = quiet(a.refresh_generated)
+        check("refresh_generated returns every problem",
+              len(both) == 2 and "magick exploded" in both[0] and both[1] == "atom.xml not regenerated — stub", both)
     finally:
-        a.refresh_feed = real
-    check("refresh_generated returns what went wrong", problems[-1] == "atom.xml not regenerated — stub", problems)
+        a.refresh_feed, mp.main = real_feed, real_main
 
 
 # ══ Saving never loses a record ═════════════════════════════════════════════════
@@ -673,7 +707,7 @@ def _():
     check("Yes updates that file, with the old result in the history — one PB for the distance",
           rec["total_time"] == "6:20" and {"time": "6:40", "date": "2020-05-01", "location": "Batumi"} in rec["previous_records"]
           and not (SANDBOX / "data/pbs/1_mile.json").exists()
-          and sum(1 for p in a.load_all_pbs() if a._label_slug(p) == "1_mile") == 1, rec)
+          and sum(1 for p in a.load_all_pbs() if a.pb_key(p["distance"]) == "1 mile") == 1, rec)
 
     twin = SANDBOX / "data/pbs/mile_copy.json"
     twin.write_text(json.dumps(_pb("1 mile", 1.609, "7:00", "2019-01-01"), ensure_ascii=False, indent=2), "utf-8")
@@ -718,6 +752,81 @@ def _():
           json.loads(legacy.read_text("utf-8"))["race_name"] == "edited" and not (SANDBOX / "data/pbs/1_mile.json").exists())
 
 
+@test("PB labels spelt differently are one distance")
+def _():
+    x = quiet(new_app)
+    check("the Add PB form starts with an empty label", x.pb_tab.v_distance.get() == "")
+    x.destroy()
+    t = app.pb_tab
+    before = snapshot()
+    ANSWER["yes"] = False
+    for label, km in (("5 km", "5"), ("5km", "5"), ("5  км", "5"), ("5,0 km", "5"), ("21.1 km", "21.1")):
+        fill_pb(t, distance=label, distance_km=km, total_time="0:18:00", date="2026-09-16")
+        LOG.clear()
+        t._save()
+        check(f"'{label}' is found as the existing PB: asks; No changes nothing",
+              LOG and LOG[0][0] == "ask" and snapshot() == before, LOG)
+    ANSWER["yes"] = True
+    t = select_pb("3_km")
+    t.v_distance.set("5 km")
+    LOG.clear()
+    t._save()
+    check("renaming 3 km to '5 km' is refused while '5 км' exists", last()[0] == "error" and snapshot() == before, LOG)
+    t = select_pb("5_км")
+    t.v_distance.set("5 km")
+    LOG.clear()
+    t._save()
+    check("respelling '5 км' as '5 km' keeps its file", last()[0] == "info"
+          and rjson("data/pbs/5_км.json")["distance"] == "5 km" and not (SANDBOX / "data/pbs/5_km.json").exists(), LOG)
+    t = select_pb("5_км")
+    t.v_distance.set("5 км")
+    t._save()
+
+
+@test("a PB file that can't be loaded blocks adding that distance")
+def _():
+    p = SANDBOX / "data/pbs/5_км.json"
+    orig = p.read_bytes()
+    rec = json.loads(orig)
+    rec["photos"] = None
+    p.write_text(json.dumps(rec, ensure_ascii=False, indent=2), "utf-8")
+    try:
+        before = snapshot()
+        fill_pb(app.pb_tab, distance="5 км", distance_km="5", total_time="0:18:00", date="2026-09-15")
+        LOG.clear()
+        app.pb_tab._save()
+        check("Add PB refuses and names the file", last()[0] == "error" and "5_км.json" in last()[2]
+              and snapshot() == before, LOG)
+        t = select_pb("3_km")
+        t.v_distance.set("5 km")
+        LOG.clear()
+        t._save()
+        check("renaming a PB is refused too", last()[0] == "error" and "5_км.json" in last()[2]
+              and snapshot() == before, LOG)
+    finally:
+        p.write_bytes(orig)
+
+
+@test("a broken sneakers.json")
+def _():
+    f = SANDBOX / "data/sneakers.json"
+    orig = f.read_bytes()
+    try:
+        for i, bad in enumerate(('["Shoe A", "Shoe B",]', "{}")):
+            f.write_text(bad, "utf-8")
+            x = quiet(new_app)
+            check(f"the editor opens with sneakers.json = {bad!r}, dropdown empty", not x.run_tab.cb_sneakers["values"])
+            x.destroy()
+            fill_run(app.run_tab, date=f"2026-08-2{i + 1}", race="Shoes", sneakers="Brand New Shoe")
+            LOG.clear()
+            quiet(app.run_tab._save)
+            check(f"a save with sneakers.json = {bad!r} completes and leaves the file alone",
+                  last()[0] == "info" and (SANDBOX / f"data/runs/2026-08-2{i + 1}.json").exists()
+                  and f.read_text("utf-8") == bad, LOG)
+    finally:
+        f.write_bytes(orig)
+
+
 @test("records with optional fields missing, or numbers stored as floats")
 def _():
     minimal = {"date": "2026-02-02", "distance_km": 5.0, "total_time": "25:00"}
@@ -758,13 +867,15 @@ def _():
     check("a PB with a float heart rate saves too",
           last()[0] == "info" and rjson("data/pbs/9_km.json")["hr_max"] == 180, LOG)
     write_record("data/runs/2026-02-05.json", _run("2026-02-05", hr_avg=150.5))
-    problems = a.load_problems()
-    check("a fractional heart rate is refused when loading, with the reason",
-          any("2026-02-05.json" in p and "whole number" in p for p in problems), problems)
-    for rel in ("data/runs/2026-02-02.json", "data/runs/2026-02-04.json", "data/runs/2026-02-05.json",
-                "data/pbs/9_km.json"):
-        (SANDBOX / rel).unlink()
-    a.write_data_js()
+    try:
+        problems = a.load_problems()
+        check("a fractional heart rate is refused when loading, with the reason",
+              any("2026-02-05.json" in p and "whole number" in p for p in problems), problems)
+    finally:
+        for rel in ("data/runs/2026-02-02.json", "data/runs/2026-02-04.json", "data/runs/2026-02-05.json",
+                    "data/pbs/9_km.json"):
+            (SANDBOX / rel).unlink(missing_ok=True)
+        a.write_data_js()
 
 
 # ══ Input ═════════════════════════════════════════════════════════════════════════
@@ -988,16 +1099,7 @@ def _():
 
 # ══ Broken files ══════════════════════════════════════════════════════════════════
 
-@test("broken record files")
-def _():
-    broken = {
-        "data/runs/broken_empty.json": "{}",
-        "data/runs/broken_photos.json": json.dumps(_run("2026-03-03", photos=None)),
-        "data/runs/broken_syntax.json": '{"date": "2026-03-04",',
-        "data/pbs/broken_pb.json": json.dumps({"date": "2026-03-05", "distance_km": 5.0, "total_time": "20:00"}),
-    }
-    for rel, text in broken.items():
-        (SANDBOX / rel).write_text(text, "utf-8")
+def broken_files_checks(broken):
     data_js = (SANDBOX / "data/data.js").read_bytes()
     raw = {rel: (SANDBOX / rel).read_bytes() for rel in broken}
     LOG.clear()
@@ -1012,16 +1114,29 @@ def _():
     x.destroy()
     check("data.js is not rebuilt without them", (SANDBOX / "data/data.js").read_bytes() == data_js)
     fill_run(app.run_tab, date="2026-08-01", race="WhileBroken")
-    RETRY["yes"] = False
     LOG.clear()
     app.run_tab._save()
     check("a save still writes the record, and the data.js dialog names the broken files",
           (SANDBOX / "data/runs/2026-08-01.json").exists() and [e[0] for e in LOG] == ["retry"]
           and "broken_empty.json" in LOG[0][2], LOG)
-    RETRY["yes"] = True
     check("the broken files are never rewritten", all((SANDBOX / rel).read_bytes() == b for rel, b in raw.items()))
-    for rel in broken:
-        (SANDBOX / rel).unlink()
+
+
+@test("broken record files")
+def _():
+    broken = {
+        "data/runs/broken_empty.json": "{}",
+        "data/runs/broken_photos.json": json.dumps(_run("2026-03-03", photos=None)),
+        "data/runs/broken_syntax.json": '{"date": "2026-03-04",',
+        "data/pbs/broken_pb.json": json.dumps({"date": "2026-03-05", "distance_km": 5.0, "total_time": "20:00"}),
+    }
+    for rel, text in broken.items():
+        (SANDBOX / rel).write_text(text, "utf-8")
+    try:
+        broken_files_checks(broken)
+    finally:
+        for rel in broken:
+            (SANDBOX / rel).unlink(missing_ok=True)
     LOG.clear()
     new_app().destroy()
     check("once they are gone, the next start rebuilds data.js with the new run",
@@ -1040,12 +1155,14 @@ def _():
             raise OSError(13, "The file is locked")
         return real()
     a.write_data_js = flaky
+    RETRY["yes"] = True
     try:
         fill_run(app.run_tab, date="2026-07-10", race="RetryRace")
         LOG.clear()
         app.run_tab._save()
     finally:
         a.write_data_js = real
+        RETRY["yes"] = False
     msg = next((e[2] for e in LOG if e[0] == "retry"), "")
     check("a failed rebuild offers Retry and never says 'save again'",
           [e[0] for e in LOG] == ["retry", "info"] and "record itself is saved" in msg and "save again" not in msg.lower(), LOG)
@@ -1066,24 +1183,38 @@ def _():
 
 @test("status line")
 def _():
-    outcome = {"problems": ["atom.xml not regenerated — test"]}
     x = new_app()
-    x.refresher = a.BackgroundRefresh(work=lambda: outcome["problems"])
+
+    def pump_until(cond):
+        """Run the real Tk event loop (so after() polls fire) until cond() holds."""
+        deadline = time.time() + 5
+        while not cond() and time.time() < deadline:
+            x.update()
+            time.sleep(0.02)
+        return cond()
+
+    pump_until(lambda: not x._polling)
+    outcome = {"problems": ["atom.xml not regenerated — test"]}
+    x.refresher = a.BackgroundRefresh(work=lambda: (time.sleep(0.3), outcome["problems"])[1])
     x.start_refresh()
-    deadline = time.time() + 5
-    while x.refresher.busy and time.time() < deadline:
-        time.sleep(0.02)
-    x._poll_refresh()
-    check("a failed pass shows in the status line with a Retry button",
-          "atom.xml not regenerated" in x.status.get() and x.retry_button.winfo_manager() == "pack", x.status.get())
+    check("while a pass runs the status says so, without Retry",
+          x.status.get().startswith("Updating") and x.retry_button.winfo_manager() == "", x.status.get())
+    check("when it fails, the warning and Retry appear by themselves",
+          pump_until(lambda: "atom.xml not regenerated" in x.status.get()) and x.retry_button.winfo_manager() == "pack",
+          x.status.get())
     outcome["problems"] = []
     x.retry_button.invoke()
-    deadline = time.time() + 5
-    while x.refresher.busy and time.time() < deadline:
-        time.sleep(0.02)
-    x._poll_refresh()
-    check("Retry runs the pass again and clears the warning",
-          x.status.get() == "" and x.retry_button.winfo_manager() == "", x.status.get())
+    check("Retry runs the pass again and the warning goes by itself",
+          pump_until(lambda: x.status.get() == "") and x.retry_button.winfo_manager() == "", x.status.get())
+    outcome["problems"] = ["still failing"]
+    x.deiconify()
+    x.geometry(f"{max(x.winfo_reqwidth(), 520)}x420")        # far below its natural height
+    x.start_refresh()
+    pump_until(lambda: "still failing" in x.status.get())
+    x.update()
+    check("on a short window the status line and Retry stay visible",
+          x.status_label.winfo_ismapped() and x.retry_button.winfo_ismapped())
+    x.withdraw()
     x.destroy()
 
 
@@ -1152,24 +1283,28 @@ def _():
         shutil.copytree(REPO / "data" / d, real / "data" / d)
     code = textwrap.dedent("""
         import json, sys
+        from pathlib import Path
         sys.path.insert(0, ".")
+        orig = {f"{d}/{p.name}": p.read_bytes() for d in ("runs", "pbs") for p in Path("data", d).glob("*.json")}
         import add_new_event as a
         log = []
-        for n in ("showinfo", "showerror", "showwarning", "askyesno", "askretrycancel"):
+        for n in ("showinfo", "showerror", "showwarning", "askyesno"):
             setattr(a.messagebox, n, lambda t, m, n=n, **k: log.append(n) or True)
+        a.messagebox.askretrycancel = lambda t, m, **k: log.append("askretrycancel") or False
         a.BackgroundRefresh.__init__.__defaults__ = (lambda: None,)
         app = a.App(); app.withdraw()
-        out = {"problems": a.load_problems(), "changed": [], "count": 0}
+        out = {"problems": a.load_problems(), "count": 0, "changed": [],
+               "startup_changed": [k for k, b in orig.items() if Path("data", k).read_bytes() != b]}
         for tab, items in ((app.edit_run_tab, "runs"), (app.edit_pb_tab, "pbs")):
             tab.refresh()
             for i in range(len(getattr(tab, items))):
                 tab.refresh()
                 rec = getattr(tab, items)[i]
-                before = rec["_path"].read_bytes()
+                key = f"{items}/{rec['_path'].name}"
                 tab.listbox.selection_set(i); tab._on_select(None); tab._save()
                 out["count"] += 1
-                if rec["_path"].read_bytes() != before or log[-1] != "showinfo":
-                    out["changed"].append(rec["_path"].name)
+                if rec["_path"].read_bytes() != orig.get(key) or log[-1] != "showinfo":
+                    out["changed"].append(key)
         print(json.dumps(out))
     """)
     r = subprocess.run([sys.executable, "-c", code], cwd=real, capture_output=True, text=True, timeout=300)
@@ -1178,8 +1313,8 @@ def _():
     except (ValueError, IndexError):
         check("real data round trip", False, r.stdout[-500:] + r.stderr[-1500:])
         return
-    check(f"all {out['count']} real records load and save back byte-identical",
-          not out["problems"] and not out["changed"] and out["count"] > 0, out)
+    check(f"all {out['count']} real records load, survive the editor starting, and save back byte-identical",
+          not out["problems"] and not out["startup_changed"] and not out["changed"] and out["count"] > 0, out)
 
 
 # Tk objects must be freed on the main thread. An App that became garbage mid-run could

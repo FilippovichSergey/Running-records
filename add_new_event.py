@@ -22,6 +22,7 @@ import tempfile
 import threading
 import time
 import tkinter as tk
+import unicodedata
 from tkinter import filedialog, messagebox, ttk
 from datetime import date
 from pathlib import Path
@@ -288,7 +289,12 @@ _HR_FIELDS    = ("hr_avg", "hr_max")
 
 
 def _is_number(v) -> bool:
-    return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+    if not isinstance(v, (int, float)) or isinstance(v, bool):
+        return False
+    try:
+        return math.isfinite(v)
+    except OverflowError:            # an int too big for a float (1 followed by 400 zeros)
+        return False
 
 
 def record_problem(rec, kind: str) -> str | None:
@@ -351,10 +357,13 @@ def scan_records(folder: Path, kind: str) -> tuple[list[dict], list[str]]:
     for f in sorted(folder.glob("*.json")):
         try:
             data = read_json(f)
-        except (OSError, ValueError) as e:
+        except (OSError, ValueError, RecursionError) as e:    # RecursionError: absurd nesting
             problems.append(f"{folder.name}/{f.name}: not readable JSON ({e})")
             continue
-        issue = record_problem(data, kind)
+        try:
+            issue = record_problem(data, kind)
+        except Exception as e:       # whatever a hand-edited file holds, never crash on it
+            issue = f"can't be checked ({type(e).__name__}: {e})"
         if issue:
             problems.append(f"{folder.name}/{f.name}: {issue}")
             continue
@@ -429,18 +438,38 @@ def freeze_feed_ids() -> list[str]:
     return changed
 
 
-def _label_slug(pb: dict) -> str | None:
+_PB_DISTANCE_RE = re.compile(r"([0-9.,]+) ?(km|км|m|м)")
+
+
+def pb_key(label: str) -> str:
+    """What makes two PB labels the same distance. The site shows "5 km", "5km", "5 KM",
+    "5  км", "5_км" and "5,0 km" all as "5 km" (pbDistLabel in app.js), so they are one
+    distance here too: "5 km". Other labels compare case- and spacing-insensitively.
+    The key only identifies; file names still come from pb_slug()."""
+    s = " ".join(unicodedata.normalize("NFC", label).casefold().replace("_", " ").split())
+    m = _PB_DISTANCE_RE.fullmatch(s)
+    if not m:
+        return s
     try:
-        return pb_slug(pb.get("distance", ""))
-    except ValidationError:
-        return None
+        number = f"{float(m.group(1).replace(',', '.')):g}"
+    except ValueError:
+        number = m.group(1)
+    return f"{number} {'m' if m.group(2) in ('m', 'м') else 'km'}"
 
 
 def pbs_with_label(label: str, exclude: Path | None = None) -> list[dict]:
-    """The personal bests for this distance. A PB is identified by its label ("5 km",
-    "5_km" and "5 KM" are one distance), not by its file name, which may be older."""
-    slug = pb_slug(label)
-    return [p for p in load_all_pbs() if _label_slug(p) == slug and p["_path"] != exclude]
+    """The personal bests for this distance — see pb_key(). A PB is identified by its
+    label, not by its file name, which may be older.
+
+    While a PB file can't be loaded, whether it is this distance can't be told, so this
+    refuses (ValidationError) rather than let a second PB for the distance be created."""
+    pbs, skipped = scan_records(PBS_DIR, "pb")
+    if skipped:
+        raise ValidationError(
+            "These personal best files can't be loaded, so it can't be told whether one of "
+            "them is already this distance's PB. Fix or remove them first:\n  " + "\n  ".join(skipped))
+    key = pb_key(label)
+    return [p for p in pbs if pb_key(p["distance"]) == key and p["_path"] != exclude]
 
 
 def free_pb_path(label: str, own: Path | None = None) -> Path:
@@ -571,7 +600,7 @@ def refresh_feed() -> str | None:
     try:
         import make_feed
         if make_feed.main([]) != 0:
-            return "atom.xml not regenerated — run make_feed.bat to see why"
+            return "atom.xml not regenerated: data/data.js is missing or can't be read"
     except Exception as exc:
         return f"atom.xml not regenerated ({exc})"
     return None
@@ -741,10 +770,24 @@ def copy_medal(src: Path | None, event_key: str) -> str:
 
 # ── Sneakers list ────────────────────────────────────────────────────────────
 
+def _read_sneakers() -> list:
+    """The saved names, strictly: raises (OSError / ValueError) if the file is broken."""
+    if not SNEAKERS_FILE.exists():
+        return []
+    names = json.loads(SNEAKERS_FILE.read_text("utf-8-sig"))
+    if not isinstance(names, list):
+        raise ValueError("data/sneakers.json is not a list")
+    return names
+
+
 def load_sneakers() -> list:
-    if SNEAKERS_FILE.exists():
-        return json.loads(SNEAKERS_FILE.read_text("utf-8-sig"))
-    return []
+    """Names for the dropdowns. A broken sneakers.json (edited by hand) leaves them empty
+    with a warning, instead of stopping the editor from opening."""
+    try:
+        return [n for n in _read_sneakers() if isinstance(n, str)]
+    except (OSError, ValueError) as e:
+        print(f"Warning: data/sneakers.json can't be read ({e}); the dropdown is empty.")
+        return []
 
 
 def save_sneakers(names: list):
@@ -754,7 +797,7 @@ def save_sneakers(names: list):
 def ensure_sneaker(name: str):
     if not name:
         return
-    names = load_sneakers()
+    names = _read_sneakers()        # strict: never replace a list we couldn't read
     if name not in names:
         names.append(name)
         save_sneakers(names)
@@ -764,7 +807,7 @@ def remember_sneaker(name: str):
     """ensure_sneaker() after a save — the record is already written, so only warn."""
     try:
         ensure_sneaker(name)
-    except (OSError, ValueError) as e:
+    except (OSError, ValueError, TypeError) as e:
         print(f"Warning: sneakers.json not updated ({e})")
 
 
@@ -918,7 +961,7 @@ class PBTab(tk.Frame):
 
         today = date.today().isoformat()
 
-        self.v_distance    = labeled_entry(self, "Distance label", 0, "5 km")
+        self.v_distance    = labeled_entry(self, "Distance label", 0)
         self.v_distance_km = labeled_entry(self, "Distance (km)", 1)
         self.v_total_time  = labeled_entry(self, "Total time (H:MM:SS)", 2)
         self.v_date        = labeled_entry(self, "Date (YYYY-MM-DD)", 3, today)
@@ -1337,7 +1380,7 @@ class EditPBTab(tk.Frame):
             # Same distance -> same file, whatever its name. Another distance must not
             # be one that already has a PB: that would leave two for one distance.
             own = old["_path"]
-            if pb_slug(fields["distance"]) == _label_slug(old):
+            if pb_key(fields["distance"]) == pb_key(old["distance"]):
                 path = own
             else:
                 taken = pbs_with_label(fields["distance"], exclude=own)
@@ -1434,17 +1477,19 @@ class App(tk.Tk):
         self.refresher = BackgroundRefresh()
         self._polling = False
 
-        nb = ttk.Notebook(self)
-        nb.pack(fill="both", expand=True, padx=10, pady=(10, 0))
-
         # Status line: background progress, or what the last preview/feed pass failed at.
+        # Packed first, at the bottom, so on a short screen the notebook shrinks instead
+        # of the status line (and its Retry button) being cut off.
         bar = tk.Frame(self)
-        bar.pack(fill="x", padx=12, pady=(2, 6))
+        bar.pack(side="bottom", fill="x", padx=12, pady=(2, 6))
         self.status = tk.StringVar()
         self.status_label = tk.Label(bar, textvariable=self.status, fg="grey", anchor="w",
                                      justify="left", wraplength=460)
         self.status_label.pack(side="left", fill="x", expand=True)
         self.retry_button = tk.Button(bar, text="Retry", command=self.start_refresh)
+
+        nb = ttk.Notebook(self)
+        nb.pack(fill="both", expand=True, padx=10, pady=(10, 0))
 
         self.run_tab      = RunTab(nb, self)
         self.pb_tab       = PBTab(nb, self)

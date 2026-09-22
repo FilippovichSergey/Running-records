@@ -1,2 +1,3 @@
-cd d:\IT\Running_records\npython make_feed.py %*
+cd d:\IT\Running_records\
+python make_feed.py %*
 pause
